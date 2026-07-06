@@ -22,6 +22,7 @@ Base URL live: `https://yfy8b8j9jj-lgtm.github.io/modula`
 
 **App del cliente**
 - App personalizzata — "Il gestionale interno" — stato: template — `/app.html`
+- Guida cliente — "Manuale d'uso brandizzato, assemblato dai moduli del cliente (pagina + PDF)" — stato: scheletro (2 capitoli pilota) — `/guida/`
 - Portale clienti — "I clienti finali prenotano" — stato: online — `/portale/`
 - Mini sito azienda — "Vetrina pubblica del cliente" — stato: scheletro — `/mini-sito/`
 
