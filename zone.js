@@ -6,6 +6,12 @@ const ZONE_LETTERS=['A','B','C','D','E','F','G','H'];
 const ZONE_COLORS={A:'#E23D3D',B:'#E2722E',C:'#C9A227',D:'#4CA02C',E:'#2E9E8F',F:'#2E78E2',G:'#7B57D6',H:'#C24FB0'};
 const ZONE_LABEL=z=>'Zona '+z;
 
+/* Il sistema a "zone" (chip A–H, sezioni per zona) dipende da una lista paesi
+   dell'azienda in zone-data.js (ZONE_PAESI). Nel modello multi-tenant quella lista
+   è VUOTA: in quel caso la mappa lavora SOLO per coordinate (indirizzo geocodificato),
+   senza zone. HAS_ZONES distingue i due mondi così non nascondiamo più i clienti. */
+const HAS_ZONES=(typeof ZONE_PAESI!=='undefined'&&ZONE_PAESI.length>0);
+
 /* normalizzazione nome paese (toglie accenti, GR/TI, parentesi, punteggiatura) */
 const zNorm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
   .replace(/\(.*?\)/g,'').replace(/\b(gr|ti)\b/g,'').replace(/[^a-z0-9]/g,'');
@@ -140,8 +146,7 @@ function zoneListClients(){
   const due=zoneDueByClient(); const q=norm(zoneQuery);
   return S.clients.filter(c=>{
     if(c.blocked)return false;
-    const z=zoneOfClient(c); if(!z)return false;
-    if(zoneSel!=='all'&&z!==zoneSel)return false;
+    if(HAS_ZONES){const z=zoneOfClient(c); if(!z)return false; if(zoneSel!=='all'&&z!==zoneSel)return false;}
     if(zoneMode==='lavori'&&!zoneShownDue(c,due))return false;
     if(q&&!norm(c.name+' '+(c.town||'')+' '+(c.street||'')+' '+(c.phone||'')).includes(q))return false;
     return true;
@@ -157,21 +162,26 @@ function renderZone(){
   zoneIndex();
   const {counts,tot}=zoneCounts();
   const noZone=S.clients.filter(c=>!c.blocked&&!zoneOfClient(c)&&((c.town||'').trim()||(c.cap||'').trim()));
+  /* clienti geolocalizzabili ma ancora senza pin (indirizzo presente, coordinate no):
+     nel mondo senza-zone è l'unica via per farli comparire sulla mappa. */
+  const unplaced=S.clients.filter(c=>!c.blocked&&!zoneHasExact(c)&&(c.town||'').trim()&&((c.street||'').trim()||(c.cap||'').trim()));
+  const placed=S.clients.filter(c=>!c.blocked&&zoneHasExact(c)).length;
   $('#main').innerHTML=`
-  <div class="pagetitle"><span class="accent" style="background:var(--teal)"></span>Zone</div>
-  <div class="zsearch"><input id="zone-q" class="searchbar" style="margin:0" placeholder="🔍 Cerca paese o cliente…" value="${esc(zoneQuery)}" oninput="zoneQuery=this.value;zoneRenderList()" onkeydown="if(event.key==='Enter')zoneSearchFly()"></div>
+  <div class="pagetitle"><span class="accent" style="background:var(--teal)"></span>${HAS_ZONES?'Zone':'Mappa clienti'}</div>
+  <div class="zsearch"><input id="zone-q" class="searchbar" style="margin:0" placeholder="🔍 Cerca ${HAS_ZONES?'paese o ':''}cliente…" value="${esc(zoneQuery)}" oninput="zoneQuery=this.value;zoneRenderList()" onkeydown="if(event.key==='Enter')zoneSearchFly()"></div>
   <div class="zmodes">
     <div class="zmode${zoneMode==='lavori'?' on':''}" onclick="zoneSetMode('lavori')">🔧 Lavori da fare</div>
     <div class="zmode${zoneMode==='clienti'?' on':''}" onclick="zoneSetMode('clienti')">👥 Tutti i clienti</div>
   </div>
   ${zoneMode==='lavori'?`<div class="zwin">${[['oggi','Oggi'],['7','Questa settimana'],['all','Tutti']].map(([v,l])=>`<div class="zw${zoneWin===v?' on':''}" onclick="zoneSetWin('${v}')">${l}</div>`).join('')}</div>`:''}
-  <div id="zone-chips">${zoneChipsHTML(counts,tot)}</div>
+  ${HAS_ZONES?`<div id="zone-chips">${zoneChipsHTML(counts,tot)}</div>`:''}
   <div id="zone-map" class="zone-map"></div>
-  <label class="ztoggle"><input type="checkbox" ${zoneShowAll?'checked':''} onchange="zoneShowAll=this.checked;renderZone()"> Mostra tutti i ${ZONE_PAESI.length} paesi sulla mappa</label>
+  ${HAS_ZONES?`<label class="ztoggle"><input type="checkbox" ${zoneShowAll?'checked':''} onchange="zoneShowAll=this.checked;renderZone()"> Mostra tutti i ${ZONE_PAESI.length} paesi sulla mappa</label>`:''}
+  ${(!placed&&unplaced.length)?`<div class="card" style="border-color:var(--amber);background:rgba(199,127,18,.08);padding:11px 13px;margin-top:8px"><b>📍 Nessun cliente ancora sulla mappa.</b><br><span class="subtle">${unplaced.length} client${unplaced.length===1?'e ha':'i hanno'} un indirizzo: trova la posizione per vederli come pin.</span>${isOwner()?`<div style="margin-top:8px"><button class="btn pri" style="padding:8px 12px" onclick="zoneGeocodeMissing()">🎯 Trova le posizioni</button></div>`:''}</div>`:''}
   <div id="zone-routebar"></div>
   <div id="zone-list"></div>
-  ${noZone.length?`<details class="znozone"><summary>⚠️ ${noZone.length} client${noZone.length===1?'e':'i'} senza zona (paese non riconosciuto)</summary><div class="card" style="margin-top:8px">${noZone.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<div class="item" onclick="openClient('${c.id}')"><div class="bd"><div class="ti">${esc(c.name)}</div><div class="su">${esc([c.town||'(nessun paese)',c.cap].filter(Boolean).join(' · '))}</div></div></div>`).join('')}</div></details>`:''}
-  ${isOwner()?`<div style="text-align:center;margin:16px 0 4px;display:flex;flex-direction:column;gap:8px"><span class="zlink" onclick="zoneAssignAll()">🔄 Assegna le zone ai clienti (gruppo = zona)</span><span class="zlink" onclick="zoneGeocodeMissing()">🎯 Trova la posizione dei clienti senza pin</span></div>`:''}`;
+  ${HAS_ZONES&&noZone.length?`<details class="znozone"><summary>⚠️ ${noZone.length} client${noZone.length===1?'e':'i'} senza zona (paese non riconosciuto)</summary><div class="card" style="margin-top:8px">${noZone.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<div class="item" onclick="openClient('${c.id}')"><div class="bd"><div class="ti">${esc(c.name)}</div><div class="su">${esc([c.town||'(nessun paese)',c.cap].filter(Boolean).join(' · '))}</div></div></div>`).join('')}</div></details>`:''}
+  ${isOwner()?`<div style="text-align:center;margin:16px 0 4px;display:flex;flex-direction:column;gap:8px">${HAS_ZONES?`<span class="zlink" onclick="zoneAssignAll()">🔄 Assegna le zone ai clienti (gruppo = zona)</span>`:''}<span class="zlink" onclick="zoneGeocodeMissing()">🎯 Trova la posizione dei clienti senza pin</span></div>`:''}`;
   zoneInitMap();
   zoneRenderList();
   zoneRouteBar();
@@ -213,8 +223,11 @@ function zoneInitMap(){
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(zMap);
   const due=zoneDueByClient();const tindex=zoneTownIndex();
   const byTown={};const exact=[];
-  S.clients.forEach(c=>{if(c.blocked)return;const z=zoneOfClient(c);if(!z)return;if(zoneMode==='lavori'&&!zoneShownDue(c,due))return;
-    if(zoneHasExact(c)){exact.push({c,z});return;}
+  S.clients.forEach(c=>{if(c.blocked)return;
+    if(zoneMode==='lavori'&&!zoneShownDue(c,due))return;
+    const z=zoneOfClient(c);
+    if(zoneHasExact(c)){exact.push({c,z});return;}   // pin per coordinate: SEMPRE, anche senza zona riconosciuta
+    if(!z)return;                                     // senza coordinate e senza paese noto: non piazzabile (usa "🎯 Trova posizione")
     const t=tindex[zNorm(c.town||'')];if(!t)return;const k=zNorm(t.p);(byTown[k]=byTown[k]||{t,clients:[]}).clients.push(c);});
   /* paesi di sfondo (opzionale) */
   if(zoneShowAll){ZONE_PAESI.forEach(t=>{if(byTown[zNorm(t.p)])return;const m=L.circleMarker([t.la,t.lo],{radius:3.5,color:'#fff',weight:0.4,fillColor:ZONE_COLORS[t.z],fillOpacity:0.45,opacity:0.5});m.bindTooltip(t.p,{direction:'top'});m.addTo(zMap);zMarkers.push({m,z:t.z,bg:true});});}
@@ -229,7 +242,7 @@ function zoneInitMap(){
   });
   /* pin esatti: casa del cliente (segnaposto a goccia) */
   exact.forEach(({c,z})=>{
-    let color=ZONE_COLORS[z];
+    let color=ZONE_COLORS[z]||'#2E9E8F';
     if(zoneMode==='lavori'){const d=due[c.id];color=urgColor(d?d.minRel:Infinity);}
     const icon=L.divIcon({className:'zpin',html:`<i style="--c:${color}"></i>`,iconSize:[22,28],iconAnchor:[11,26],popupAnchor:[0,-24]});
     const m=L.marker([c.lat,c.lng],{icon});
@@ -278,7 +291,10 @@ function zoneStyle(fit=true){
 function zoneSearchFly(){
   const q=norm(zoneQuery);if(!q||!zMap)return;
   let hit=ZONE_PAESI.find(t=>norm(t.p).includes(q));
-  if(!hit){const c=S.clients.find(c=>!c.blocked&&norm(c.name).includes(q)&&zoneOfClient(c));if(c)hit=zoneTownIndex()[zNorm(c.town||'')];}
+  if(!hit){
+    const c=S.clients.find(c=>!c.blocked&&norm(c.name+' '+(c.town||'')).includes(q));
+    if(c){ if(zoneHasExact(c)){zMap.flyTo([c.lat,c.lng],16,{duration:.6});return;} const t=zoneTownIndex()[zNorm(c.town||'')]; if(t)hit=t; }
+  }
   if(hit)zMap.flyTo([hit.la,hit.lo],14,{duration:0.6});
 }
 
@@ -308,6 +324,10 @@ function zoneListHTML(){
   const list=zoneListClients();
   if(!list.length)return `<div class="card"><div class="empty"><div class="big">${zoneMode==='lavori'?'✅':'🗺️'}</div>${zoneMode==='lavori'?'Nessun lavoro in sospeso qui.':'Nessun cliente in questa selezione.'}</div></div>`;
   const ord=(a,b)=>(due[a.id]?.minRel??1e9)-(due[b.id]?.minRel??1e9)||a.name.localeCompare(b.name);
+  if(!HAS_ZONES){ // nessuna zona: lista piatta di tutti i clienti (con pin 🏠 chi ha la posizione)
+    const cls=list.slice().sort(ord);
+    return `<div class="zsection" style="--zc:var(--teal)"><span class="zsdot"></span><span style="color:var(--teal)">👥 Clienti</span><span class="badge" style="border-color:var(--line2);color:var(--t3)">${cls.length}</span></div><div class="card">${cls.map(c=>zoneRow(c,due)).join('')}</div>`;
+  }
   if(zoneSel==='all'){
     return ZONE_LETTERS.filter(z=>list.some(c=>zoneOfClient(c)===z)).map(z=>{
       const cls=list.filter(c=>zoneOfClient(c)===z).sort(ord);
@@ -431,7 +451,7 @@ function zoneGeoRemove(cid){
 /* batch (solo titolare): geocodifica i clienti senza posizione, ≤1 richiesta/sec, salta i pin manuali */
 async function zoneGeocodeMissing(){
   if(!confirm('Cerco automaticamente la posizione dei clienti che non ce l\'hanno ancora.\nInvia gli indirizzi (senza nome) a OpenStreetMap, una richiesta al secondo.\nI pin già sistemati a mano NON vengono toccati. Procedo?'))return;
-  const todo=S.clients.filter(c=>!c.blocked&&!zoneHasExact(c)&&((c.street||'').trim()||(c.cap||'').trim())&&(c.town||'').trim()&&zoneOfClient(c));
+  const todo=S.clients.filter(c=>!c.blocked&&!zoneHasExact(c)&&((c.street||'').trim()||(c.cap||'').trim())&&(c.town||'').trim()&&(!HAS_ZONES||zoneOfClient(c)));
   if(!todo.length){if(typeof toast==='function')toast('Tutti già posizionati 👍');return;}
   let ok=0,ko=0;
   for(let i=0;i<todo.length;i++){
