@@ -28,6 +28,19 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+# 1b. integra eventuali commit arrivati su origin/LIVE_BRANCH (es. lavoro fatto
+#     direttamente sul live da un'altra sessione): evita il rifiuto non-fast-forward.
+git fetch -q origin "$LIVE_BRANCH" 2>/dev/null || true
+if git rev-parse -q --verify "origin/$LIVE_BRANCH" >/dev/null 2>&1 \
+   && ! git merge-base --is-ancestor "origin/$LIVE_BRANCH" HEAD; then
+  echo "↩ «origin/$LIVE_BRANCH» ha commit nuovi: li integro nel branch corrente (merge)…"
+  if ! git merge --no-edit "origin/$LIVE_BRANCH"; then
+    echo "✋ Conflitto nel merge con «origin/$LIVE_BRANCH» — risolvilo a mano, poi ripubblica."
+    exit 1
+  fi
+  [ "$cur" != "$LIVE_BRANCH" ] && git push -q origin "$cur" 2>/dev/null || true
+fi
+
 # 2. avanza main al branch corrente e pusha
 if [ "$cur" = "$LIVE_BRANCH" ]; then
   git push origin "$LIVE_BRANCH"
