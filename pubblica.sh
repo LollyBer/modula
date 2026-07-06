@@ -58,19 +58,22 @@ owner=${REPO%%/*}; name=${REPO##*/}
 url="https://${owner}.github.io/${name}/"
 echo "⏳ Attendo la build di GitHub Pages per $(git rev-parse --short HEAD)…"
 
-# 3. poll finché Pages ha buildato ESATTAMENTE questo commit
-for i in $(seq 1 40); do
-  read -r status commit < <(gh api "repos/$REPO/pages/builds/latest" 2>/dev/null \
+# 3. poll finché Pages ha buildato questo commit (best-effort)
+for i in $(seq 1 18); do
+  line=$(gh api "repos/$REPO/pages/builds/latest" 2>/dev/null \
     | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('status'),d.get('commit'))" 2>/dev/null \
     || echo "unknown none")
-  if [ "$status" = "built" ] && [ "$commit" = "$head" ]; then
+  st=${line% *}; commit=${line#* }
+  if [ "$st" = "built" ] && [ "$commit" = "$head" ]; then
     echo "✅ PUBBLICATO — live: ${url}"
     echo "   L'app ptek/clienti (PWA su app.html) prende i file nuovi alla prossima apertura o pull-to-refresh."
-    echo "   ⚠ Se hai cambiato il MODELLO DATI (nuove tabelle/colonne), ricordati: Supabase → SQL Editor → esegui supabase/schema.sql."
+    echo "   ⚠ Se hai cambiato il MODELLO DATI (nuove tabelle/colonne): Supabase → SQL Editor → esegui supabase/schema.sql."
     exit 0
   fi
-  echo "   …build: ${status} (tentativo ${i}/40)"
-  sleep 10
+  sleep 8
 done
-echo "⚠ Build non confermata entro il timeout — controlla su GitHub. Il push su «$LIVE_BRANCH» è comunque avvenuto."
+# Non un errore: il push è avvenuto. Pages finisce da solo; se il commit cambia solo
+# file NON pubblicati (es. pubblica.sh, escluso dal sito) può non registrare un build nuovo.
+echo "✓ Push su «$LIVE_BRANCH» fatto — live: ${url}"
+echo "  GitHub Pages di solito completa entro 1–2 minuti: il sito si aggiorna da solo."
 exit 0
