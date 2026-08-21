@@ -126,7 +126,7 @@ e i TODO aperti (Supabase, VAPID, logo). È il riepilogo di cosa è stato conseg
 - **Verifica locale**: `python3 -m http.server 8000` → apri `/clienti/<slug>/app.html`. Controlla che
   il menù mostri solo i moduli giusti e che la console non abbia `render… is not a function`.
 - **Online**: `git add -A && git commit -m "Cliente <slug>: app assemblata" && git push`
-  → live su `https://yfy8b8j9jj-lgtm.github.io/modula/clienti/<slug>/app.html`.
+  → live su `https://lollyber.github.io/modula/clienti/<slug>/app.html`.
 
 ---
 

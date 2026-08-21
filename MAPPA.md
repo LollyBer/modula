@@ -12,7 +12,7 @@ del host, font-weight 400/500, contenitore 680px. Vedi codice in fondo.
 
 Hub centrale: **Modula** — "gestionali su misura".
 
-Base URL live: `https://yfy8b8j9jj-lgtm.github.io/modula`
+Base URL live: `https://lollyber.github.io/modula`
 
 ### Sezioni (rami dall'hub)
 **Sito & vendita**

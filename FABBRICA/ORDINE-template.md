@@ -26,6 +26,6 @@ la richiesta entra qui, l'esito si aggiorna qui. Coppia con `CONSEGNA.md` (l'out
 
 ## Esito
 - cartella: `clienti/<slug>/`
-- link live: `https://yfy8b8j9jj-lgtm.github.io/modula/clienti/<slug>/app.html`
+- link live: `https://lollyber.github.io/modula/clienti/<slug>/app.html`
 - TODO aperti: Supabase · logo · VAPID · moduli promessi
 - note:

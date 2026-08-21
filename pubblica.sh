@@ -14,7 +14,7 @@
 # Uso:  ./pubblica.sh
 # ============================================================================
 set -euo pipefail
-REPO="yfy8b8j9jj-lgtm/modula"
+REPO="LollyBer/modula"
 LIVE_BRANCH="main"
 cd "$(dirname "$0")"
 

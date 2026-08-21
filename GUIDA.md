@@ -71,4 +71,4 @@ Il 95% del tuo lavoro è il primo (clic in Regia).
 
 ---
 
-🔗 Vedi anche: il sito live è **https://yfy8b8j9jj-lgtm.github.io/modula/** · la Regia è `…/admin/` · l'app è `…/app.html`.
+🔗 Vedi anche: il sito live è **https://lollyber.github.io/modula/** · la Regia è `…/admin/` · l'app è `…/app.html`.
