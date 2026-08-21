@@ -5,8 +5,8 @@
 
    Finche' restano i segnaposto __..__ l'app parte in modalita' DEMO (nessun backend). */
 window.MODULA_CONFIG = {
-  SUPABASE_URL: 'https://hdhaptzsgkpdhuelwede.supabase.co',
-  SUPABASE_ANON_KEY: 'sb_publishable_qGJfbDU2EKSBMl6pzY__CQ_ifsB4UGA',
+  SUPABASE_URL: 'https://yohtthmcjqwlxoihvcrt.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_C4HlueumJxy1BjNc1fJCTQ__WzeWm2s',
   VAPID_PUBLIC: 'BJ3nqbGBg4JV6xwXvKgyOMj9LDG9XvbbE4wm2WoV56do2iWNERvcnZh4kLHLubtH7SUFB5mM2BgY6w0zPb-t61Q',  /* chiave PUBBLICA push (pubblica per design). La privata sta in FABBRICA/automazione/vapid.local.json */
   /* Indirizzo dove arrivano le richieste moduli inviate dai titolari DALL'app.
      Le legge la Fabbrica (vedi FABBRICA/POSTA.md) e instrada attivazioni / moduli su misura. */
