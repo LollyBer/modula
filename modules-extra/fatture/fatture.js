@@ -1,0 +1,206 @@
+/* ===== MODULO: FATTURE (con QR-fattura svizzera) =====
+   Collegamenti: ← Clienti (destinatario) · → CONTI (le fatture PAGATE = entrate).
+   Ruoli: solo titolare (come Conti). Dati azienda/IBAN in S.settings.billing.
+   PDF: fattura HTML A4 + QR-fattura (libreria swissqrbill, import a richiesta) → Stampa/Salva PDF.
+   Dipende dal core (S, uid, save, render, openSheet, closeSheet, esc, toast, isOwner,
+   byId, cName, cOpt, fmtD, todayIso, moduleActive, $). */
+
+/* ---- calcoli (arrotondamento svizzero a 5 cent) ---- */
+const invSubtotal=f=>(f.lines||[]).reduce((t,l)=>t+((+l.qty||0)*(+l.price||0)),0);
+const invVatAmount=f=>invSubtotal(f)*(+f.vatRate||0)/100;
+const invTotal=f=>Math.round((invSubtotal(f)+invVatAmount(f))*20)/20;
+const chf=n=>'CHF '+(Math.round((+n||0)*100)/100).toLocaleString('de-CH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const INV_ST={bozza:['Bozza','#9C9384'],inviata:['Inviata','#C77F12'],pagata:['Pagata','#2E9E5E']};
+
+/* ---- elenco ---- */
+let invTab='tutte';
+function renderFatture(){
+  if(!isOwner()){view='hub';renderHub();return;}
+  const b=S.settings.billing||{};
+  const list=[...S.invoices].sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:(b.created||0)-(a.created||0)));
+  const shown=invTab==='tutte'?list:list.filter(f=>f.status===invTab);
+  const nonPag=list.filter(f=>f.status!=='pagata'&&f.status!=='bozza');
+  const daIncassare=nonPag.reduce((t,f)=>t+invTotal(f),0);
+  const tabs=[['tutte','Tutte'],['bozza','Bozze'],['inviata','Da incassare'],['pagata','Pagate']];
+  $('#main').innerHTML=`
+  <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>🧾 Fatture</div>
+  ${(!b.iban||!b.name)?`<div class="card" style="border-color:rgba(199,127,18,.4)"><div style="font-size:13px">⚙️ Prima di emettere fatture, imposta <b>ragione sociale</b> e <b>IBAN</b> per la QR-fattura.</div><button class="btn sm pri" style="margin-top:8px" onclick="openBilling()">Imposta dati fatturazione</button></div>`:''}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:4px 0 12px">
+    <div class="stat"><div class="subtle" style="font-size:11px">Da incassare</div><div style="font-size:18px;font-weight:700;color:var(--amber)">${chf(daIncassare)}</div></div>
+    <div class="stat"><div class="subtle" style="font-size:11px">Fatture</div><div style="font-size:18px;font-weight:700">${list.length}</div></div>
+  </div>
+  <div style="display:flex;gap:7px;margin-bottom:10px">
+    <button class="btn pri" style="flex:1" onclick="openInvoice()">+ Nuova fattura</button>
+    <button class="btn ghost sm" onclick="openBilling()">⚙️</button>
+  </div>
+  <div class="tabs">${tabs.map(([id,l])=>`<div class="tb ${invTab===id?'on':''}" onclick="invTab='${id}';render()">${l}</div>`).join('')}</div>
+  ${shown.length?shown.map(invRow).join(''):'<div class="card"><div class="empty"><div class="big">🧾</div>Nessuna fattura.</div></div>'}`;
+}
+function invRow(f){
+  const st=INV_ST[f.status]||INV_ST.bozza;
+  return `<div class="card" style="cursor:pointer" onclick="openInvoice('${f.id}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(f.clientName||cName(f.clientId)||'—')}</div>
+      <div class="subtle" style="font-size:11px">N. ${esc(f.number||'—')}${f.date?' · '+fmtD(f.date):''}</div></div>
+      <div style="text-align:right"><div style="font-family:var(--mono);font-weight:700">${chf(invTotal(f))}</div>
+      <span class="badge" style="border-color:${st[1]};color:${st[1]};font-size:9px">${st[0]}</span></div>
+    </div></div>`;
+}
+
+/* ---- editor ---- */
+let invDraft=null;
+function nextInvNumber(){const b=S.settings.billing||{};const n=(+b.nextNumber||1);return (b.prefix||'')+String(n).padStart(4,'0');}
+function openInvoice(id){
+  const b=S.settings.billing||{};
+  const src=id?byId(S.invoices,id):null;
+  invDraft=src?{...src,lines:(src.lines||[]).map(l=>({...l}))}:{id:uid(),number:nextInvNumber(),date:todayIso(),dueDate:addDaysIso(todayIso(),30),clientId:'',clientName:'',clientAddr:'',lines:[{desc:'',qty:1,price:null}],vatRate:(b.defaultVat!=null?b.defaultVat:8.1),notes:b.footer||'',status:'bozza',_new:true};
+  const st=invDraft.status;
+  openSheet(`<h3>${id?'Fattura N. '+esc(invDraft.number):'Nuova fattura'} <span class="x" onclick="closeSheet()">✕</span></h3>
+   <div class="frow">
+     <div class="fld"><label>Cliente</label><select id="iv-cl" onchange="invPickClient(this.value)"><option value="">— scegli —</option>${cOpt(invDraft.clientId)}</select></div>
+     <div class="fld"><label>Data</label><input id="iv-date" type="date" value="${invDraft.date||todayIso()}"></div>
+   </div>
+   <div class="frow">
+     <div class="fld"><label>Scadenza</label><input id="iv-due" type="date" value="${invDraft.dueDate||''}"></div>
+     <div class="fld"><label>N. fattura</label><input id="iv-num" value="${esc(invDraft.number||'')}"></div>
+   </div>
+   <div class="fld"><label>Righe</label><div id="iv-lines">${invDraft.lines.map(invLineRow).join('')}</div>
+     <button class="btn sm ghost" style="margin-top:6px" onclick="invAddLine()">+ Aggiungi riga</button></div>
+   <div class="frow">
+     <div class="fld"><label>IVA %</label><input id="iv-vat" type="number" inputmode="decimal" step="any" value="${invDraft.vatRate!=null?invDraft.vatRate:''}" oninput="invRefreshTot()"></div>
+     <div class="fld"><label>Stato</label><select id="iv-status">${Object.keys(INV_ST).map(k=>`<option value="${k}" ${st===k?'selected':''}>${INV_ST[k][0]}</option>`).join('')}</select></div>
+   </div>
+   <div id="iv-tot" style="text-align:right;font-size:13px;margin:4px 0 8px">${invTotHTML()}</div>
+   <div class="fld"><label>Note / piè di pagina</label><textarea id="iv-notes" rows="2" placeholder="Grazie · condizioni di pagamento…">${esc(invDraft.notes||'')}</textarea></div>
+   <div class="actions">
+     ${id?`<button class="btn danger" onclick="delInvoice('${id}')">Elimina</button>`:''}
+     <button class="btn ghost" onclick="closeSheet()">Annulla</button>
+     ${id?`<button class="btn" onclick="printInvoice('${id}')">🖨 Stampa / PDF</button>`:''}
+     <button class="btn pri" onclick="saveInvoice('${id||''}')">Salva</button>
+   </div>`);
+}
+function invLineRow(l,i){
+  const idx=i!=null?i:0;
+  return `<div class="frow" data-i="${idx}" style="gap:6px;margin-bottom:5px">
+    <input style="flex:2" placeholder="Descrizione" value="${esc(l.desc||'')}" oninput="invLine(${idx},'desc',this.value)">
+    <input style="flex:.6" type="number" inputmode="decimal" step="any" placeholder="q.tà" value="${l.qty!=null?l.qty:''}" oninput="invLine(${idx},'qty',this.value)">
+    <input style="flex:.9" type="number" inputmode="decimal" step="any" placeholder="prezzo" value="${l.price!=null?l.price:''}" oninput="invLine(${idx},'price',this.value)">
+    <button class="btn ghost sm" onclick="invDelLine(${idx})" style="flex:0 0 auto">✕</button></div>`;
+}
+function invLine(i,field,val){if(!invDraft||!invDraft.lines[i])return;invDraft.lines[i][field]=(field==='desc')?val:(parseFloat(val)||0);invRefreshTot();}
+function invAddLine(){if(!invDraft)return;invDraft.lines.push({desc:'',qty:1,price:null});const el=$('#iv-lines');if(el)el.innerHTML=invDraft.lines.map(invLineRow).join('');invRefreshTot();}
+function invDelLine(i){if(!invDraft)return;invDraft.lines.splice(i,1);if(!invDraft.lines.length)invDraft.lines.push({desc:'',qty:1,price:null});const el=$('#iv-lines');if(el)el.innerHTML=invDraft.lines.map(invLineRow).join('');invRefreshTot();}
+function invTotHTML(){const f=invDraft||{lines:[]};f.vatRate=$('#iv-vat')?(parseFloat($('#iv-vat').value)||0):f.vatRate;return `Imponibile <b>${chf(invSubtotal(f))}</b> · IVA <b>${chf(invVatAmount(f))}</b> · <span style="font-size:15px">Totale <b style="color:var(--cy)">${chf(invTotal(f))}</b></span>`;}
+function invRefreshTot(){const el=$('#iv-tot');if(el)el.innerHTML=invTotHTML();}
+function invPickClient(cid){if(!invDraft)return;invDraft.clientId=cid;const c=byId(S.clients,cid);if(c){invDraft.clientName=c.name||((c.firstName||'')+' '+(c.lastName||'')).trim();invDraft.clientAddr=[[c.street||c.address||'',c.streetNo||''].filter(Boolean).join(' '),[c.cap||'',c.town||''].filter(Boolean).join(' ')].filter(Boolean).join(', ');}}
+function saveInvoice(id){
+  if(!invDraft)return;
+  invDraft.clientId=$('#iv-cl')?$('#iv-cl').value:invDraft.clientId;
+  if(!invDraft.clientId){toast('Scegli il cliente');return;}
+  invPickClient(invDraft.clientId);
+  invDraft.date=$('#iv-date').value||todayIso();
+  invDraft.dueDate=$('#iv-due').value||null;
+  invDraft.number=$('#iv-num').value.trim()||invDraft.number;
+  invDraft.vatRate=parseFloat($('#iv-vat').value)||0;
+  invDraft.notes=$('#iv-notes').value.trim();
+  const newStatus=$('#iv-status').value;
+  if(newStatus==='pagata'&&invDraft.status!=='pagata'&&!invDraft.paidDate)invDraft.paidDate=todayIso();
+  if(newStatus!=='pagata')invDraft.paidDate=null;
+  invDraft.status=newStatus;
+  const isNew=!id;
+  if(id){const f=byId(S.invoices,id);if(f)Object.assign(f,invDraft);}
+  else S.invoices.unshift({...invDraft,created:Date.now()});
+  if(isNew){const b=S.settings.billing||{};b.nextNumber=(+b.nextNumber||1)+1;S.settings.billing=b;}
+  invDraft=null;save();closeSheet();render();toast('✓ Fattura salvata');
+}
+function delInvoice(id){if(!confirm('Eliminare la fattura?'))return;S.invoices=S.invoices.filter(x=>x.id!==id);invDraft=null;save();closeSheet();render();toast('Fattura eliminata');}
+
+/* ---- impostazioni fatturazione (azienda + IBAN) ---- */
+function openBilling(){
+  const b=S.settings.billing||{};
+  openSheet(`<h3>⚙️ Dati fatturazione <span class="x" onclick="closeSheet()">✕</span></h3>
+   <div class="fld"><label>Ragione sociale</label><input id="b-name" value="${esc(b.name||S.settings.companyName||'')}" placeholder="Impresa Edile Rossi Sagl"></div>
+   <div class="frow">
+     <div class="fld" style="flex:2"><label>Indirizzo (via e n.)</label><input id="b-addr" value="${esc(b.address||'')}" placeholder="Via Lugano 12"></div>
+   </div>
+   <div class="frow">
+     <div class="fld"><label>CAP</label><input id="b-zip" value="${esc(b.zip||'')}" placeholder="6900"></div>
+     <div class="fld" style="flex:2"><label>Località</label><input id="b-city" value="${esc(b.city||'')}" placeholder="Lugano"></div>
+   </div>
+   <div class="fld"><label>IBAN / QR-IBAN</label><input id="b-iban" class="mono" value="${esc(b.iban||'')}" placeholder="CH.. .... .... .... .... ."></div>
+   <div class="frow">
+     <div class="fld"><label>P. IVA (facolt.)</label><input id="b-vatno" value="${esc(b.vatNo||'')}" placeholder="CHE-123.456.789 IVA"></div>
+     <div class="fld"><label>IVA % default</label><input id="b-dvat" type="number" inputmode="decimal" step="any" value="${b.defaultVat!=null?b.defaultVat:8.1}"></div>
+   </div>
+   <div class="frow">
+     <div class="fld"><label>Prefisso numero</label><input id="b-prefix" value="${esc(b.prefix||'')}" placeholder="2026-"></div>
+     <div class="fld"><label>Prossimo numero</label><input id="b-next" type="number" value="${b.nextNumber!=null?b.nextNumber:1}"></div>
+   </div>
+   <div class="fld"><label>Piè di pagina default</label><textarea id="b-footer" rows="2" placeholder="Pagamento a 30 giorni. Grazie.">${esc(b.footer||'')}</textarea></div>
+   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="saveBilling()">Salva</button></div>`);
+}
+function saveBilling(){
+  const b=Object.assign({},S.settings.billing||{});
+  b.name=$('#b-name').value.trim();b.address=$('#b-addr').value.trim();b.zip=$('#b-zip').value.trim();b.city=$('#b-city').value.trim();
+  b.iban=$('#b-iban').value.replace(/\s/g,'').trim();b.vatNo=$('#b-vatno').value.trim();
+  b.defaultVat=parseFloat($('#b-dvat').value);if(isNaN(b.defaultVat))b.defaultVat=8.1;
+  b.prefix=$('#b-prefix').value;b.nextNumber=parseInt($('#b-next').value)||1;b.footer=$('#b-footer').value.trim();
+  S.settings.billing=b;save();closeSheet();render();toast('✓ Dati fatturazione salvati');
+}
+
+/* ---- stampa / PDF con QR-fattura ---- (addDaysIso è globale, definito in pellet.js) */
+async function invGenQR(f,b){
+  const [svg,utils]=await Promise.all([import('https://esm.sh/swissqrbill@4/svg'),import('https://esm.sh/swissqrbill@4/utils')]);
+  const acc=(b.iban||'').replace(/\s/g,'');
+  const base={currency:'CHF',amount:invTotal(f),creditor:{account:acc,name:b.name,address:b.address||'',zip:b.zip||'',city:b.city||'',country:'CH'}};
+  if(utils.isQRIBAN(acc)){const digits=(f.number||'').replace(/\D/g,'')||'1';const ref=digits.padStart(26,'0').slice(-26);base.reference=ref+utils.calculateQRReferenceChecksum(ref);}
+  const cl=byId(S.clients,f.clientId);
+  const withDeb=Object.assign({},base);
+  if(cl&&cl.cap&&cl.town)withDeb.debtor={name:f.clientName||cl.name,address:[cl.street||cl.address||'',cl.streetNo||''].filter(Boolean).join(' ')||cl.town,zip:cl.cap,city:cl.town,country:'CH'};
+  try{return new svg.SwissQRBill(withDeb).toString();}catch(e){try{return new svg.SwissQRBill(base).toString();}catch(e2){return '';}}
+}
+async function printInvoice(id){
+  const f=byId(S.invoices,id);if(!f)return;
+  const b=S.settings.billing||{};
+  if(!b.iban||!b.name){toast('Prima imposta ragione sociale e IBAN');return openBilling();}
+  toast('🧾 Preparo la fattura…');
+  let qr='';try{qr=await invGenQR(f,b);}catch(e){toast('⚠ QR non generato (fattura stampata senza QR)');}
+  const w=window.open('','_blank');
+  if(!w){toast('Consenti i popup per stampare/salvare il PDF');return;}
+  w.document.write(invoiceHTML(f,b,qr));w.document.close();
+  setTimeout(()=>{try{w.focus();w.print();}catch(e){}},600);
+}
+function invoiceHTML(f,b,qrSvg){
+  const rows=(f.lines||[]).filter(l=>l.desc||l.price).map(l=>`<tr><td>${esc(l.desc||'')}</td><td class="r">${(+l.qty||0)}</td><td class="r">${chf(l.price)}</td><td class="r">${chf((+l.qty||0)*(+l.price||0))}</td></tr>`).join('');
+  const st=INV_ST[f.status]||INV_ST.bozza;
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Fattura ${esc(f.number||'')}</title>
+  <style>
+   *{box-sizing:border-box}body{font-family:-apple-system,Arial,sans-serif;color:#1a1a1a;margin:0;padding:22mm 18mm}
+   .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:26px}
+   .co{font-size:15px;font-weight:700}.co small{display:block;font-weight:400;font-size:12px;color:#555;margin-top:3px;line-height:1.5}
+   h1{font-size:22px;margin:0}.meta{font-size:12px;color:#555;text-align:right;line-height:1.6}
+   .to{margin:18px 0 8px}.to .lab{font-size:10px;letter-spacing:1px;color:#888;text-transform:uppercase}.to b{font-size:14px}
+   table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+   th{text-align:left;border-bottom:2px solid #333;padding:7px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+   td{padding:7px 6px;border-bottom:1px solid #e5e5e5}.r{text-align:right}
+   .tot{margin-top:12px;margin-left:auto;width:52%;font-size:13px}
+   .tot .rowt{display:flex;justify-content:space-between;padding:5px 6px}.tot .big{border-top:2px solid #333;font-size:16px;font-weight:700;margin-top:3px}
+   .notes{margin-top:22px;font-size:12px;color:#555;white-space:pre-wrap;border-top:1px solid #e5e5e5;padding-top:10px}
+   .qrwrap{margin-top:26px}.qrwrap svg{width:100%;height:auto;display:block}
+   @media print{body{padding:14mm 14mm}.qrwrap{page-break-inside:avoid}}
+  </style></head><body>
+   <div class="top">
+     <div class="co">${esc(b.name||'')}<small>${esc(b.address||'')}${b.zip||b.city?'<br>'+esc((b.zip||'')+' '+(b.city||'')):''}${b.vatNo?'<br>'+esc(b.vatNo):''}</small></div>
+     <div><h1>Fattura</h1><div class="meta">N. ${esc(f.number||'')}<br>Data: ${f.date?fmtD(f.date):''}${f.dueDate?'<br>Scadenza: '+fmtD(f.dueDate):''}<br>Stato: ${st[0]}</div></div>
+   </div>
+   <div class="to"><div class="lab">Fattura a</div><b>${esc(f.clientName||'')}</b><br><span style="color:#555">${esc(f.clientAddr||'')}</span></div>
+   <table><thead><tr><th>Descrizione</th><th class="r">Q.tà</th><th class="r">Prezzo</th><th class="r">Totale</th></tr></thead><tbody>${rows||'<tr><td colspan="4" style="color:#999">Nessuna riga</td></tr>'}</tbody></table>
+   <div class="tot">
+     <div class="rowt"><span>Imponibile</span><b>${chf(invSubtotal(f))}</b></div>
+     <div class="rowt"><span>IVA ${(+f.vatRate||0)}%</span><b>${chf(invVatAmount(f))}</b></div>
+     <div class="rowt big"><span>Totale</span><b>${chf(invTotal(f))}</b></div>
+   </div>
+   ${f.notes?`<div class="notes">${esc(f.notes)}</div>`:''}
+   ${qrSvg?`<div class="qrwrap">${qrSvg}</div>`:''}
+  </body></html>`;
+}

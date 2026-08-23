@@ -37,7 +37,8 @@ function entrate(mk){
   const pellet=S.pellet.filter(p=>p.status==='consegnato'&&p.date&&p.date.slice(0,7)===mk).reduce((t,p)=>t+(p.price||0),0);
   const man=S.maintenances.filter(m=>m.status==='fatta'&&m.date&&m.date.slice(0,7)===mk).reduce((t,m)=>t+maintIncome(m),0);
   const cant=S.sites.filter(s=>s.status==='chiuso'&&siteIncomeMonth(s)===mk).reduce((t,s)=>t+(s.amount||0),0);
-  return{pellet,man,cant,tot:pellet+man+cant};
+  const fatture=(moduleActive('fatture')?S.invoices:[]).filter(f=>f.status==='pagata'&&(f.paidDate||f.date)&&(f.paidDate||f.date).slice(0,7)===mk).reduce((t,f)=>t+(typeof invTotal==='function'?invTotal(f):0),0);
+  return{pellet,man,cant,fatture,tot:pellet+man+cant+fatture};
 }
 const entrRow=(label,val)=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px"><span class="subtle">${label}</span><span style="font-family:var(--mono);color:var(--teal)">CHF ${fmtQty(val)}</span></div>`;
 function expRow(e){const sn=e.siteId?(byId(S.sites,e.siteId)||{}).name:'';const rl=recurLabel(e.recur);return`<div class="item" onclick="openExpense('${e.id}')"><div class="bd"><div class="ti">${esc(e.category||'Spesa')} · <span style="color:var(--coral)">CHF ${fmtQty(e.amount||0)}</span>${rl?` <span class="badge" style="border-color:var(--cy);color:var(--cy)">${rl}</span>`:''}</div><div class="su">${fmtD(e.date)}${e.note?' · '+esc(e.note):''}${sn?' · 🏗 '+esc(sn):''}</div></div></div>`;}
@@ -68,7 +69,7 @@ function contiRiepilogo(mk){
   const pmk=shiftMonth(mk,-1);const put=entrate(pmk).tot-speseTot(pmk);
   const delta=put?Math.round((ut-put)/Math.abs(put)*100):null;
   const list=speseMese(mk).slice().sort((a,b)=>(a.date<b.date?1:-1));
-  const emax=Math.max(e.pellet,e.man,e.cant,0.001);
+  const emax=Math.max(e.pellet,e.man,e.cant,e.fatture||0,0.001);
   const ebar=(ic,label,val,col)=>`<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--t2)">${ic} ${label}</span><span style="font-family:var(--mono);color:var(--teal)">CHF ${fmtQty(val)}</span></div><div class="ck-bar" style="height:6px"><i style="width:${Math.round(val/emax*100)}%;background:${col}"></i></div></div>`;
   return`${monthBar(mk)}
   <div class="card" style="border-color:rgba(46,158,94,.4);background:rgba(46,158,94,.05);text-align:center;padding:14px">
@@ -82,9 +83,10 @@ function contiRiepilogo(mk){
   </div>
   ${contiTrend(mk)}
   <div class="card"><div class="sh"><span class="t">📥 Da dove arrivano le entrate</span></div>
-    ${ebar('🪵','Pellet',e.pellet,'#5E9E2E')}
-    ${ebar('🔧','Manutenzioni',e.man,'var(--amber)')}
-    ${ebar('🏗','Cantieri',e.cant,'var(--blue)')}
+    ${moduleActive('fatture')?ebar('🧾','Fatture',e.fatture||0,'#5BA02C'):''}
+    ${moduleActive('pellet')?ebar('🪵','Pellet',e.pellet,'#5E9E2E'):''}
+    ${moduleActive('man')?ebar('🔧','Manutenzioni',e.man,'var(--amber)'):''}
+    ${moduleActive('sites')?ebar('🏗','Cantieri',e.cant,'var(--blue)'):''}
   </div>
   <div class="card"><div class="sh"><span class="t">📤 Spese del mese</span><button class="btn sm pri" onclick="openExpense('')">+ Spesa</button></div>
     ${list.length?list.map(expRow).join(''):'<div class="subtle" style="padding:6px 2px">Nessuna spesa in questo mese.</div>'}

@@ -23,6 +23,8 @@ const MODS = [
 
   {id:'conti', ic:'💰', nm:'Conti', px:12, pitch:'Entrate, spese e utile sempre sotto controllo.',
    f:['Incassi e spese aggiornati in tempo reale','Categorie e spese ricorrenti','Utile del mese a colpo d’occhio','Export pulito per il commercialista']},
+  {id:'fatture', ic:'🧾', nm:'Fatture', px:19, pitch:'Fatture con QR-fattura svizzera, pronte da inviare.',
+   f:['Righe, IVA e totali calcolati in automatico','QR-fattura svizzera: il cliente paga subito','Le fatture pagate entrano nei Conti','Salvi il PDF e lo mandi al cliente']},
   {id:'man', ic:'🔧', nm:'Manutenzioni', px:19, pitch:'Interventi, assistenza e storico, senza più foglietti.',
    f:['Programmi l’intervento e lo assegni al tecnico','Stato: da fare · in corso · fatta','Bollettino e firma del cliente sul telefono','Storico completo per cliente e per impianto']},
   {id:'macchine', ic:'⚙️', nm:'Macchine / Impianti', px:19, custom:true, pitch:'Il parco macchine con schede e scadenze.',

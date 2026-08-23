@@ -216,6 +216,19 @@ create table if not exists reports (
   created_at timestamptz not null default now()
 );
 
+-- fatture (collegate a Conti: le pagate = entrate). QR-fattura svizzera generata lato app.
+create table if not exists invoices (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  number text default '', date date, due_date date,
+  client_id uuid references clients(id) on delete set null,
+  client_name text default '', client_addr text default '',
+  lines jsonb not null default '[]'::jsonb,
+  vat_rate numeric default 0, notes text default '',
+  status text default 'bozza', paid_date date,
+  created_at timestamptz not null default now()
+);
+
 -- settings: UNA riga per azienda (non piu' id=1 globale)
 create table if not exists settings (
   tenant_id uuid primary key references tenants(id) on delete cascade,
@@ -225,6 +238,8 @@ create table if not exists settings (
 alter table settings add column if not exists event_types jsonb not null default '[]'::jsonb;
 -- lavagna componibile (post-it + widget su tela libera) per azienda:
 alter table settings add column if not exists board jsonb not null default '[]'::jsonb;
+-- dati fatturazione azienda (ragione sociale, indirizzo, IBAN, IVA default, progressivo):
+alter table settings add column if not exists billing jsonb not null default '{}'::jsonb;
 
 create table if not exists push_subs (
   endpoint text primary key,
@@ -262,7 +277,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','push_subs'
   ] loop
@@ -278,7 +293,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports',
+    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs'
   ] loop
@@ -304,7 +319,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs'
   ] loop
@@ -382,7 +397,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'clients','maintenances','appointments','pellet','sites','site_logs','reports','attachments','client_attachments',
+    'clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','attachments','client_attachments',
     'notes','note_groups','lists','list_items','chat','call_log','expenses','maint_prices',
     'employees','time_entries','settings'
   ] loop

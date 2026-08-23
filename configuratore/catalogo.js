@@ -23,6 +23,7 @@ const MODULI_EXTRA = [
   { id:'man',      ic:'🔧',  nome:'Manutenzioni',         desc:'Interventi, assistenza e storico.',        stato:'pronto' },
   { id:'sites',    ic:'🏗',  nome:'Cantieri / Commesse',  desc:'Lavori in corso, ore e avanzamento.',      stato:'pronto' },
   { id:'reports',  ic:'📸',  nome:'Rapportini',           desc:'Rapporti di cantiere giornalieri con ore, materiali e foto.', stato:'pronto' },
+  { id:'fatture',  ic:'🧾',  nome:'Fatture',              desc:'Fatture con QR-fattura svizzera, collegate ai Conti.', stato:'pronto' },
   { id:'macchine', ic:'⚙️',  nome:'Macchine / Impianti',  desc:'Parco macchine, schede e assistenza.',     stato:'pronto', custom:'ptek' },  /* su misura per ptek: NON proposto agli altri */
   { id:'pellet',   ic:'🪵',  nome:'Consegne prodotto',    desc:'Consegne, bolle e scorte.',                stato:'pronto' },
   { id:'zone',     ic:'🗺️',  nome:'Zone & Mappa',         desc:'Zone di consegna e clienti sulla mappa.',  stato:'pronto' },

@@ -6,6 +6,9 @@
    ============================================================ */
 const NEWS = [
   { tipo:'Nuovo modulo', data:'Agosto 2026',
+    titolo:'Fatture con QR-fattura', testo:'Emetti fatture con la QR-fattura svizzera, e quelle pagate finiscono da sole nei Conti.' },
+
+  { tipo:'Nuovo modulo', data:'Agosto 2026',
     titolo:'Rapportini di cantiere', testo:'Il rapporto giornaliero con ore, materiali e foto — e il promemoria automatico a chi è in cantiere.' },
 
   { tipo:'Nuovo modulo', data:'Agosto 2026',

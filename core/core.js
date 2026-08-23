@@ -40,7 +40,7 @@ function visViews(){return VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||((v.id=
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[]},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],billing:{}},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -71,6 +71,9 @@ const MAPS={
  reports:{tbl:'reports',
   toDb:r=>({id:r.id,site_id:r.siteId||null,emp_id:r.empId||null,date:r.date||null,hours:num(r.hours),start_t:r.start||null,end_t:r.end||null,work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato'}),
   fromDb:r=>({id:r.id,siteId:r.site_id,empId:r.emp_id,date:r.date,hours:r.hours,start:r.start_t||'',end:r.end_t||'',work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato',created:Date.parse(r.created_at)||Date.now()})},
+ invoices:{tbl:'invoices',
+  toDb:f=>({id:f.id,number:f.number||'',date:f.date||null,due_date:f.dueDate||null,client_id:f.clientId||null,client_name:f.clientName||'',client_addr:f.clientAddr||'',lines:f.lines||[],vat_rate:num(f.vatRate),notes:f.notes||'',status:f.status||'bozza',paid_date:f.paidDate||null}),
+  fromDb:r=>({id:r.id,number:r.number||'',date:r.date,dueDate:r.due_date,clientId:r.client_id,clientName:r.client_name||'',clientAddr:r.client_addr||'',lines:r.lines||[],vatRate:r.vat_rate,notes:r.notes||'',status:r.status||'bozza',paidDate:r.paid_date,created:Date.parse(r.created_at)||Date.now()})},
  notes:{tbl:'notes',
   toDb:n=>({id:n.id,text:n.text,client_id:n.clientId||null,group_id:n.groupId||null,employees:n.employees||[],date:n.date||null,pinned:!!n.pinned,archived:!!n.archived,via:n.via||'manuale'}),
   fromDb:r=>({id:r.id,text:r.text,clientId:r.client_id,groupId:r.group_id,employees:r.employees||[],date:r.date,pinned:!!r.pinned,archived:!!r.archived,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
@@ -99,12 +102,12 @@ let snapshot={};
 function snapRows(key,rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r));snapshot[key]=o;}
 async function loadAll(){
   const q=t=>sb.from(t).select('*');
-  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp]=await Promise.all([
+  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp,iv]=await Promise.all([
     q('clients'),q('employees'),q('time_entries'),q('maintenances'),q('appointments'),q('pellet'),
     q('sites'),q('site_logs').order('created_at'),q('attachments'),
     q('notes'),q('note_groups'),q('lists'),q('list_items').order('position'),
     sb.from('chat').select('*').order('created_at',{ascending:true}).limit(300),
-    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports')
+    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports'),q('invoices')
   ]);
   /* te (time_entries) è ESCLUSO dal controllo bloccante: se la tabella non è ancora
      stata creata su Supabase, l'app parte comunque (presenze vuote) invece di crashare. */
@@ -112,6 +115,7 @@ async function loadAll(){
   if(err)throw err.error;
   if(te.error)console.warn('time_entries non disponibile (esegui schema.sql):',te.error.message);
   if(rp&&rp.error)console.warn('reports non disponibile (esegui schema.sql):',rp.error.message);
+  if(iv&&iv.error)console.warn('invoices non disponibile (esegui schema.sql):',iv.error.message);
   S.clients=(cl.data||[]).map(MAPS.clients.fromDb);
   S.employees=(em.data||[]).map(MAPS.employees.fromDb);
   S.timeEntries=(te.data||[]).map(MAPS.timeEntries.fromDb);
@@ -130,7 +134,8 @@ async function loadAll(){
   S.expenses=(ex&&ex.data||[]).map(MAPS.expenses.fromDb).sort((a,b)=>b.created-a.created);
   S.maintPrices=(mp&&mp.data||[]).map(MAPS.maintPrices.fromDb);
   S.reports=(rp&&rp.data||[]).map(MAPS.reports.fromDb).sort((a,b)=>b.created-a.created);
-  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[])};
+  S.invoices=(iv&&iv.data||[]).map(MAPS.invoices.fromDb).sort((a,b)=>b.created-a.created);
+  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{})};
   rebuildSnapshot();
 }
 function dbRows(){
@@ -152,9 +157,9 @@ function dbRows(){
     maintPrices:S.maintPrices.map(MAPS.maintPrices.toDb),
   };
 }
-const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',reports:'reports',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices'};
-const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','reports','expenses','notes','listItems','siteLogs','callLog','maintPrices'];
-const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','expenses','reports','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
+const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',reports:'reports',invoices:'invoices',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices'};
+const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','reports','invoices','expenses','notes','listItems','siteLogs','callLog','maintPrices'];
+const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','expenses','invoices','reports','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
 function rebuildSnapshot(){const r=dbRows();for(const k of UP_ORDER)snapRows(k,r[k]);snapshot._settings=JSON.stringify(S.settings);}
 
 /* ---------- sync: diff e push ---------- */
@@ -180,7 +185,7 @@ async function syncNow(){
       if(dels.length){const{error}=await sb.from(TBL[k]).delete().in('id',dels);if(error)throw error;}
     }
     if(isOwner()&&snapshot._settings!==JSON.stringify(S.settings)){
-      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[]}).eq('tenant_id',TENANT_ID);
+      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[],billing:S.settings.billing||{}}).eq('tenant_id',TENANT_ID);
       if(error)throw error;
     }
     rebuildSnapshot();
@@ -494,6 +499,7 @@ const VIEWS=[
   {id:'pellet',ic:'🪵',label:'Pellet'},
   {id:'sites',ic:'🏗',label:'Cantieri'},
   {id:'reports',ic:'📸',label:'Rapportini'},
+  {id:'fatture',ic:'🧾',label:'Fatture'},
   {id:'macchine',ic:'⚙️',label:'Macchine'},
   {id:'clients',ic:'👥',label:'Clienti'},
   {id:'zone',ic:'🗺️',label:'Zone'},
@@ -517,6 +523,7 @@ const MODULE_CATALOG={
     {id:'man',ic:'🔧',nome:'Manutenzioni',desc:'Interventi e storico.'},
     {id:'sites',ic:'🏗',nome:'Cantieri',desc:'Lavori in corso e ore.'},
     {id:'reports',ic:'📸',nome:'Rapportini',desc:'Rapporti di cantiere giornalieri con foto.'},
+    {id:'fatture',ic:'🧾',nome:'Fatture',desc:'Fatture con QR-fattura svizzera, collegate a Conti.'},
     {id:'macchine',ic:'⚙️',nome:'Macchine',desc:'Parco macchine e schede.'},
     {id:'pellet',ic:'🪵',nome:'Consegne',desc:'Consegne, bolle e scorte.'},
     {id:'zone',ic:'🗺️',nome:'Zone & Mappa',desc:'Zone e clienti sulla mappa.'},
@@ -525,7 +532,6 @@ const MODULE_CATALOG={
     {id:'prenota',ic:'🗓️',nome:'Prenotazioni',desc:'Appuntamenti online.'},
     {id:'magazzino',ic:'📦',nome:'Magazzino',desc:'Scorte e soglie.'},
     {id:'catalogo',ic:'🏷️',nome:'Catalogo/Listino',desc:'Prodotti e prezzi.'},
-    {id:'fatture',ic:'🧾',nome:'Fatture',desc:'Preventivi e fatture.'},
     {id:'documenti',ic:'📁',nome:'Documenti',desc:'Archivio file e contratti.'},
     {id:'report',ic:'📊',nome:'Report',desc:'Statistiche e grafici.'},
     {id:'fidelity',ic:'🎁',nome:'Fidelity',desc:'Punti e promozioni.'},
@@ -1070,7 +1076,7 @@ function render(){
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
-  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps};
+  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,fatture:window.renderFatture,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps};
   $('#main').innerHTML='';(R[view]||window.renderHub)();
   if(view==='notif'&&notifTab==='chat'){const sc=$('#chatscroll');if(sc)sc.scrollTop=sc.scrollHeight;}
 }
