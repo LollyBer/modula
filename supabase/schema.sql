@@ -210,6 +210,8 @@ create table if not exists settings (
 );
 -- voci del calendario configurabili per azienda (idempotente per DB gia' creati):
 alter table settings add column if not exists event_types jsonb not null default '[]'::jsonb;
+-- lavagna componibile (post-it + widget su tela libera) per azienda:
+alter table settings add column if not exists board jsonb not null default '[]'::jsonb;
 
 create table if not exists push_subs (
   endpoint text primary key,

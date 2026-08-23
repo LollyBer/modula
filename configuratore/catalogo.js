@@ -25,6 +25,7 @@ const MODULI_EXTRA = [
   { id:'macchine', ic:'⚙️',  nome:'Macchine / Impianti',  desc:'Parco macchine, schede e assistenza.',     stato:'pronto', custom:'ptek' },  /* su misura per ptek: NON proposto agli altri */
   { id:'pellet',   ic:'🪵',  nome:'Consegne prodotto',    desc:'Consegne, bolle e scorte.',                stato:'pronto' },
   { id:'zone',     ic:'🗺️',  nome:'Zone & Mappa',         desc:'Zone di consegna e clienti sulla mappa.',  stato:'pronto' },
+  { id:'lavagna',  ic:'📋',  nome:'Lavagna',              desc:'Dashboard componibile: post-it e widget dei tuoi moduli su tela libera.', stato:'pronto' },
   /* in arrivo (visibili nel catalogo, si costruiscono man mano) */
   { id:'prenota',  ic:'🗓️',  nome:'Prenotazioni',         desc:'Appuntamenti e prenotazioni online.',      stato:'arrivo' },
   { id:'magazzino',ic:'📦',  nome:'Magazzino',            desc:'Scorte, carico/scarico e soglie.',         stato:'arrivo' },

@@ -1,0 +1,56 @@
+/* ===== LAVAGNA — tela libera, post-it + widget ===== */
+.lav-bar{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px}
+.lav-title{font-size:22px;font-weight:700;display:flex;align-items:center;gap:9px}
+.lav-title .accent{width:5px;height:20px;border-radius:3px;display:inline-block}
+.lav-hint{font-size:11.5px;color:var(--t2);background:var(--bg2);border:1px dashed var(--line2);border-radius:10px;padding:8px 11px;margin-bottom:10px}
+
+.lav-canvas{position:relative;min-height:300px;width:100%;border-radius:14px;transition:background .15s}
+.lav-canvas.editing{background:
+  linear-gradient(var(--line) 1px,transparent 1px) 0 0/22px 22px,
+  linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/22px 22px,
+  var(--bg2);
+  outline:1px dashed var(--line2)}
+
+.lav-tile{position:absolute;box-sizing:border-box;border-radius:12px;overflow:hidden}
+.lav-tile.dragging{z-index:50;opacity:.94;box-shadow:0 10px 24px rgba(70,55,30,.28)}
+.lav-canvas.editing .lav-tile{box-shadow:0 2px 8px rgba(70,55,30,.14)}
+
+/* maniglia + elimina (solo modifica) */
+.lav-drag{position:absolute;top:0;left:0;right:0;height:22px;display:flex;align-items:center;justify-content:center;color:var(--t2);font-size:13px;letter-spacing:2px;cursor:grab;touch-action:none;background:rgba(0,0,0,.05);z-index:3}
+.lav-drag:active{cursor:grabbing}
+.lav-del{position:absolute;top:-1px;right:-1px;width:24px;height:22px;border:0;background:var(--coral);color:#fff;font-size:12px;border-radius:0 12px 0 10px;cursor:pointer;z-index:4}
+.lav-canvas.editing .lav-tile{padding-top:22px}
+
+/* POST-IT */
+.lav-tile.postit{padding:12px 12px 14px;min-height:70px;box-shadow:0 2px 6px rgba(70,55,30,.16);cursor:pointer}
+.lav-canvas.editing .lav-tile.postit{padding-top:26px}
+.pit-txt{font-size:13.5px;line-height:1.4;font-weight:500;white-space:pre-wrap;word-break:break-word}
+.lav-tile.postit.done .pit-txt{text-decoration:line-through;opacity:.6}
+.pit-chk{position:absolute;right:8px;top:8px;width:18px;height:18px;border-radius:50%;border:1.6px solid;background:transparent;color:#fff;font-size:11px;line-height:1;cursor:pointer;z-index:2}
+.lav-canvas.editing .pit-chk{display:none}
+
+/* WIDGET */
+.lav-tile.widget{background:var(--bg1);border:1px solid var(--line)}
+.lavw-head{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:2px solid;font-weight:700;font-size:13.5px;color:var(--t1)}
+.lavw-body{padding:6px 12px 11px;max-height:340px;overflow:auto}
+.lavw-empty{font-size:12.5px;color:var(--t2);padding:12px 2px;text-align:center}
+.lavw-row{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}
+.lavw-row:last-child{border-bottom:0}
+.lavw-time{font-family:var(--mono,ui-monospace);font-size:11.5px;color:var(--t2);min-width:38px;padding-top:1px}
+.lavw-bar{width:4px;align-self:stretch;border-radius:3px;flex-shrink:0}
+.lavw-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.lavw-ti{font-size:13px;font-weight:600;color:var(--t1);word-break:break-word}
+.lavw-ti.done{text-decoration:line-through;color:var(--t2)}
+.lavw-su{font-size:11px;color:var(--t2);word-break:break-word}
+.lavw-emp{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line)}
+.lavw-emp:last-child{border-bottom:0}
+.lavw-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;flex-shrink:0}
+.lavw-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.lavw-site{padding:8px 0;border-bottom:1px solid var(--line)}.lavw-site:last-child{border-bottom:0}
+.lavw-prog{height:7px;background:var(--bg3);border-radius:5px;overflow:hidden;margin:5px 0 3px}
+.lavw-prog i{display:block;height:100%;background:var(--blue)}
+
+/* editor post-it: swatch colori */
+.pit-cols{display:flex;flex-wrap:wrap;gap:9px}
+.pit-col{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 1px 3px rgba(70,55,30,.2)}
+.pit-col.on{border-color:var(--t1);transform:scale(1.12)}

@@ -40,7 +40,7 @@ function visViews(){return VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||((v.id=
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[]},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[]},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -125,7 +125,7 @@ async function loadAll(){
   S.callLog=(cg.data||[]).map(MAPS.callLog.fromDb);
   S.expenses=(ex&&ex.data||[]).map(MAPS.expenses.fromDb).sort((a,b)=>b.created-a.created);
   S.maintPrices=(mp&&mp.data||[]).map(MAPS.maintPrices.fromDb);
-  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[])};
+  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[])};
   rebuildSnapshot();
 }
 function dbRows(){
@@ -175,7 +175,7 @@ async function syncNow(){
       if(dels.length){const{error}=await sb.from(TBL[k]).delete().in('id',dels);if(error)throw error;}
     }
     if(isOwner()&&snapshot._settings!==JSON.stringify(S.settings)){
-      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[]}).eq('tenant_id',TENANT_ID);
+      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[]}).eq('tenant_id',TENANT_ID);
       if(error)throw error;
     }
     rebuildSnapshot();

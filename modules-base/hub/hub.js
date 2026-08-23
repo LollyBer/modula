@@ -3,7 +3,13 @@
 
 /* ================= HUB ================= */
 let hubParsed=null;
+/* Toggle Hub classico / Lavagna: due versioni della home, l'utente sceglie (per-dispositivo).
+   Compare solo se il modulo 'lavagna' è attivo per l'azienda. */
+function homeToggle(mode){if(!moduleActive('lavagna'))return '';return `<div class="tabs" style="margin-bottom:12px"><div class="tb ${mode==='classic'?'on':''}" onclick="setHomeMode('classic')">⚡ Hub</div><div class="tb ${mode==='lavagna'?'on':''}" onclick="setHomeMode('lavagna')">📋 Lavagna</div></div>`;}
+function homeMode(){if(!moduleActive('lavagna'))return 'classic';try{return localStorage.getItem('modula_home')||'lavagna';}catch(e){return 'lavagna';}}
+function setHomeMode(m){try{localStorage.setItem('modula_home',m);}catch(e){}render();}
 function renderHub(){
+  if(homeMode()==='lavagna'&&moduleActive('lavagna')&&typeof renderLavagna==='function'){renderLavagna();return;}
   const ev=allEvents();const t=todayIso();const mk=t.slice(0,7);
   const todayEv=ev.filter(e=>e.date===t&&!e.done);
   const next=ev.filter(e=>e.date>t&&!e.done).slice(0,5);
@@ -29,6 +35,7 @@ function renderHub(){
   </div>`;
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent"></span>Hub</div>
+  ${homeToggle('classic')}
   <div class="hub" id="hub"><div class="ring"></div>
     <div class="hub-box">
       <textarea id="hubinput" rows="2" placeholder="Scrivi qui e ci penso io a smistare…&#10;es. «aggiungi manutenzione a Rossi domani alle 4»"></textarea>
