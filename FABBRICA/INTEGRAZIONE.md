@@ -28,9 +28,13 @@ Dati di un modulo (li concorda l'agente con Loris prima di iniziare):
    (o aggiungila): così compare nel configuratore della vetrina.
 6. **`admin/index.html`** — aggiungi `{id:'<id>',label:'<Label>'}` all'array `MODULES`:
    così l'interruttore appare nella console super-admin.
+7. **LANDING (vetrina)** — REGOLA di Loris: un modulo nuovo va **sempre** anche in vetrina.
+   - `landing/landing.js` array `MODS`: `{id:'<id>', ic:'<ic>', nm:'<Nome>', px:<prezzo CHF/mese>, pitch:'…', f:['…','…','…','…']}` (esploratore moduli + price builder). `px:0` = incluso nella base, `px:-1` = in arrivo. Il **prezzo lo decide Loris**: metti un segnaposto e fatteglielo confermare.
+   - `landing/news.js` array `NEWS`: una voce `{tipo:'Nuovo modulo', data:'<Mese Anno>', titolo:'…', testo:'…'}` in cima.
+   - `landing/index.html`: aggiorna il contatore "Moduli".
 
-Fatti questi 6 punti, il modulo è nel sistema. Si vede quando è in `VIEWS` **e** acceso sul
-tenant (`moduleActive`) **e** l'utente ha il permesso (`can('<id>')`).
+Fatti questi 7 punti, il modulo è nel sistema **e in vetrina**. Si vede nell'app quando è in
+`VIEWS` **e** acceso sul tenant (`moduleActive`) **e** l'utente ha il permesso (`can('<id>')`).
 
 ---
 

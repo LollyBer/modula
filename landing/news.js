@@ -5,6 +5,12 @@
    La più recente va in cima.
    ============================================================ */
 const NEWS = [
+  { tipo:'Nuovo modulo', data:'Agosto 2026',
+    titolo:'Rapportini di cantiere', testo:'Il rapporto giornaliero con ore, materiali e foto — e il promemoria automatico a chi è in cantiere.' },
+
+  { tipo:'Nuovo modulo', data:'Agosto 2026',
+    titolo:'Lavagna', testo:'Una dashboard componibile: post-it e widget che sposti come vuoi, con la giornata a colpo d’occhio.' },
+
   { tipo:'Nuovo modulo', data:'Giugno 2026',
     titolo:'Conti', testo:'Tieni sotto controllo entrate, spese e utile, con riepiloghi per mese e anno.' },
 

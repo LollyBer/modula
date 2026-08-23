@@ -31,8 +31,12 @@ const MODS = [
    f:['Consegne programmate con quantità e prezzo','Firma del cliente direttamente sullo schermo','Stato: da consegnare · consegnato','Organizza i giri della giornata']},
   {id:'sites', ic:'🏗', nm:'Cantieri / Commesse', px:29, pitch:'Lavori in corso con ore, costi e avanzamento.',
    f:['Avanzamento del cantiere sempre aggiornato','Ore registrate per dipendente','Costi, materiali e foto sul posto','Scadenze e chiusura commessa con resoconto']},
+  {id:'reports', ic:'📸', nm:'Rapportini', px:19, pitch:'Il rapporto giornaliero di cantiere, con foto, dal telefono.',
+   f:['Ore, lavoro svolto e materiali per giornata','Foto del cantiere allegate al rapporto','Promemoria automatico a chi è in cantiere','Ore per commessa pronte per la fattura']},
   {id:'zone', ic:'🗺️', nm:'Zone & Mappa', px:29, pitch:'I tuoi clienti sulla mappa, i giri ottimizzati.',
    f:['Tutti i clienti visualizzati sulla mappa','Zone di consegna e di competenza','Raggruppa per area per organizzare i giri','Filtra per paese o quartiere']},
+  {id:'lavagna', ic:'📋', nm:'Lavagna', px:12, pitch:'La tua dashboard componibile: la giornata a colpo d’occhio.',
+   f:['Post-it e widget che sposti come vuoi','Vedi chi è dove e i cantieri aperti','Componi la tua vista su tela libera','Ogni modulo porta i suoi widget']},
 
   {id:'prenota', ic:'🗓️', nm:'Prenotazioni', px:-1, pitch:'Appuntamenti e prenotazioni online per i tuoi clienti.', f:['Il cliente prenota da solo online','Calendario sincronizzato col team','Conferme e promemoria automatici']},
   {id:'magazzino', ic:'📦', nm:'Magazzino', px:-1, pitch:'Scorte, carico/scarico e soglie minime.', f:['Carico e scarico in un tocco','Avviso quando un articolo sta finendo','Inventario sempre aggiornato']},
