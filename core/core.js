@@ -149,6 +149,8 @@ function dbRows(){
     appointments:S.appointments.map(MAPS.appointments.toDb),
     pellet:S.pellet.map(MAPS.pellet.toDb),
     sites:S.sites.map(MAPS.sites.toDb),
+    reports:S.reports.map(MAPS.reports.toDb),
+    invoices:S.invoices.map(MAPS.invoices.toDb),
     notes:S.notes.map(MAPS.notes.toDb),
     listItems:S.lists.flatMap(l=>l.items.map((i,idx)=>itemToDb(l,i,idx))),
     siteLogs:S.sites.flatMap(s=>s.log.map(l=>logToDb(s,l))),
