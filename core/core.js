@@ -23,7 +23,10 @@ let BRAND={ name:'', tagline:'', logo:'' };
 /* Moduli attivi per l'azienda loggata. null = tutti (demo/retrocompat); altrimenti
    è l'elenco deciso dal super-admin per quel tenant. Filtra cosa si vede in nav. */
 let ACTIVE_MODULES=null;
-const moduleActive=id=>!ACTIVE_MODULES||id==='hub'||id==='notif'||ACTIVE_MODULES.includes(id);
+/* moduli BASE (hub, notif + i 4 imprescindibili) sempre attivi: altri moduli dipendono
+   da clienti/personale, e nav/aggregazioni devono restare coerenti con activeModuleIds(). */
+const BASE_MODULE_IDS=['hub','notif','cal','notes','clients','emps'];
+const moduleActive=id=>!ACTIVE_MODULES||BASE_MODULE_IDS.includes(id)||ACTIVE_MODULES.includes(id);
 /* Posti dipendente del piano (titolare incluso). null = illimitato (demo/retrocompat).
    Lo decide il super-admin per ogni azienda; l'app impedisce di superarlo. */
 let MAX_EMP=null;
@@ -37,7 +40,7 @@ function visViews(){return VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||((v.id=
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[]},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -98,7 +101,7 @@ async function loadAll(){
     q('sites'),q('site_logs').order('created_at'),q('attachments'),
     q('notes'),q('note_groups'),q('lists'),q('list_items').order('position'),
     sb.from('chat').select('*').order('created_at',{ascending:true}).limit(300),
-    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('id',1).maybeSingle()
+    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle()
   ]);
   /* te (time_entries) è ESCLUSO dal controllo bloccante: se la tabella non è ancora
      stata creata su Supabase, l'app parte comunque (presenze vuote) invece di crashare. */
@@ -122,7 +125,7 @@ async function loadAll(){
   S.callLog=(cg.data||[]).map(MAPS.callLog.fromDb);
   S.expenses=(ex&&ex.data||[]).map(MAPS.expenses.fromDb).sort((a,b)=>b.created-a.created);
   S.maintPrices=(mp&&mp.data||[]).map(MAPS.maintPrices.fromDb);
-  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag};
+  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[])};
   rebuildSnapshot();
 }
 function dbRows(){
@@ -172,7 +175,7 @@ async function syncNow(){
       if(dels.length){const{error}=await sb.from(TBL[k]).delete().in('id',dels);if(error)throw error;}
     }
     if(isOwner()&&snapshot._settings!==JSON.stringify(S.settings)){
-      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag)}).eq('id',1);
+      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[]}).eq('tenant_id',TENANT_ID);
       if(error)throw error;
     }
     rebuildSnapshot();
@@ -408,11 +411,38 @@ const TYPE_META={
   site:{label:'Cantiere',color:'var(--blue)',hex:'#A9742F',ic:'🏗',view:'sites'},
   list:{label:'Lista',color:'#2E9E5E',hex:'#2E9E5E',ic:'☑️',view:'hub'},
 };
+/* ===== VOCI del calendario (configurabili per azienda) =====
+   Ogni voce: {id,label,ic,hex,kind}. `kind` = tipo con cui l'evento viene salvato:
+   guida commitParsed (auto-creazione nel modulo collegato) e il colore via TYPE_META.
+   Le voci disponibili sono filtrate per i moduli ATTIVI del tenant. Se il titolare non
+   le ha personalizzate (S.settings.eventTypes vuoto), si usano default intelligenti
+   generati dai moduli attivi. */
+const EVENT_KINDS={
+  appointment:{label:'Appuntamento',module:'cal',ic:'📅',hex:'#5BA02C'},
+  note:{label:'Promemoria',module:'notes',ic:'📝',hex:'#2E9E5E'},
+  maintenance:{label:'Manutenzione',module:'man',ic:'🔧',hex:'#C77F12'},
+  pellet:{label:'Consegna',module:'pellet',ic:'🪵',hex:'#5E9E2E'},
+  site:{label:'Cantiere',module:'sites',ic:'🏗',hex:'#A9742F'},
+};
+const KIND_LINK={appointment:'📅 Appuntamento (calendario)',note:'📝 Nessuno — solo promemoria',maintenance:'🔧 Manutenzioni',pellet:'🪵 Pellet',site:'🏗 Cantieri'};
+function defaultCalTypes(){
+  return Object.keys(EVENT_KINDS).filter(k=>moduleActive(EVENT_KINDS[k].module))
+    .map(k=>({id:'def-'+k,label:EVENT_KINDS[k].label,ic:EVENT_KINDS[k].ic,hex:EVENT_KINDS[k].hex,kind:k}));
+}
+function calTypes(){
+  const custom=(S.settings&&Array.isArray(S.settings.eventTypes))?S.settings.eventTypes:[];
+  const list=custom.length?custom:defaultCalTypes();
+  return list.filter(v=>{const m=EVENT_KINDS[v.kind];return m?moduleActive(m.module):true;});
+}
+const calTypeById=id=>calTypes().find(v=>v.id===id);
 /* commit parsed object into state */
 function commitParsed(p,via){
   const clientId=p.person&&p.person.kind==='client'?p.person.id:null;
   const employeeId=p.employee?p.employee.id:null;
   const personRaw=p.person&&p.person.kind==='raw'?p.person.name:null;
+  /* non creare record in un modulo spento per questo tenant → ricadi su nota (niente record orfani) */
+  const TYPE_MOD={maintenance:'man',pellet:'pellet',site:'sites'};
+  if(TYPE_MOD[p.type]&&!moduleActive(TYPE_MOD[p.type]))p.type='note';
   let msg='';
   if(p.type==='maintenance'){
     S.maintenances.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,date:p.date,time:p.time,status:p.date?'programmata':'da_fare',notes:'',via,created:Date.now()});
@@ -1206,10 +1236,10 @@ const visPellet=()=>isOwner()?S.pellet:S.pellet.filter(assignedToMe);
 function allEvents(){
   const ev=[];
   visApp().forEach(a=>{if(a.date)ev.push({type:'appointment',date:a.date,time:a.time,title:a.title,sub:cName(a.clientId)||a.clientRaw||'',done:a.done,id:a.id});});
-  visMan().forEach(m=>{if(m.date)ev.push({type:'maintenance',date:m.date,time:m.time,title:m.title,sub:cName(m.clientId)||m.clientRaw||'',done:m.status==='fatta',id:m.id});});
-  (can('pellet')?S.pellet:[]).forEach(p=>{if(p.date)ev.push({type:'pellet',date:p.date,time:p.time,title:(p.qty?p.qty+' '+p.unit:'Consegna pellet'),sub:cName(p.clientId)||p.clientRaw||'',done:p.status==='consegnato',id:p.id});});
+  if(moduleActive('man'))visMan().forEach(m=>{if(m.date)ev.push({type:'maintenance',date:m.date,time:m.time,title:m.title,sub:cName(m.clientId)||m.clientRaw||'',done:m.status==='fatta',id:m.id});});
+  (moduleActive('pellet')&&can('pellet')?S.pellet:[]).forEach(p=>{if(p.date)ev.push({type:'pellet',date:p.date,time:p.time,title:(p.qty?p.qty+' '+p.unit:'Consegna pellet'),sub:cName(p.clientId)||p.clientRaw||'',done:p.status==='consegnato',id:p.id});});
   S.notes.forEach(n=>{if(n.date&&!n.archived)ev.push({type:'note',date:n.date,time:null,title:n.text,sub:'',done:false,id:n.id});});
-  visSites().forEach(s=>{if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub:cName(s.clientId)||s.clientRaw||'',done:false,id:s.id});});
+  if(moduleActive('sites'))visSites().forEach(s=>{if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub:cName(s.clientId)||s.clientRaw||'',done:false,id:s.id});});
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
 

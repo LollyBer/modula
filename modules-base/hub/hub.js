@@ -11,7 +11,7 @@ function renderHub(){
   const openMan=S.maintenances.filter(m=>m.status!=='fatta').length;
   const openPel=S.pellet.filter(p=>p.status!=='consegnato').length;
   let contiCard='';
-  if(isOwner()){const e=entrate(mk);const sp=speseTot(mk);const ut=e.tot-sp;contiCard=`<div class="card hl" style="border-color:rgba(46,158,94,.28);cursor:pointer" onclick="nav('conti')"><div class="sh"><span class="t" style="color:var(--t2)">🔒 Conti · ${monthLabel(mk)}</span><span class="a">Apri →</span></div><div style="display:flex;justify-content:space-between;margin-top:2px"><div><div class="subtle" style="font-size:10px">Entrate</div><div style="font-size:16px;font-weight:700;color:var(--teal)">${fmtQty(e.tot)}</div></div><div><div class="subtle" style="font-size:10px">Spese</div><div style="font-size:16px;font-weight:700;color:var(--coral)">${fmtQty(sp)}</div></div><div><div class="subtle" style="font-size:10px">Utile</div><div style="font-size:16px;font-weight:700;color:${ut>=0?'var(--cy)':'var(--coral)'}">${ut>=0?'+':''}${fmtQty(ut)}</div></div></div></div>`;}
+  if(isOwner()&&moduleActive('conti')){const e=entrate(mk);const sp=speseTot(mk);const ut=e.tot-sp;contiCard=`<div class="card hl" style="border-color:rgba(46,158,94,.28);cursor:pointer" onclick="nav('conti')"><div class="sh"><span class="t" style="color:var(--t2)">🔒 Conti · ${monthLabel(mk)}</span><span class="a">Apri →</span></div><div style="display:flex;justify-content:space-between;margin-top:2px"><div><div class="subtle" style="font-size:10px">Entrate</div><div style="font-size:16px;font-weight:700;color:var(--teal)">${fmtQty(e.tot)}</div></div><div><div class="subtle" style="font-size:10px">Spese</div><div style="font-size:16px;font-weight:700;color:var(--coral)">${fmtQty(sp)}</div></div><div><div class="subtle" style="font-size:10px">Utile</div><div style="font-size:16px;font-weight:700;color:${ut>=0?'var(--cy)':'var(--coral)'}">${ut>=0?'+':''}${fmtQty(ut)}</div></div></div></div>`;}
   const cantieri=visSites().filter(s=>s.status==='aperto').sort((a,b)=>b.created-a.created).slice(0,5);
   const cantieriCard=`<div class="card"><div class="sh"><span class="t">🏗 Cantieri in corso</span><span class="a" onclick="nav('sites')">Cantieri →</span></div>
     ${cantieri.length?cantieri.map(s=>{const hrs=siteHours(s);const pct=s.estHours?Math.min(100,Math.round(hrs/s.estHours*100)):null;return`<div class="item" onclick="openSite('${s.id}')"><div class="bd"><div class="ti">${esc(s.name)}</div><div class="su">${esc(cName(s.clientId)||s.clientRaw||'—')}${s.employees.length?' · 👷 '+s.employees.map(eName).filter(Boolean).join(', '):''}</div>${s.estHours?`<div class="ck-bar" style="margin:6px 0 3px;max-width:220px"><i style="width:${pct}%;${pct>=100?'background:var(--amber)':''}"></i></div>`:''}<div class="mt">${hrs}h${s.estHours?' / '+s.estHours+'h':''}${pct!=null?' · '+pct+'%':''}</div></div></div>`;}).join(''):'<div class="empty"><div class="big">🏗</div>Nessun cantiere in corso.</div>'}
@@ -36,16 +36,16 @@ function renderHub(){
       <div id="hubpreview"></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px">
-    <div class="stat" style="text-align:center;padding:10px 4px"><div style="font-size:20px;font-weight:700;color:var(--cy)">${todayEv.length}</div><div class="subtle" style="font-size:10px">Oggi</div></div>
-    <div class="stat" style="text-align:center;padding:10px 4px;${late.length?'border-color:rgba(214,69,40,.35)':''}"><div style="font-size:20px;font-weight:700;color:var(--coral)">${late.length}</div><div class="subtle" style="font-size:10px">In ritardo</div></div>
-    <div class="stat" style="text-align:center;padding:10px 4px"><div style="font-size:20px;font-weight:700;color:var(--amber)">${openMan}</div><div class="subtle" style="font-size:10px">Manut.</div></div>
-    <div class="stat" style="text-align:center;padding:10px 4px"><div style="font-size:20px;font-weight:700;color:var(--fire)">${openPel}</div><div class="subtle" style="font-size:10px">Pellet</div></div>
-  </div>
+  ${(()=>{const cells=[
+    `<div class="stat" style="text-align:center;padding:10px 4px"><div style="font-size:20px;font-weight:700;color:var(--cy)">${todayEv.length}</div><div class="subtle" style="font-size:10px">Oggi</div></div>`,
+    `<div class="stat" style="text-align:center;padding:10px 4px;${late.length?'border-color:rgba(214,69,40,.35)':''}"><div style="font-size:20px;font-weight:700;color:var(--coral)">${late.length}</div><div class="subtle" style="font-size:10px">In ritardo</div></div>`,
+    moduleActive('man')?`<div class="stat" style="text-align:center;padding:10px 4px"><div style="font-size:20px;font-weight:700;color:var(--amber)">${openMan}</div><div class="subtle" style="font-size:10px">Manut.</div></div>`:'',
+    moduleActive('pellet')?`<div class="stat" style="text-align:center;padding:10px 4px"><div style="font-size:20px;font-weight:700;color:var(--fire)">${openPel}</div><div class="subtle" style="font-size:10px">Pellet</div></div>`:'',
+  ].filter(Boolean);return`<div style="display:grid;grid-template-columns:repeat(${cells.length},1fr);gap:7px;margin-bottom:12px">${cells.join('')}</div>`;})()}
   ${contiCard}
-  ${cantieriCard}
+  ${moduleActive('sites')?cantieriCard:''}
   ${late.length?`<div class="card" style="border-color:rgba(214,69,40,.35)"><div class="sh"><span class="t" style="color:var(--coral)">⚠ In ritardo</span></div>${late.map(evRow).join('')}</div>`:''}
-  ${typeof zoneHubCardHTML==='function'?zoneHubCardHTML():''}
+  ${moduleActive('zone')&&typeof zoneHubCardHTML==='function'?zoneHubCardHTML():''}
   <div class="card hl"><div class="sh"><span class="t">Oggi</span><span class="a" onclick="nav('cal')">Calendario →</span></div>
     ${todayEv.length?todayEv.map(evRow).join(''):'<div class="empty"><div class="big">🌊</div>Niente in programma oggi.</div>'}
   </div>

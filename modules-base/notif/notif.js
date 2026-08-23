@@ -7,10 +7,10 @@ let notifTab='inbox';
 function myWork(){
   if(!S.session)return{man:[],app:[],sit:[],pel:[],total:0};
   const id=S.session.empId;
-  const man=S.maintenances.filter(m=>empIdsOf(m).includes(id)&&m.status!=='fatta');
+  const man=moduleActive('man')?S.maintenances.filter(m=>empIdsOf(m).includes(id)&&m.status!=='fatta'):[];
   const app=S.appointments.filter(a=>empIdsOf(a).includes(id)&&!a.done);
-  const sit=S.sites.filter(s=>(s.employees||[]).includes(id)&&s.status==='aperto');
-  const pel=S.pellet.filter(p=>empIdsOf(p).includes(id)&&p.status!=='consegnato');
+  const sit=moduleActive('sites')?S.sites.filter(s=>(s.employees||[]).includes(id)&&s.status==='aperto'):[];
+  const pel=moduleActive('pellet')?S.pellet.filter(p=>empIdsOf(p).includes(id)&&p.status!=='consegnato'):[];
   return{man,app,sit,pel,total:man.length+app.length+sit.length+pel.length};
 }
 function notifCount(){return myWork().total;}

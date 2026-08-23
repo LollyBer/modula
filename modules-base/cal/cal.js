@@ -35,8 +35,9 @@ function renderCal(){
       <button class="cal-nav" onclick="calShift(1)">›</button>
     </div>
     <div class="cal-grid">${['LU','MA','ME','GI','VE','SA','DO'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
-    <div class="legend">${Object.values(TYPE_META).filter(t=>t.label!=='Lista').map(t=>`<span><i style="background:${t.hex}"></i>${t.label}</span>`).join('')}</div>
+    <div class="legend">${calTypes().map(v=>`<span><i style="background:${v.hex}"></i>${esc(v.label)}</span>`).join('')}</div>
   </div>
+  ${isOwner()?`<div style="display:flex;justify-content:flex-end;margin:-2px 0 8px"><button class="btn sm ghost" onclick="openCalTypes()">⚙️ Voci calendario</button></div>`:''}
   <button class="fab" onclick="openQuickAdd('${calSel}')">+</button>`;
 }
 function calShift(n){calCur=new Date(calCur.getFullYear(),calCur.getMonth()+n,1);render();}
@@ -72,7 +73,7 @@ function openQuickAdd(date){
   openSheet(`<h3>Aggiungi al ${fmtD(date)} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Cosa</label><input id="qa-t" placeholder="es. Sopralluogo da Bernasconi"></div>
   <div class="frow">
-    <div class="fld"><label>Tipo</label><select id="qa-type"><option value="appointment">Appuntamento</option><option value="maintenance">Manutenzione</option><option value="pellet">Consegna pellet</option><option value="note">Nota</option></select></div>
+    <div class="fld"><label>Tipo</label><select id="qa-type">${calTypes().map(v=>`<option value="${v.id}">${v.ic||''} ${esc(v.label)}</option>`).join('')}</select></div>
     <div class="fld"><label>Ora</label><input id="qa-time" type="time"></div>
   </div>
   <div class="fld"><label>Cliente (opzionale)</label><select id="qa-cl"><option value="">—</option>${cOpt('')}</select></div>
@@ -80,8 +81,47 @@ function openQuickAdd(date){
 }
 function quickAddSave(date){
   const t=$('#qa-t').value.trim();if(!t){toast('Scrivi cosa devi fare');return;}
-  const type=$('#qa-type').value,time=$('#qa-time').value||null,clientId=$('#qa-cl').value||null;
+  const voce=calTypeById($('#qa-type').value)||calTypes()[0];
+  const type=voce?voce.kind:'note';
+  const time=$('#qa-time').value||null,clientId=$('#qa-cl').value||null;
   const p={type,title:t,date,time,person:clientId?{kind:'client',id:clientId,name:cName(clientId)}:null,qty:null,unit:null};
   const msg=commitParsed(p,'cal');closeSheet();toast(msg);render();
 }
+
+/* ================= ⚙️ VOCI DEL CALENDARIO (gestione, solo titolare) ================= */
+/* Se il titolare non ha ancora personalizzato, materializza i default (così sono modificabili). */
+function calTypesEnsure(){if(!Array.isArray(S.settings.eventTypes)||!S.settings.eventTypes.length){S.settings.eventTypes=defaultCalTypes().map(v=>({label:v.label,ic:v.ic,hex:v.hex,kind:v.kind,id:uid()}));}}
+function openCalTypes(){
+  const list=calTypes();
+  openSheet(`<h3>⚙️ Voci del calendario <span class="x" onclick="closeSheet();render()">✕</span></h3>
+  <div class="subtle" style="margin-bottom:10px">Crea le voci che usi e collega ognuna a un modulo: quando scegli quella voce in un evento, l'app crea in automatico la scheda nel modulo giusto (col cliente). Compaiono solo le voci dei moduli che hai attivi.</div>
+  ${list.map(v=>{const link=KIND_LINK[v.kind]||v.kind;return`<div class="frw" style="cursor:pointer" onclick="editCalType('${v.id}')">
+    <div class="avat" style="width:34px;height:34px;background:${v.hex}22;border:1px solid ${v.hex}77;font-size:16px">${v.ic||'📌'}</div>
+    <div class="bd"><div class="ti">${esc(v.label)}</div><div class="su">${esc(link)}</div></div>
+    <span style="color:var(--t3);font-size:14px">✏️</span></div>`;}).join('')||'<div class="empty">Nessuna voce.</div>'}
+  <button class="btn pri" style="width:100%;margin-top:10px" onclick="editCalType()">+ Nuova voce</button>`);
+}
+function editCalType(id){
+  calTypesEnsure();
+  const v=id?S.settings.eventTypes.find(x=>x.id===id):null;
+  const cur=v||{label:'',ic:'📌',hex:'#5BA02C',kind:(defaultCalTypes()[0]||{kind:'note'}).kind};
+  const kinds=Object.keys(EVENT_KINDS).filter(k=>moduleActive(EVENT_KINDS[k].module));
+  openSheet(`<h3>${id?'Modifica voce':'Nuova voce'} <span class="x" onclick="openCalTypes()">✕</span></h3>
+  <div class="fld"><label>Nome</label><input id="ct-label" value="${esc(cur.label)}" placeholder="es. Manutenzione caldaia"></div>
+  <div class="frow">
+    <div class="fld"><label>Emoji</label><input id="ct-ic" value="${esc(cur.ic||'')}" maxlength="2" style="text-align:center;font-size:18px"></div>
+    <div class="fld"><label>Colore</label><input id="ct-hex" type="color" value="${cur.hex||'#5BA02C'}" style="height:40px;padding:4px"></div>
+  </div>
+  <div class="fld"><label>Collega al modulo</label><select id="ct-kind">${kinds.map(k=>`<option value="${k}" ${cur.kind===k?'selected':''}>${esc(KIND_LINK[k]||k)}</option>`).join('')}</select></div>
+  <div class="actions">${id?`<button class="btn danger" onclick="delCalType('${id}')">Elimina</button>`:''}<button class="btn ghost" onclick="openCalTypes()">Annulla</button><button class="btn pri" onclick="saveCalType('${id||''}')">Salva</button></div>`);
+}
+function saveCalType(id){
+  calTypesEnsure();
+  const label=$('#ct-label').value.trim();if(!label){toast('Dai un nome alla voce');return;}
+  const data={label,ic:$('#ct-ic').value.trim()||'📌',hex:$('#ct-hex').value||'#5BA02C',kind:$('#ct-kind').value};
+  if(id){const v=S.settings.eventTypes.find(x=>x.id===id);if(v)Object.assign(v,data);}
+  else S.settings.eventTypes.push({id:uid(),...data});
+  save();openCalTypes();toast('✓ Voce salvata');
+}
+function delCalType(id){S.settings.eventTypes=(S.settings.eventTypes||[]).filter(x=>x.id!==id);save();openCalTypes();toast('Voce eliminata');}
 

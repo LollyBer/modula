@@ -208,6 +208,8 @@ create table if not exists settings (
   tenant_id uuid primary key references tenants(id) on delete cascade,
   company_name text default '', bags_per_pallet int default 70, price_per_ton numeric, price_per_bag numeric
 );
+-- voci del calendario configurabili per azienda (idempotente per DB gia' creati):
+alter table settings add column if not exists event_types jsonb not null default '[]'::jsonb;
 
 create table if not exists push_subs (
   endpoint text primary key,
