@@ -76,6 +76,14 @@ function openSite(id){
       <input type="file" id="att-file" accept=".pdf,.xls,.xlsx,.csv,.doc,.docx" style="display:none" onchange="addFile('${id}',event)">
     </div>
   </div>
+  ${moduleActive('reports')?`<div class="fld"><label>📸 Rapportini (${repForSite(id).length})${(()=>{const h=repHours(repForSite(id));return h?' · '+fmtQty(h)+'h totali':'';})()}</label>
+    ${repForSite(id).slice(0,12).map(r=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer" onclick="closeSheet();openReport('${r.id}')">
+      <span style="font-family:var(--mono);color:var(--t3);flex-shrink:0">${fmtD(r.date)}</span>
+      <span style="flex:1;min-width:0">${esc(eName(r.empId)||'—')}${r.work?' · '+esc(r.work.slice(0,40)):''}</span>
+      ${r.photos&&r.photos.length?`<span style="color:var(--t3)">📷${r.photos.length}</span>`:''}
+      ${r.hours?`<span style="font-family:var(--mono);color:var(--cy)">${fmtQty(r.hours)}h</span>`:''}</div>`).join('')||'<div class="subtle">Nessun rapportino per questo cantiere.</div>'}
+    <button class="btn sm" style="margin-top:8px" onclick="closeSheet();openReport(null,'${id}')">+ Nuovo rapportino</button>
+  </div>`:''}
   <div class="fld"><label>Diario lavori (${s.log.length})</label>
     ${s.log.length?s.log.slice().reverse().slice(0,15).map(l=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px">
       <span style="font-family:var(--mono);color:var(--t3);flex-shrink:0">${fmtD(l.date)}</span>

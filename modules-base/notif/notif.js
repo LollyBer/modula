@@ -11,7 +11,8 @@ function myWork(){
   const app=S.appointments.filter(a=>empIdsOf(a).includes(id)&&!a.done);
   const sit=moduleActive('sites')?S.sites.filter(s=>(s.employees||[]).includes(id)&&s.status==='aperto'):[];
   const pel=moduleActive('pellet')?S.pellet.filter(p=>empIdsOf(p).includes(id)&&p.status!=='consegnato'):[];
-  return{man,app,sit,pel,total:man.length+app.length+sit.length+pel.length};
+  const rep=(typeof reportsToFill==='function')?reportsToFill(id):[];
+  return{man,app,sit,pel,rep,total:man.length+app.length+sit.length+pel.length+rep.length};
 }
 function notifCount(){return myWork().total;}
 function renderNotif(){
@@ -66,6 +67,14 @@ function renderInbox(w){
       <div class="bd"><div class="ti">${p.qty?fmtQty(p.qty)+' '+esc(p.unit||'sacchi'):'Consegna'}${who?` — <b>${esc(who)}</b>`:''}</div>
       <div class="su">${p.date?'📅 '+fmtD(p.date)+(p.time?' · '+p.time:''):'senza data'}${late?' · <span style="color:#D64528">in ritardo</span>':''}</div></div>
       <button class="qbtn" onclick="event.stopPropagation();markPelDone('${p.id}')">✓ Consegnata</button></div>`;
+    }).join(''));
+  }
+  if(w.rep&&w.rep.length){
+    blocks.push(`<div class="grp">📸 RAPPORTINI DA COMPILARE (${w.rep.length})</div>`+w.rep.map(s=>{
+      const who=cName(s.clientId)||s.clientRaw||'';
+      return`<div class="frw" style="border-left-color:var(--amber)" onclick="openReport(null,'${s.id}')">
+      <div class="bd"><div class="ti">${esc(s.name)}</div><div class="su">${who?esc(who)+' · ':''}rapporto di oggi</div></div>
+      <button class="qbtn" onclick="event.stopPropagation();openReport(null,'${s.id}')">Compila ›</button></div>`;
     }).join(''));
   }
   $('#notifbody').innerHTML=(w.total?greet:'')+(blocks.length?blocks.join(''):`<div class="empty tall"><div class="big">✅</div>Nessuna cosa da fare assegnata a te.<br><span class="subtle">Qui arrivano manutenzioni, appuntamenti, cantieri e consegne assegnati a te.</span></div>`);

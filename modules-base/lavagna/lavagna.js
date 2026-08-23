@@ -12,6 +12,7 @@ const LAV_WIDGETS={
   oggi:{label:'Oggi',ic:'☀️',module:'cal',render:lavwOggi},
   dipendenti:{label:'Dove sono i dipendenti',ic:'👷',module:'emps',render:lavwDip},
   cantieri:{label:'Cantieri aperti',ic:'🏗',module:'sites',render:lavwCantieri},
+  rapportini:{label:'Rapportini da compilare',ic:'📸',module:'reports',render:lavwRapportini},
 };
 const lavWidgetActive=wid=>{const w=LAV_WIDGETS[wid];return w?moduleActive(w.module):false;};
 
@@ -107,6 +108,13 @@ function lavwCantieri(){
   return sites.slice(0,8).map(s=>{const hrs=typeof siteHours==='function'?siteHours(s):0;const pct=s.estHours?Math.min(100,Math.round(hrs/s.estHours*100)):null;return `<div class="lavw-site">
     <div class="lavw-ti">${esc(s.name)}</div><div class="lavw-su">${esc(cName(s.clientId)||s.clientRaw||'—')}</div>
     ${s.estHours?`<div class="lavw-prog"><i style="width:${pct}%;${pct>=100?'background:var(--amber)':''}"></i></div><div class="lavw-su">${hrs}h / ${s.estHours}h · ${pct}%</div>`:`<div class="lavw-su">${hrs}h</div>`}</div>`;}).join('');
+}
+
+function lavwRapportini(){
+  const id=S.session&&S.session.empId;
+  const todo=(typeof reportsToFill==='function')?reportsToFill(id):[];
+  if(!todo.length)return `<div class="lavw-empty">Nessun rapportino da compilare 👍</div>`;
+  return todo.map(s=>`<div class="lavw-row" style="cursor:pointer" onclick="openReport(null,'${s.id}')"><span class="lavw-bar" style="background:#C77F12"></span><span class="lavw-main"><span class="lavw-ti">${esc(s.name)}</span><span class="lavw-su">tocca per il rapporto di oggi ›</span></span></div>`).join('');
 }
 
 /* ============ DRAG (tela libera, mouse + touch) ============ */

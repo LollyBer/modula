@@ -485,7 +485,7 @@ function printMonthAll(ym){
 /* ================= GESTIONE (solo titolare) ================= */
 function renderEmpsManage(){
   const mKey=todayIso().slice(0,7);
-  const PI={cal:['📅','Cal.'],man:['🔧','Manut.'],pellet:['🪵','Pellet'],sites:['🏗','Cant.'],notes:['📝','Note'],chat:['💬','Chat'],clients:['👥','Clienti']};
+  const PI={cal:['📅','Cal.'],man:['🔧','Manut.'],pellet:['🪵','Pellet'],sites:['🏗','Cant.'],reports:['📸','Rapp.'],notes:['📝','Note'],chat:['💬','Chat'],clients:['👥','Clienti']};
   const seatInfo=MAX_EMP!=null?`${seatCount()} / ${MAX_EMP} posti`:`${S.employees.length}`;
   $('#main').innerHTML=`
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
@@ -532,7 +532,7 @@ function editEmp(id){
     ...S.appointments.filter(a=>empIdsOf(a).includes(id)&&!a.done).map(a=>'📅 '+a.title+' — '+fmtD(a.date)),
     ...S.sites.filter(s=>s.status!=='chiuso'&&s.employees.includes(id)).map(s=>'🏗 '+s.name)
   ]:[];
-  const PERMS=[['cal','📅 Calendario'],['man','🔧 Manutenzioni'],['pellet','🪵 Pellet'],['sites','🏗 Cantieri'],['macchine','⚙️ Macchine'],['notes','📝 Note'],['chat','💬 Chat'],['clients','👥 Clienti']];
+  const PERMS=[['cal','📅 Calendario'],['man','🔧 Manutenzioni'],['pellet','🪵 Pellet'],['sites','🏗 Cantieri'],['reports','📸 Rapportini'],['macchine','⚙️ Macchine'],['notes','📝 Note'],['chat','💬 Chat'],['clients','👥 Clienti']];
   openSheet(`<h3>${id?'Scheda personale':'Nuova persona'} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Nome</label><input id="em-n" value="${esc(e.name)}"></div>
   <div class="frow"><div class="fld"><label>Ruolo</label><input id="em-r" value="${esc(e.role||'')}" placeholder="es. Tecnico"></div>
