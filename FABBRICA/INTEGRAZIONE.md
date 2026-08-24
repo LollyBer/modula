@@ -57,6 +57,10 @@ Fatti questi 7 punti, il modulo è nel sistema **e in vetrina**. Si vede nell'ap
      `tenant_id` nel `toDb`: lo stampa il trigger `set_tenant_id`.
    - `loadAll()`: aggiungi la query e `S.<key>=(…).map(MAPS.<key>.fromDb)`.
    - `dbRows()`, `TBL`, `UP_ORDER`, `DEL_ORDER`: aggiungi `<key>` / `'<tbl>'`.
+     > ⚠️ **Devono combaciare TUTTI e 4.** Se `<key>` è in `UP_ORDER` ma manca in `dbRows()`,
+     > al login `rebuildSnapshot`→`snapRows(k, undefined)` va in crash con
+     > `undefined is not an object (evaluating 'rows.forEach')` e **blocca l'accesso a tutte le aziende**.
+     > (Successo il 2026-08-23 col modulo reports/invoices — fix: aggiunte le chiavi a `dbRows()`.)
 
 ---
 
