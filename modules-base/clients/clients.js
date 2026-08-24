@@ -51,11 +51,14 @@ function renderClients(){
   }).join(''):'<div class="card"><div class="empty"><div class="big">👥</div>Nessun cliente con questi filtri.</div></div>';
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--teal)"></span>Clienti <span class="subtle">(${S.clients.length})</span>${shown}</div>
-  <input class="searchbar" placeholder="🔍 Cerca nome, paese, gruppo, telefono, via…" value="${esc(cliQ)}" oninput="cliQ=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)">
+  <input class="searchbar" id="cli-q" placeholder="🔍 Cerca nome, paese, gruppo, telefono, via…" value="${esc(cliQ)}" oninput="cliSearchInput(this.value)">
   ${filterBar}
   ${body}
   <button class="fab" onclick="editClient(null)">+</button>`;
 }
+/* ricerca clienti senza perdere il fuoco: ri-renderizza e rimette subito il cursore
+   sul campo NUOVO (per id), non su quello vecchio ormai distrutto. */
+function cliSearchInput(v){cliQ=v;render();const e=document.getElementById('cli-q');if(e){e.focus();try{e.setSelectionRange(v.length,v.length);}catch(_){}}}
 function openClient(id){
   const c=byId(S.clients,id);if(!c)return;
   const man=S.maintenances.filter(m=>m.clientId===id).sort((a,b)=>((a.date||'')>(b.date||'')?-1:1));
