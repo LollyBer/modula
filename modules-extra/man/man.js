@@ -143,7 +143,7 @@ function openMan(id){
   const m=id?byId(S.maintenances,id):{title:'',clientId:null,employeeId:null,date:'',time:'',status:'da_fare',notes:'',recur:0};
   openSheet(`<h3>${id?'Manutenzione':'Nuova manutenzione'} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Descrizione</label><input id="mn-t" value="${esc(m.title)}" placeholder="es. Pulizia caldaia pellet"></div>
-  <div class="fld"><label>Cliente</label><select id="mn-c" onchange="updClientPrev(this,'mn-cprev')"><option value="">${(m.clientRaw&&!m.clientId)?'🆕 '+esc(m.clientRaw)+' (nuovo)':'—'}</option>${cOpt(m.clientId)}</select><div id="mn-cprev">${clientPreviewHTML(m.clientId)}</div></div>
+  <div class="fld"><label>Cliente</label>${cliInput('mn-c',m.clientId,'mn-cprev')}<div id="mn-cprev">${clientPreviewHTML(m.clientId)}</div></div>
   <div class="fld"><label>Assegna a (uno o più)</label>${empSeg('mn-e',empIdsOf(m))}</div>
   <div class="frow"><div class="fld"><label>Data</label><input id="mn-d" type="date" value="${m.date||''}"></div>
   <div class="fld"><label>Ora</label><input id="mn-h" type="time" value="${m.time||''}"></div></div>

@@ -190,7 +190,7 @@ function openPel(id,preset){
   <div class="frow">
   <div class="fld"><label>Quantità</label><input id="pl-q" type="number" inputmode="decimal" step="any" value="${p.qty||''}"></div>
   <div class="fld"><label>Unità</label><select id="pl-u">${(p.kind==='sfuso'?['t']:['sacchi','kg']).map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div>
-  <div class="fld"><label>Cliente</label><select id="pl-c" onchange="updClientPrev(this,'pl-cprev')"><option value="">—</option>${cOpt(p.clientId)}</select><div id="pl-cprev">${clientPreviewHTML(p.clientId)}</div></div>
+  <div class="fld"><label>Cliente</label>${cliInput('pl-c',p.clientId,'pl-cprev')}<div id="pl-cprev">${clientPreviewHTML(p.clientId)}</div></div>
   <div class="fld"><label>Assegna a (uno o più)</label>${empSeg('pl-e',empIdsOf(p))}</div>
   <div class="frow"><div class="fld"><label>Data</label><input id="pl-d" type="date" value="${p.date||''}"></div>
   <div class="fld"><label>Ora</label><input id="pl-h" type="time" value="${p.time||''}"></div></div>

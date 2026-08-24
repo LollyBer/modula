@@ -62,7 +62,7 @@ function openInvoice(id,preset){
   const st=invDraft.status;
   openSheet(`<h3>${id?'Fattura N. '+esc(invDraft.number):'Nuova fattura'} <span class="x" onclick="closeSheet()">✕</span></h3>
    <div class="frow">
-     <div class="fld"><label>Cliente</label><select id="iv-cl" onchange="invPickClient(this.value)"><option value="">— scegli —</option>${cOpt(invDraft.clientId)}</select></div>
+     <div class="fld"><label>Cliente</label>${cliInput('iv-cl',invDraft.clientId)}</div>
      <div class="fld"><label>Data</label><input id="iv-date" type="date" value="${invDraft.date||todayIso()}"></div>
    </div>
    <div class="frow">

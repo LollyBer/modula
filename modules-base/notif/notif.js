@@ -86,7 +86,7 @@ function openApp(id){
   if(!a)return;
   openSheet(`<h3>${id?'Appuntamento':'Nuovo appuntamento'} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Titolo</label><input id="ap-t" value="${esc(a.title)}" placeholder="es. Sopralluogo Via Roma"></div>
-  <div class="fld"><label>Cliente</label><select id="ap-c" onchange="updClientPrev(this,'ap-cprev')"><option value="">${(a.clientRaw&&!a.clientId)?'🆕 '+esc(a.clientRaw)+' (nuovo)':'—'}</option>${cOpt(a.clientId)}</select><div id="ap-cprev">${clientPreviewHTML(a.clientId)}</div></div>
+  <div class="fld"><label>Cliente</label>${cliInput('ap-c',a.clientId,'ap-cprev')}<div id="ap-cprev">${clientPreviewHTML(a.clientId)}</div></div>
   <div class="fld"><label>Assegna a (uno o più)</label>${empSeg('ap-e',empIdsOf(a))}</div>
   <div class="frow"><div class="fld"><label>Data</label><input id="ap-d" type="date" value="${a.date||''}"></div>
   <div class="fld"><label>Ora</label><input id="ap-h" type="time" value="${a.time||''}"></div></div>

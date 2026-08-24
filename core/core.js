@@ -264,6 +264,12 @@ const cName=id=>{const c=byId(S.clients,id);return c?c.name:''};
 const eName=id=>{const e=byId(S.employees,id);return e?e.name:''};
 /* opzioni cliente per i menù a tendina: nasconde i bloccati, ma mantiene quello già scelto in un record esistente */
 const cOpt=sel=>S.clients.filter(c=>!c.blocked||c.id===sel).map(c=>`<option value="${c.id}" ${sel===c.id?'selected':''}>${esc(c.name)}${c.blocked?' 🚫':''}</option>`).join('');
+/* RICERCA cliente per nome (datalist) — riusabile in OGNI modulo: con tanti clienti è meglio della
+   tendina piena. cliInput(id,selId,prevId) rende un campo di ricerca + un input NASCOSTO id=<id> che
+   contiene l'id del cliente → i salvataggi continuano a leggere $('#<id>').value come prima. */
+const cliDatalist=()=>`<datalist id="cli-dl">${S.clients.filter(c=>!c.blocked).map(c=>`<option value="${esc(c.name)}"></option>`).join('')}</datalist>`;
+const cliInput=(id,selId,prevId)=>{const c=selId?byId(S.clients,selId):null;return `<input id="${id}__q" list="cli-dl" value="${c?esc(c.name):''}" placeholder="Cerca cliente per nome…" autocomplete="off" oninput="cliResolve('${id}'${prevId?",'"+prevId+"'":""})"><input type="hidden" id="${id}" value="${selId||''}" data-raw="">`+cliDatalist();};
+function cliResolve(id,prevId){const q=document.getElementById(id+'__q'),h=document.getElementById(id);const v=(q&&q.value||'').trim();const c=v?S.clients.find(x=>x.name&&x.name.toLowerCase()===v.toLowerCase()):null;if(h){h.value=c?c.id:'';h.dataset.raw=(!c&&v)?v:'';}if(prevId){const el=document.getElementById(prevId);if(el)el.innerHTML=(c&&typeof clientPreviewHTML==='function')?clientPreviewHTML(c.id):'';}}
 /* indirizzo composto + anteprima dati cliente (nei form: sai già dove andare) */
 const cAddr=c=>!c?'':([[c.street,c.streetNo].filter(Boolean).join(' '),[c.cap,c.town||c.zone].filter(Boolean).join(' ')].filter(Boolean).join(', ')||c.address||'');
 function clientPreviewHTML(id){
@@ -1372,7 +1378,7 @@ function editSite(id,preset){
   const SST=[['previsto','Previsto'],['aperto','In corso'],['da_fatturare','Da fatturare'],['chiuso','Archivio']];
   openSheet(`<h3>${id?'Modifica cantiere':(preset==='previsto'?'Nuovo lavoro futuro':'Nuovo cantiere')} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Nome</label><input id="st-n" value="${esc(s.name)}" placeholder="es. Installazione caldaia Via Roma"></div>
-  <div class="fld"><label>Cliente</label><select id="st-c"><option value="">—</option>${cOpt(s.clientId)}</select></div>
+  <div class="fld"><label>Cliente</label>${cliInput('st-c',s.clientId)}</div>
   <div class="frow">
     <div class="fld"><label>Stima ore lavoro</label><input id="st-h" type="number" inputmode="decimal" value="${s.estHours||''}" placeholder="es. 40"></div>
     ${isOwner()?`<div class="fld"><label>Importo CHF</label><input id="st-am" type="number" inputmode="decimal" step="any" value="${s.amount||''}" placeholder="da fatturare"></div>`:''}

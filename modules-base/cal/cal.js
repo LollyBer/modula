@@ -76,15 +76,17 @@ function openQuickAdd(date){
     <div class="fld"><label>Tipo</label><select id="qa-type">${calTypes().map(v=>`<option value="${v.id}">${v.ic||''} ${esc(v.label)}</option>`).join('')}</select></div>
     <div class="fld"><label>Ora</label><input id="qa-time" type="time"></div>
   </div>
-  <div class="fld"><label>Cliente (opzionale)</label><select id="qa-cl"><option value="">—</option>${cOpt('')}</select></div>
+  <div class="fld"><label>Cliente (opzionale)</label>${cliInput('qa-cl','')}</div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="quickAddSave('${date}')">Salva</button></div>`);
 }
 function quickAddSave(date){
   const t=$('#qa-t').value.trim();if(!t){toast('Scrivi cosa devi fare');return;}
   const voce=calTypeById($('#qa-type').value)||calTypes()[0];
   const type=voce?voce.kind:'note';
-  const time=$('#qa-time').value||null,clientId=$('#qa-cl').value||null;
-  const p={type,title:t,date,time,person:clientId?{kind:'client',id:clientId,name:cName(clientId)}:null,qty:null,unit:null};
+  const clientId=$('#qa-cl').value||null;
+  const rawName=(!clientId&&$('#qa-cl').dataset&&$('#qa-cl').dataset.raw)||null;
+  const time=$('#qa-time').value||null;
+  const p={type,title:t,date,time,person:clientId?{kind:'client',id:clientId,name:cName(clientId)}:(rawName?{kind:'raw',name:rawName}:null),qty:null,unit:null};
   const msg=commitParsed(p,'cal');closeSheet();toast(msg);render();
 }
 

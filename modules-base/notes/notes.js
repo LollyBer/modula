@@ -71,7 +71,7 @@ function newNote(){
   <div class="fld"><label>Testo</label><textarea id="nn-t" placeholder="Scrivi…"></textarea></div>
   <div class="fld"><label>Gruppo</label><select id="nn-g">${groupOpts(noteGroupSel!=='all'&&noteGroupSel!=='arch'?noteGroupSel:null)}</select></div>
   <div class="frow"><div class="fld"><label>Data (va a calendario)</label><input id="nn-d" type="date"></div>
-  <div class="fld"><label>Cliente</label><select id="nn-c"><option value="">—</option>${cOpt('')}</select></div></div>
+  <div class="fld"><label>Cliente</label>${cliInput('nn-c','')}</div></div>
   <div class="fld"><label>Assegna a (uno o più, facoltativo)</label>${empSeg('nn-e',[])}</div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="saveNewNote()">Salva</button></div>`);
 }
@@ -82,7 +82,7 @@ function openNote(id){
   <div class="fld"><label>Testo</label><textarea id="en-t">${esc(n.text)}</textarea></div>
   <div class="fld"><label>Gruppo</label><select id="en-g">${groupOpts(n.groupId)}</select></div>
   <div class="frow"><div class="fld"><label>Data (va a calendario)</label><input id="en-d" type="date" value="${n.date||''}"></div>
-  <div class="fld"><label>Cliente</label><select id="en-c"><option value="">—</option>${cOpt(n.clientId)}</select></div></div>
+  <div class="fld"><label>Cliente</label>${cliInput('en-c',n.clientId)}</div></div>
   <div class="fld"><label>Assegna a (uno o più, facoltativo)</label>${empSeg('en-e',empIdsOf(n))}</div>
   <div class="actions">
     <button class="btn danger" onclick="delItem('notes','${id}')">Elimina</button>
