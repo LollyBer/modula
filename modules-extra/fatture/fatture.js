@@ -50,10 +50,15 @@ function invRow(f){
 /* ---- editor ---- */
 let invDraft=null;
 function nextInvNumber(){const b=S.settings.billing||{};const n=(+b.nextNumber||1);return (b.prefix||'')+String(n).padStart(4,'0');}
-function openInvoice(id){
+function openInvoice(id,preset){
   const b=S.settings.billing||{};
   const src=id?byId(S.invoices,id):null;
   invDraft=src?{...src,lines:(src.lines||[]).map(l=>({...l}))}:{id:uid(),number:nextInvNumber(),date:todayIso(),dueDate:addDaysIso(todayIso(),30),clientId:'',clientName:'',clientAddr:'',lines:[{desc:'',qty:1,price:null}],vatRate:(b.defaultVat!=null?b.defaultVat:8.1),notes:b.footer||'',status:'bozza',_new:true};
+  if(!id&&preset){
+    if(preset.clientId){invDraft.clientId=preset.clientId;invPickClient(preset.clientId);}
+    if(preset.lines&&preset.lines.length)invDraft.lines=preset.lines.map(l=>({...l}));
+    if(preset.notes!=null)invDraft.notes=preset.notes;
+  }
   const st=invDraft.status;
   openSheet(`<h3>${id?'Fattura N. '+esc(invDraft.number):'Nuova fattura'} <span class="x" onclick="closeSheet()">✕</span></h3>
    <div class="frow">
@@ -115,6 +120,23 @@ function saveInvoice(id){
 }
 function delInvoice(id){if(!confirm('Eliminare la fattura?'))return;S.invoices=S.invoices.filter(x=>x.id!==id);invDraft=null;save();closeSheet();render();toast('Fattura eliminata');}
 
+/* pre-compila una BOZZA di fattura da un cantiere: cliente + importo concordato,
+   o ore totali dai rapportini, + materiali usati in nota. Poi il titolare rivede e salva. */
+function invoiceFromSite(siteId){
+  const s=byId(S.sites,siteId); if(!s){toast('Cantiere non trovato');return;}
+  const reps=(typeof repForSite==='function')?repForSite(siteId):[];
+  const hours=reps.reduce((t,r)=>t+(+r.hours||0),0);
+  const b=S.settings.billing||{};
+  const lines=[];
+  if(+s.amount>0) lines.push({desc:'Lavori — '+s.name, qty:1, price:+s.amount});
+  else if(hours>0) lines.push({desc:'Manodopera — '+s.name+' ('+fmtQty(hours)+' h)', qty:hours, price:(b.hourlyRate!=null?b.hourlyRate:null)});
+  else lines.push({desc:'Lavori — '+s.name, qty:1, price:null});
+  const mats=reps.map(r=>r.materials).filter(Boolean);
+  const notes=(mats.length?('Materiali: '+mats.join('; ')+'\n'):'')+(b.footer||'');
+  openInvoice(null,{clientId:s.clientId||'', lines, notes});
+  toast('🧾 Bozza precompilata dal cantiere — controlla e salva');
+}
+
 /* ---- impostazioni fatturazione (azienda + IBAN) ---- */
 function openBilling(){
   const b=S.settings.billing||{};
@@ -132,6 +154,7 @@ function openBilling(){
      <div class="fld"><label>P. IVA (facolt.)</label><input id="b-vatno" value="${esc(b.vatNo||'')}" placeholder="CHE-123.456.789 IVA"></div>
      <div class="fld"><label>IVA % default</label><input id="b-dvat" type="number" inputmode="decimal" step="any" value="${b.defaultVat!=null?b.defaultVat:8.1}"></div>
    </div>
+   <div class="fld"><label>Tariffa oraria CHF <span class="subtle">(per fatturare i cantieri a ore)</span></label><input id="b-hourly" type="number" inputmode="decimal" step="any" value="${b.hourlyRate!=null?b.hourlyRate:''}" placeholder="es. 75"></div>
    <div class="frow">
      <div class="fld"><label>Prefisso numero</label><input id="b-prefix" value="${esc(b.prefix||'')}" placeholder="2026-"></div>
      <div class="fld"><label>Prossimo numero</label><input id="b-next" type="number" value="${b.nextNumber!=null?b.nextNumber:1}"></div>
@@ -144,6 +167,7 @@ function saveBilling(){
   b.name=$('#b-name').value.trim();b.address=$('#b-addr').value.trim();b.zip=$('#b-zip').value.trim();b.city=$('#b-city').value.trim();
   b.iban=$('#b-iban').value.replace(/\s/g,'').trim();b.vatNo=$('#b-vatno').value.trim();
   b.defaultVat=parseFloat($('#b-dvat').value);if(isNaN(b.defaultVat))b.defaultVat=8.1;
+  b.hourlyRate=parseFloat($('#b-hourly').value);if(isNaN(b.hourlyRate))b.hourlyRate=null;
   b.prefix=$('#b-prefix').value;b.nextNumber=parseInt($('#b-next').value)||1;b.footer=$('#b-footer').value.trim();
   S.settings.billing=b;save();closeSheet();render();toast('✓ Dati fatturazione salvati');
 }

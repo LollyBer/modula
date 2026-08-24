@@ -84,6 +84,7 @@ function openSite(id){
       ${r.hours?`<span style="font-family:var(--mono);color:var(--cy)">${fmtQty(r.hours)}h</span>`:''}</div>`).join('')||'<div class="subtle">Nessun rapportino per questo cantiere.</div>'}
     <button class="btn sm" style="margin-top:8px" onclick="closeSheet();openReport(null,'${id}')">+ Nuovo rapportino</button>
   </div>`:''}
+  ${moduleActive('fatture')&&isOwner()?`<button class="btn pri" style="width:100%;margin-bottom:10px" onclick="closeSheet();invoiceFromSite('${id}')">🧾 Fattura questo cantiere</button>`:''}
   <div class="fld"><label>Diario lavori (${s.log.length})</label>
     ${s.log.length?s.log.slice().reverse().slice(0,15).map(l=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px">
       <span style="font-family:var(--mono);color:var(--t3);flex-shrink:0">${fmtD(l.date)}</span>
