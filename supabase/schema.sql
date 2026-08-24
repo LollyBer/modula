@@ -229,6 +229,21 @@ create table if not exists invoices (
   created_at timestamptz not null default now()
 );
 
+-- archivio documenti (fatture fornitori, DDT, contratti, spese...) — modulo Documenti
+create table if not exists documents (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  tipo text default 'fattura', fornitore text default '', vat_no text default '',
+  number text default '', doc_date date, due_date date,
+  amount numeric, currency text default 'CHF', category text default '',
+  description text default '', pay_status text default 'da_pagare', paid_date date,
+  pinned boolean default false,
+  client_id uuid references clients(id) on delete set null,
+  site_id uuid references sites(id) on delete set null,
+  file_name text default '', storage_path text default '', mime text default '',
+  created_at timestamptz not null default now()
+);
+
 -- settings: UNA riga per azienda (non piu' id=1 globale)
 create table if not exists settings (
   tenant_id uuid primary key references tenants(id) on delete cascade,
@@ -277,7 +292,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','push_subs'
   ] loop
@@ -293,7 +308,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices',
+    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs'
   ] loop
@@ -319,7 +334,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs'
   ] loop
@@ -397,7 +412,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','attachments','client_attachments',
+    'clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents','attachments','client_attachments',
     'notes','note_groups','lists','list_items','chat','call_log','expenses','maint_prices',
     'employees','time_entries','settings'
   ] loop
