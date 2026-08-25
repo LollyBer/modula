@@ -45,10 +45,13 @@ Prossimo: simulare/assemblare clienti veri dalla regia · costruire i 7 moduli t
 (`interventi`·`contratti-man`·`scadenziario`·`impianti`·`mezzi`·`preventivi`·`ricorrenze`) in Laboratorio.
 Rimandato: dominio personalizzato · generatore in-browser (scartato: tutto su Claude).
 
-### Nuovi arrivi
-Catalogo settori→moduli su misura spuntabile (`FABBRICA/SETTORI-MODULI.md`, 15 settori) · richiesta modulo
-su misura nel configuratore · landing/configuratore mostrano solo i moduli pronti · widget regia Fabbrica ·
-modalità demo nelle app cliente · reparto Conversione.
+### Nuovi arrivi (ago 2026)
+Migrazione backend+hosting su account propri (Supabase `yohtthmcjqwlxoihvcrt` + repo `LollyBer/modula`,
+live `lollyber.github.io/modula`) · **18 moduli** · nuovi moduli: **Lavagna** (dashboard a tela libera),
+**Rapportini** di cantiere (foto+promemoria), **Fatture** (QR-fattura svizzera → Conti), **Documenti**
+(archivio fatture fornitori/scadenze, senza IA) · voci calendario configurabili · gating `moduleActive`
+ovunque · ricerca cliente per nome in tutti i moduli · "Fattura questo cantiere" (cantiere→bozza fattura).
+Prima (giu-lug): catalogo settori→moduli · richiesta modulo su misura · landing solo moduli pronti · Fabbrica.
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.
