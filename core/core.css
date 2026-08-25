@@ -159,6 +159,13 @@ body::before{content:'';position:fixed;inset:0;background:
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 2px 0}
 .legend span{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--t2)}
 .legend i{width:7px;height:7px;border-radius:50%}
+/* Desktop: le celle non devono essere quadrate (diventerebbero enormi e il mese non entra a schermo).
+   Altezza legata al viewport così tutte le 6 settimane stanno dentro senza scroll. */
+@media(min-width:900px){
+  .cal-cell{aspect-ratio:auto;height:clamp(52px,9vh,92px);align-items:flex-start;padding:6px 8px}
+  .cal-cell .dn{font-size:13px}
+  .cal-dots{justify-content:flex-start;margin-top:5px}
+}
 
 /* ---------- CHAT ---------- */
 .chatwrap{display:flex;flex-direction:column;height:calc(100dvh - 235px);min-height:300px}
