@@ -4,12 +4,24 @@
 .lav-title .accent{width:5px;height:20px;border-radius:3px;display:inline-block}
 .lav-hint{font-size:11.5px;color:var(--t2);background:var(--bg2);border:1px dashed var(--line2);border-radius:10px;padding:8px 11px;margin-bottom:10px}
 
-.lav-canvas{position:relative;min-height:300px;width:100%;border-radius:14px;transition:background .15s}
+/* superficie a lavagna vera: ardesia verde-scura + cornice in legno */
+.lav-canvas{position:relative;min-height:360px;width:100%;box-sizing:border-box;padding:16px;
+  border:14px solid #7c552e;
+  border-image:linear-gradient(135deg,#b0824a,#5f3f1f 45%,#8a5c30 72%,#4a3116) 1;
+  background:
+    radial-gradient(130% 90% at 50% -15%,rgba(255,255,255,.07),transparent 60%),
+    radial-gradient(90% 70% at 85% 115%,rgba(255,255,255,.05),transparent 55%),
+    linear-gradient(160deg,#21332c,#182420);
+  box-shadow:inset 0 0 70px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.32);
+  transition:background .15s}
+/* in modifica: griglia a gessetto per allineare le tessere */
 .lav-canvas.editing{background:
-  linear-gradient(var(--line) 1px,transparent 1px) 0 0/22px 22px,
-  linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/22px 22px,
-  var(--bg2);
-  outline:1px dashed var(--line2)}
+  linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px) 0 0/24px 24px,
+  linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px) 0 0/24px 24px,
+  linear-gradient(160deg,#21332c,#182420)}
+/* testo scritto direttamente sull'ardesia (stato vuoto) → color gesso */
+.lav-canvas>.empty{color:rgba(255,255,255,.8)}
+.lav-canvas>.empty .big{color:rgba(255,255,255,.9)}
 
 .lav-tile{position:absolute;box-sizing:border-box;border-radius:12px;overflow:hidden}
 .lav-tile.dragging{z-index:50;opacity:.94;box-shadow:0 10px 24px rgba(70,55,30,.28)}
