@@ -36,7 +36,7 @@ let TENANT_ACTIVE=true;  /* false = azienda sospesa (es. non paga): l'app blocca
 const seatCount=()=>S.employees.filter(e=>e.active!==false).length;
 const seatFull=()=>MAX_EMP!=null && seatCount()>=MAX_EMP;
 /* viste visibili = permesso utente (can) ∩ modulo attivo per il tenant */
-function visViews(){return VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||((v.id==='zone'?can('clients'):can(v.id))&&moduleActive(v.id)));}
+function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.id==='settings'||((v.id==='zone'?can('clients'):can(v.id))&&moduleActive(v.id)));return typeof applyModOrder==='function'?applyModOrder(base):base;}
 
 const APP_VERSION='2026.07.06-140421';
 
@@ -520,6 +520,7 @@ const VIEWS=[
   {id:'zone',ic:'🗺️',label:'Zone'},
   {id:'conti',ic:'💰',label:'Conti'},
   {id:'emps',ic:'👷',label:'Personale'},
+  {id:'settings',ic:'⚙️',label:'Impostazioni'},
 ];
 let view='hub';
 /* ---- CATALOGO PIATTAFORMA: tutti i moduli Modula (per la schermata "Moduli & richieste") ----
@@ -577,19 +578,13 @@ function setBottomNav(ids){const k=navKey();bottomNavMem[k]=ids.slice();try{loca
 function renderNav(){
   {const bt=$('#brandtop');if(bt)bt.textContent=BRAND.name||'Modula';}
   const vis=visViews();
-  const ps=pushState();const sep='margin-top:10px;border-top:1px solid var(--line);border-radius:0;padding-top:14px';
-  const pushNav=ps==='unsupported'?''
-    :ps==='on'?`<div class="ni" style="${sep};color:var(--cy)" onclick="pushTest()"><span class="ic">📩</span>Notifica di prova</div><div class="ni" style="color:var(--teal)" onclick="disablePush()"><span class="ic">🔔</span>Notifiche attive — disattiva</div>`
-    :ps==='blocked'?`<div class="ni" style="${sep};color:var(--t3)"><span class="ic">🔕</span>Notifiche bloccate dal dispositivo</div>`
-    :`<div class="ni" style="${sep};color:var(--amber)" onclick="enablePush()"><span class="ic">🔔</span>Attiva notifiche</div>`;
-  $('#navside').innerHTML=vis.map(v=>{const c=v.id==='notif'?notifCount():0;return`<div class="ni ${view===v.id?'act':''}" onclick="nav('${v.id}')"><span class="ic">${v.ic}</span>${v.label}${c?` <span class="badge" style="margin-left:auto;border-color:var(--cy);color:var(--cy)">${c}</span>`:''}</div>`;}).join('')
-    +pushNav
-    +(isOwner()?`<div class="ni" style="${ps==='unsupported'?sep:''}" onclick="openModuleStore()"><span class="ic">🧩</span>Moduli & richieste</div>`:'')
-    +(isOwner()?`<div class="ni" onclick="openBackup()"><span class="ic">💾</span>Backup dati</div>`:'')
-    +(isOwner()?`<div class="ni" onclick="openImport()"><span class="ic">📥</span>Importa dati</div>`:'')
-    +`<div class="ni" onclick="toggleTheme()"><span class="ic">${getTheme()==='dark'?'☀️':'🌙'}</span>${getTheme()==='dark'?'Tema chiaro':'Tema scuro'}</div>`
-    +`<div class="ni" onclick="openChangePassword()"><span class="ic">🔑</span>Cambia password</div>`
-    +`<div class="ni" onclick="logout()"><span class="ic">🚪</span>Esci (${esc(me().name)})</div>`;
+  const ps=pushState();
+  const mods=vis.filter(v=>v.id!=='settings');
+  const setV=vis.find(v=>v.id==='settings');
+  const ni=v=>{const c=v.id==='notif'?notifCount():0;return`<div class="ni ${view===v.id?'act':''}" onclick="nav('${v.id}')"><span class="ic">${v.ic}</span>${v.label}${c?` <span class="badge" style="margin-left:auto;border-color:var(--cy);color:var(--cy)">${c}</span>`:''}</div>`;};
+  const nudge=ps==='off'?`<div class="ni" style="color:var(--amber)" onclick="nav('settings')"><span class="ic">🔔</span>Attiva notifiche</div>`:'';
+  $('#navside').innerHTML=mods.map(ni).join('')+nudge
+    +(setV?`<div class="ni ${view==='settings'?'act':''}" style="margin-top:10px;border-top:1px solid var(--line);padding-top:14px" onclick="nav('settings')"><span class="ic">${setV.ic}</span>${setV.label}</div>`:'');
   const allowed=new Set(vis.map(v=>v.id));
   let chosen=getBottomNav().filter(id=>allowed.has(id)).slice(0,5);
   if(!chosen.length)chosen=vis.filter(v=>v.id!=='notif').slice(0,5).map(v=>v.id);
@@ -606,22 +601,10 @@ function openMenu(){
   const vis=visViews();
   const inBar=new Set(getBottomNav().filter(id=>vis.some(v=>v.id===id)).slice(0,5));
   const overflow=vis.filter(v=>!inBar.has(v.id));
-  const ps=pushState();
-  const pushRow=ps==='unsupported'?''
-    :ps==='blocked'?`<div class="sg" style="padding:13px;border-color:var(--line2);color:var(--t3)">🔕 Notifiche bloccate dal telefono — abilitale nelle impostazioni del dispositivo</div>`
-    :ps==='on'?`<div class="sg" style="padding:13px;border-color:var(--cy);color:var(--cy)" onclick="closeSheet();pushTest()">📩 Invia notifica di prova</div><div class="sg" style="padding:13px;border-color:var(--teal);color:var(--teal)" onclick="closeSheet();disablePush()">🔔 Notifiche attive — tocca per disattivare</div>`
-    :`<div class="sg" style="padding:13px;border-color:var(--amber);color:var(--amber)" onclick="closeSheet();enablePush()">🔔 Attiva notifiche su questo telefono</div>`;
   openSheet(`<h3>Sezioni <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="seg" style="flex-direction:column;gap:8px">
-    ${overflow.map(v=>`<div class="sg" style="padding:13px" onclick="closeSheet();nav('${v.id}')">${v.ic} ${v.label}${v.id==='notif'&&notifCount()?' ('+notifCount()+')':''}</div>`).join('')||'<div class="subtle" style="padding:4px 2px">Tutte le sezioni sono già nella barra in basso.</div>'}
+    ${overflow.map(v=>`<div class="sg ${v.id==='settings'?'':''}" style="padding:13px${v.id==='settings'?';border-color:var(--cy);color:var(--cy)':''}" onclick="closeSheet();nav('${v.id}')">${v.ic} ${v.label}${v.id==='notif'&&notifCount()?' ('+notifCount()+')':''}</div>`).join('')||'<div class="subtle" style="padding:4px 2px">Tutte le sezioni sono già nella barra in basso.</div>'}
     <div class="sg" style="padding:13px;border-color:var(--cy);color:var(--cy)" onclick="closeSheet();editBottomNav()">⚙️ Personalizza la barra in basso</div>
-    ${pushRow}
-    ${isOwner()?`<div class="sg" style="padding:13px;border-color:var(--cy);color:var(--cy)" onclick="closeSheet();openModuleStore()">🧩 Moduli & richieste</div>`:''}
-    ${isOwner()?`<div class="sg" style="padding:13px;border-color:var(--line2)" onclick="closeSheet();openBackup()">💾 Backup dati</div>`:''}
-    ${isOwner()?`<div class="sg" style="padding:13px;border-color:var(--line2)" onclick="closeSheet();openImport()">📥 Importa dati</div>`:''}
-    <div class="sg" style="padding:13px" onclick="closeSheet();toggleTheme()">${getTheme()==='dark'?'☀️ Tema chiaro':'🌙 Tema scuro'}</div>
-    <div class="sg" style="padding:13px" onclick="closeSheet();openChangePassword()">🔑 Cambia password</div>
-    <div class="sg" style="padding:13px;border-color:rgba(214,69,40,.35);color:var(--coral)" onclick="logout()">🚪 Esci (${esc(me().name)})</div>
   </div>`);
 }
 function openChangePassword(){
@@ -1087,11 +1070,11 @@ function undoImport(){
 function render(){
   if(!S.session||!me()){renderLock();return;}
   const lk=document.querySelector('.lock');if(lk)lk.remove();
-  if((!can(view)||!moduleActive(view))&&view!=='hub'&&view!=='notif')view='hub';
+  if((!can(view)||!moduleActive(view))&&view!=='hub'&&view!=='notif'&&view!=='settings')view='hub';
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
-  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps};
+  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,settings:window.renderSettings};
   $('#main').innerHTML='';(R[view]||window.renderHub)();
   if(view==='notif'&&notifTab==='chat'){const sc=$('#chatscroll');if(sc)sc.scrollTop=sc.scrollHeight;}
 }

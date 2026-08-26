@@ -159,6 +159,15 @@ body::before{content:'';position:fixed;inset:0;background:
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 2px 0}
 .legend span{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--t2)}
 .legend i{width:7px;height:7px;border-radius:50%}
+/* ---- Impostazioni ---- */
+.set-h{font-family:var(--disp);font-weight:700;font-size:16px;margin-bottom:6px}
+.set-modlist{display:flex;flex-direction:column;gap:6px}
+.set-modrow{display:flex;align-items:center;gap:10px;background:var(--bg1);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.set-modrow .ic{font-size:16px;width:22px;text-align:center;flex:0 0 auto}
+.set-modrow .nm{flex:1;font-size:14px}
+.set-arrows{display:flex;gap:5px;flex:0 0 auto}
+.set-arrows .btn{width:34px;padding:5px 0;text-align:center}
+.set-arrows .btn:disabled{opacity:.3}
 /* Desktop: le celle non devono essere quadrate (diventerebbero enormi e il mese non entra a schermo).
    Altezza legata al viewport così tutte le 6 settimane stanno dentro senza scroll. */
 @media(min-width:900px){
