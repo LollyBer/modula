@@ -251,8 +251,10 @@ create table if not exists settings (
 );
 -- voci del calendario configurabili per azienda (idempotente per DB gia' creati):
 alter table settings add column if not exists event_types jsonb not null default '[]'::jsonb;
--- lavagna componibile (post-it + widget su tela libera) per azienda:
+-- lavagna componibile (post-it + widget su tela libera) per azienda (LEGACY condivisa, mantenuta per migrazione):
 alter table settings add column if not exists board jsonb not null default '[]'::jsonb;
+-- lavagne PER-UTENTE: oggetto { "<emp_id>": [ ...tessere ] } → ogni amministratore ha la sua:
+alter table settings add column if not exists boards jsonb not null default '{}'::jsonb;
 -- dati fatturazione azienda (ragione sociale, indirizzo, IBAN, IVA default, progressivo):
 alter table settings add column if not exists billing jsonb not null default '{}'::jsonb;
 -- promemoria appuntamenti: {enabled, minutesBefore, allDayTime}. Letto dalla Edge Function "reminders".

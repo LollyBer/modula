@@ -1,6 +1,6 @@
 /* ===== MODULO: LAVAGNA — dashboard componibile su tela libera =====
-   Post-it e widget trascinabili liberamente (x/y). Salvata per azienda in
-   S.settings.board (jsonb). Ogni tessera: {id, kind:'postit'|'widget', ..., x,y,w}.
+   Post-it e widget trascinabili liberamente (x/y). PER-UTENTE: ogni amministratore
+   ha la sua, in S.settings.boards[empId] (jsonb). Ogni tessera: {id, kind:'postit'|'widget', ..., x,y,w}.
    Dipende dal core (S, uid, save, render, openSheet, esc, toast, moduleActive,
    allEvents, cName, eName, empIdsOf, isOwner, visSites, siteHours, todayIso...). */
 
@@ -20,9 +20,22 @@ const lavWidgetActive=wid=>{const w=LAV_WIDGETS[wid];return w?moduleActive(w.mod
 const POSTIT_COLORS=[['#FBEAC9','#5c3a06'],['#CFF0E1','#0c4a37'],['#FAD9CC','#7a2f14'],['#E6F1FB','#123a5e'],['#DDEFC2','#31530c'],['#EDE0F7','#3d2a5c'],['#FBE3EE','#5c1f3a'],['#FFF4B8','#5a4a06']];
 const postitFg=bg=>{const f=POSTIT_COLORS.find(c=>c[0]===bg);return f?f[1]:'#3a3320';};
 
-/* ---- store ---- */
-const board=()=>(S.settings&&Array.isArray(S.settings.board))?S.settings.board:[];
-function boardEnsure(){if(!Array.isArray(S.settings.board))S.settings.board=[];if(!S.settings.board.length){S.settings.board=defaultBoard();lavFresh=true;}}
+/* ---- store: lavagna PER-UTENTE — ogni amministratore ha la sua (settings.boards[empId]).
+   La vecchia lavagna condivisa (settings.board) resta come sorgente di migrazione: alla
+   prima apertura ognuno parte da quel contenuto e poi la sua diverge. ---- */
+function myBoardKey(){return (S.session&&S.session.empId)||'x';}
+function board(){const bs=(S.settings&&S.settings.boards)||{};const b=bs[myBoardKey()];return Array.isArray(b)?b:[];}
+function setBoard(arr){if(!S.settings.boards)S.settings.boards={};S.settings.boards[myBoardKey()]=arr;}
+function boardEnsure(){
+  if(!S.settings.boards)S.settings.boards={};
+  let b=S.settings.boards[myBoardKey()];
+  if(!Array.isArray(b)){
+    const legacy=Array.isArray(S.settings.board)?S.settings.board:null;
+    if(legacy&&legacy.length)b=JSON.parse(JSON.stringify(legacy)); // migra dalla condivisa
+    else{b=defaultBoard();lavFresh=true;}
+    S.settings.boards[myBoardKey()]=b;
+  }
+}
 function defaultBoard(){
   const t=[];let y=10;
   t.push({id:uid(),kind:'postit',text:'Benvenuto nella Lavagna 📌\nTocca ✏️ per spostare le tessere, e ➕ per aggiungere post-it e widget.',color:'#FBEAC9',done:false,x:10,y,w:210});y+=150;
@@ -136,7 +149,7 @@ function lavBindDrag(){
 }
 
 /* ============ AZIONI TESSERE ============ */
-function lavDel(id){if(!confirm('Eliminare questa tessera?'))return;S.settings.board=board().filter(t=>t.id!==id);save();render();}
+function lavDel(id){if(!confirm('Eliminare questa tessera?'))return;setBoard(board().filter(t=>t.id!==id));save();render();}
 function lavPostitDone(id){const t=board().find(x=>x.id===id);if(!t)return;t.done=!t.done;save();render();}
 function lavAddSheet(){
   const widgets=Object.keys(LAV_WIDGETS).filter(lavWidgetActive);
@@ -145,7 +158,7 @@ function lavAddSheet(){
    <div class="subtle" style="margin:6px 0 8px">Widget dai tuoi moduli attivi:</div>
    ${widgets.map(wid=>{const W=LAV_WIDGETS[wid];return `<button class="btn ghost" style="width:100%;justify-content:flex-start;margin-bottom:7px;text-align:left" onclick="lavAddWidget('${wid}')">${W.ic} ${esc(W.label)}</button>`;}).join('')||'<div class="empty">Nessun widget disponibile (dipende dai moduli attivi).</div>'}`);
 }
-function lavAddWidget(wid){const y=board().reduce((m,t)=>Math.max(m,(t.y||0)+140),10);S.settings.board=board().concat([{id:uid(),kind:'widget',widget:wid,color:'#5BA02C',x:10,y,w:330}]);save();closeSheet();boardEdit=true;render();toast('Widget aggiunto — trascinalo dove vuoi');}
+function lavAddWidget(wid){const y=board().reduce((m,t)=>Math.max(m,(t.y||0)+140),10);setBoard(board().concat([{id:uid(),kind:'widget',widget:wid,color:'#5BA02C',x:10,y,w:330}]));save();closeSheet();boardEdit=true;render();toast('Widget aggiunto — trascinalo dove vuoi');}
 function lavPostit(id){
   const t=id?board().find(x=>x.id===id):null;
   const cur=t||{text:'',color:'#FBEAC9'};
@@ -160,7 +173,7 @@ function lavSavePostit(id){
   const sel=document.querySelector('.pit-col.on');const color=window._pitCol||(sel&&sel.dataset.c)||'#FBEAC9';
   if(!text){toast('Scrivi qualcosa');return;}
   if(id){const t=board().find(x=>x.id===id);if(t){t.text=text;t.color=color;}}
-  else{const y=board().reduce((m,t)=>Math.max(m,(t.y||0)+120),10);S.settings.board=board().concat([{id:uid(),kind:'postit',text,color,done:false,x:10,y,w:180}]);}
+  else{const y=board().reduce((m,t)=>Math.max(m,(t.y||0)+120),10);setBoard(board().concat([{id:uid(),kind:'postit',text,color,done:false,x:10,y,w:180}]));}
   window._pitCol=null;save();closeSheet();render();toast('✓ Post-it salvato');
 }
 /* configurazione widget: titolo, colore accento, larghezza */
