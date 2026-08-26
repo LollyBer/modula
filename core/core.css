@@ -168,6 +168,8 @@ body::before{content:'';position:fixed;inset:0;background:
 .set-arrows{display:flex;gap:5px;flex:0 0 auto}
 .set-arrows .btn{width:34px;padding:5px 0;text-align:center}
 .set-arrows .btn:disabled{opacity:.3}
+.set-check{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer}
+.set-check input{width:18px;height:18px;accent-color:var(--cy)}
 /* Desktop: le celle non devono essere quadrate (diventerebbero enormi e il mese non entra a schermo).
    Altezza legata al viewport così tutte le 6 settimane stanno dentro senza scroll. */
 @media(min-width:900px){

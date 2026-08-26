@@ -255,6 +255,8 @@ alter table settings add column if not exists event_types jsonb not null default
 alter table settings add column if not exists board jsonb not null default '[]'::jsonb;
 -- dati fatturazione azienda (ragione sociale, indirizzo, IBAN, IVA default, progressivo):
 alter table settings add column if not exists billing jsonb not null default '{}'::jsonb;
+-- promemoria appuntamenti: {enabled, minutesBefore, allDayTime}. Letto dalla Edge Function "reminders".
+alter table settings add column if not exists reminders jsonb not null default '{}'::jsonb;
 
 create table if not exists push_subs (
   endpoint text primary key,
@@ -262,6 +264,17 @@ create table if not exists push_subs (
   p256dh text, auth text, emp_id uuid, ua text,
   created_at timestamptz not null default now()
 );
+
+-- promemoria GIA' inviati (dedup): una riga per (tipo, evento). Riempita dalla Edge Function
+-- "reminders" con la service_role; nessuna policy pubblica (non serve al client).
+create table if not exists reminders_sent (
+  kind text not null,               -- 'appointment' | 'maintenance'
+  event_id uuid not null,
+  tenant_id uuid references tenants(id) on delete cascade,
+  sent_at timestamptz not null default now(),
+  primary key (kind, event_id)
+);
+alter table reminders_sent enable row level security;  -- nessuna policy = accesso solo service_role
 
 -- ─────────────────────────── 4. FUNZIONI CHIAVE ───────────────────────────
 -- tenant dell'utente loggato (letto dal suo record in employees). SECURITY DEFINER

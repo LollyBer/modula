@@ -40,7 +40,7 @@ function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.i
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],billing:{}},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],billing:{},reminders:{}},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -140,7 +140,7 @@ async function loadAll(){
   S.reports=(rp&&rp.data||[]).map(MAPS.reports.fromDb).sort((a,b)=>b.created-a.created);
   S.invoices=(iv&&iv.data||[]).map(MAPS.invoices.fromDb).sort((a,b)=>b.created-a.created);
   S.documents=(dc&&dc.data||[]).map(MAPS.documents.fromDb).sort((a,b)=>b.created-a.created);
-  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{})};
+  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{}),reminders:(st.data.reminders&&typeof st.data.reminders==='object'&&!Array.isArray(st.data.reminders))?st.data.reminders:(st.data.reminders?JSON.parse(st.data.reminders):{})};
   rebuildSnapshot();
 }
 function dbRows(){
@@ -193,7 +193,7 @@ async function syncNow(){
       if(dels.length){const{error}=await sb.from(TBL[k]).delete().in('id',dels);if(error)throw error;}
     }
     if(isOwner()&&snapshot._settings!==JSON.stringify(S.settings)){
-      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[],billing:S.settings.billing||{}}).eq('tenant_id',TENANT_ID);
+      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[],billing:S.settings.billing||{},reminders:S.settings.reminders||{}}).eq('tenant_id',TENANT_ID);
       if(error)throw error;
     }
     rebuildSnapshot();

@@ -68,6 +68,22 @@ function renderSettings(){
       <button class="btn sm ghost" onclick="openBilling()">Apri dati fatturazione</button>
     </div>`:'';
 
+  const rm=(S.settings&&S.settings.reminders)||{};
+  const rmOn=rm.enabled!==false; // default acceso
+  const rmMin=rm.minutesBefore!=null?rm.minutesBefore:60;
+  const rmTime=rm.allDayTime||'08:00';
+  const minOpt=(v,l)=>`<option value="${v}" ${rmMin===v?'selected':''}>${l}</option>`;
+  const remindersCard=owner?`
+    <div class="card">
+      <div class="set-h">🔔 Promemoria appuntamenti</div>
+      <div class="subtle" style="margin-bottom:12px">Invia una notifica prima di ogni appuntamento/manutenzione segnati. Al titolare arrivano quelli di tutta l'azienda; a ogni dipendente solo i propri. Richiede le notifiche attive sul dispositivo.</div>
+      <label class="set-check"><input type="checkbox" id="rm-on" ${rmOn?'checked':''} onchange="saveReminders()"> Promemoria attivi</label>
+      <div class="fld" style="margin-top:12px"><label>Quanto prima avvisare</label>
+        <select id="rm-min" onchange="saveReminders()">${minOpt(15,'15 minuti prima')}${minOpt(30,'30 minuti prima')}${minOpt(60,'1 ora prima')}${minOpt(120,'2 ore prima')}${minOpt(180,'3 ore prima')}${minOpt(1440,'1 giorno prima')}</select></div>
+      <div class="fld" style="margin-bottom:0"><label>Per gli eventi senza orario, avvisa alle</label>
+        <input type="time" id="rm-time" value="${esc(rmTime)}" onchange="saveReminders()"></div>
+    </div>`:'';
+
   const calCard=(owner&&moduleActive('cal')&&typeof openCalTypes==='function')?`
     <div class="card">
       <div class="set-h">📅 Voci del calendario</div>
@@ -109,6 +125,7 @@ function renderSettings(){
     <div class="fld" style="margin-bottom:0"><label>Notifiche</label>${pushRow}</div>
   </div>
 
+  ${remindersCard}
   ${billingCard}
   ${calCard}
   ${ownerTools}
@@ -121,5 +138,13 @@ function saveMyName(){
   if(!v){toast('Scrivi il tuo nome');return;}
   m.name=v;save();renderNav();
   const el=$('#set-name-ok');if(el){el.textContent='✓ salvato';setTimeout(()=>{el.textContent='';},2000);}
+}
+function saveReminders(){
+  if(!isOwner())return;
+  const on=$('#rm-on')?$('#rm-on').checked:true;
+  const min=$('#rm-min')?parseInt($('#rm-min').value)||60:60;
+  const time=$('#rm-time')?($('#rm-time').value||'08:00'):'08:00';
+  S.settings.reminders=Object.assign({},S.settings.reminders,{enabled:on,minutesBefore:min,allDayTime:time});
+  save();toast('✓ Promemoria salvati');
 }
 window.renderSettings=renderSettings;
