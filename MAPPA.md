@@ -52,6 +52,10 @@ live `lollyber.github.io/modula`) · **18 moduli** · nuovi moduli: **Lavagna** 
 (archivio fatture fornitori/scadenze, senza IA) · voci calendario configurabili · gating `moduleActive`
 ovunque · ricerca cliente per nome in tutti i moduli · "Fattura questo cantiere" (cantiere→bozza fattura).
 Prima (giu-lug): catalogo settori→moduli · richiesta modulo su misura · landing solo moduli pronti · Fabbrica.
+2026-08-26: modulo FISSO **Impostazioni** (ordine moduli per-utente + account + preferenze + promemoria +
+strumenti titolare; consolida la sidebar) · **Promemoria appuntamenti** push con scope per ruolo (Edge Function
+`reminders` + pg_cron, da deployare) · **prezzo abbonamento corretto** dai moduli in Regia · fix calendario
+desktop (mese intero a schermo).
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.
