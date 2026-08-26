@@ -43,6 +43,8 @@
   .pill{font-size:11px;font-family:'JetBrains Mono';padding:2px 7px;border-radius:6px;border:1px solid var(--line2);color:var(--t3)}
   .pill.on{color:var(--ac);border-color:var(--ac)}
   .pill.off{color:var(--amber);border-color:var(--amber)}
+  .pill.price{color:var(--t1);border-color:var(--line2);background:rgba(255,255,255,.04)}
+  .pill.price.cap{color:var(--ac);border-color:var(--ac);background:rgba(52,211,153,.10)}
   .codebox{background:#04130D;border:1px solid var(--ac);border-radius:9px;padding:10px 13px;font-family:'JetBrains Mono';color:var(--ac);display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
   .stats{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0 2px;font-size:13px;color:var(--t2)}
   .adminbox{margin-top:16px;padding:14px 16px;background:var(--bg);border:1px solid var(--line);border-radius:11px}
@@ -128,6 +130,20 @@ const MODULES=[
   {id:'lavagna',label:'Lavagna'},
 ];
 const BASE_IDS=new Set(['hub','notif','cal','notes','clients','emps']);
+/* --- PREZZO ABBONAMENTO (allineato alla landing: BASE + moduli extra, tetto "Tutto compreso") --- */
+/* px per modulo/mese; base=0. I moduli su misura (macchine) NON entrano nel canone: si pagano una tantum. */
+const BASE_PX=59, TUTTO_PX=190, INCL_USERS_PX=4;
+const MODULE_PX={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,conti:12,lavagna:12,documenti:15,man:19,pellet:19,reports:19,fatture:19,sites:29,zone:29};
+const CUSTOM_IDS=new Set(MODULES.filter(m=>m.custom).map(m=>m.id)); // es. macchine → fuori canone
+/* Prezzo mensile corretto dai moduli attivi di un tenant. Ritorna {price, capped}. */
+function subPrice(mods){
+  const list=Array.isArray(mods)?mods:[];
+  let sum=BASE_PX;
+  list.forEach(id=>{ if(CUSTOM_IDS.has(id))return; const p=MODULE_PX[id]; if(p>0)sum+=p; });
+  if(sum>=TUTTO_PX)return {price:TUTTO_PX,capped:true};
+  return {price:sum,capped:false};
+}
+const chfMo=n=>'CHF '+Math.round(n).toLocaleString('de-CH');
 /* Moduli ancora da costruire — ci pensiamo poi (coda di lavoro) */
 const MODULES_TODO=[
   {ic:'🗓️',label:'Prenotazioni',note:'appuntamenti / prenotazioni online'},
@@ -323,21 +339,23 @@ async function resetBanco(id){
 /* ---- sezione ABBONAMENTI ---- */
 function sectionAbbonamenti(){
   const cli=DATA.tenants.filter(t=>!isBench(t));
-  const rows=cli.map(t=>{const a=DATA.adm[t.id]||{};return {name:t.name,id:t.id,price:Number(a.plan_price)||0,status:a.payment_status||'in_regola',due:a.plan_due,active:t.active!==false};});
+  const rows=cli.map(t=>{const a=DATA.adm[t.id]||{};const sp=subPrice(t.modules);return {name:t.name,id:t.id,price:Number(a.plan_price)||0,hasPrice:a.plan_price!=null&&a.plan_price!=='',corretto:sp.price,capped:sp.capped,status:a.payment_status||'in_regola',due:a.plan_due,active:t.active!==false};});
   const mrr=rows.filter(r=>r.status==='in_regola').reduce((s,r)=>s+r.price,0);
   const insol=rows.filter(r=>r.status==='insoluto');
   const dovuto=insol.reduce((s,r)=>s+r.price,0);
   const chf=n=>'CHF '+Math.round(n).toLocaleString('it-CH');
   const opt=(cur,v,l)=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
+  const mismatch=r=>r.hasPrice&&Math.round(r.price)!==Math.round(r.corretto);
   const tr=rows.map(r=>`<tr>
       <td>${esc(r.name)}${r.active?'':' <span class="pill off">sospesa</span>'}</td>
-      <td class="mono">${r.price?chf(r.price):'—'}</td>
+      <td class="mono" title="Canone corretto dai moduli attivi${r.capped?' — Tutto compreso':''}">${chfMo(r.corretto)}${r.capped?' <span style="color:var(--ac)">★</span>':''}</td>
+      <td class="mono" ${mismatch(r)?'style="color:var(--amber)" title="Diverso dal canone corretto dai moduli"':''}>${r.hasPrice?chf(r.price):'<span class="tiny" style="color:var(--t3)">non impostato</span>'}</td>
       <td>${r.due?fmtDate(r.due):'—'}</td>
       <td><select onchange="savePayStatus('${r.id}',this.value)">${opt(r.status,'in_regola','In regola')}${opt(r.status,'insoluto','Insoluto')}${opt(r.status,'sospeso','Sospeso')}</select></td>
       <td>${r.active
         ? `<button class="sm" onclick="toggleActive('${r.id}','false')">🔒 Blocca</button>`
         : `<button class="sm" style="border-color:var(--amber);color:var(--amber)" onclick="toggleActive('${r.id}','true')">🔓 Sblocca</button>`}</td>
-    </tr>`).join('')||`<tr><td colspan="5" class="muted">Nessun cliente con canone impostato. Imposta i canoni nella scheda di ogni azienda.</td></tr>`;
+    </tr>`).join('')||`<tr><td colspan="6" class="muted">Nessuna azienda cliente ancora.</td></tr>`;
   return `
     <h2>Abbonamenti</h2>
     <div class="tiny" style="margin:4px 0 16px">Resoconto entrate e stato pagamenti. Il canone si imposta nella scheda di ogni azienda (tab Aziende clienti).</div>
@@ -347,7 +365,7 @@ function sectionAbbonamenti(){
       <div class="abbo-card ${insol.length?'warn':''}"><div class="abbo-n">${insol.length}</div><div class="abbo-l">Insoluti${dovuto?(' · '+chf(dovuto)):''}</div></div>
     </div>
     <table class="abbo-table">
-      <thead><tr><th>Azienda</th><th>Canone</th><th>Scadenza</th><th>Stato pagamento</th><th>App</th></tr></thead>
+      <thead><tr><th>Azienda</th><th>Corretto (moduli)</th><th>Canone applicato</th><th>Scadenza</th><th>Stato pagamento</th><th>App</th></tr></thead>
       <tbody>${tr}</tbody>
     </table>`;
 }
@@ -414,10 +432,13 @@ function tenantCard(t,codes,adm,ov){
   const inviteMsg=ownerCode?`Ciao, ecco l'accesso alla tua app ${t.name}:\n${APP_URL}\nCodice invito: ${ownerCode}\nApri il link, registrati e inserisci il codice.`:'';
   const pay=adm.payment_status||'in_regola';
   const opt=(v,l)=>`<option value="${v}" ${pay===v?'selected':''}>${l}</option>`;
+  const sp=subPrice(t.modules);
+  const priceTitle=`Canone corretto dai moduli attivi${sp.capped?' — Tutto compreso (tetto CHF '+TUTTO_PX+')':''}`;
   return `<details class="tenant" id="t-${t.id}" data-search="${esc((t.name+' '+t.slug).toLowerCase())}">
     <summary>
       <span class="tname">${esc(t.name)}</span>
       <span class="pill">${esc(t.slug)}</span>
+      <span class="pill price${sp.capped?' cap':''}" title="${esc(priceTitle)}">💳 ${chfMo(sp.price)}/mese${sp.capped?' ★':''}</span>
       <span class="pill ${t.active?'on':'off'}">${t.active?'attiva':'sospesa'}</span>
       <span class="pill ${pay==='in_regola'?'on':'off'}">${pay==='in_regola'?'pag. ok':esc(pay)}</span>
       <span class="sum-stat tiny">\u{1F464} ${ov.employees_active!=null?ov.employees_active:'?'} · \u{1F4C7} ${ov.clients_count!=null?ov.clients_count:'?'}</span>
@@ -439,7 +460,9 @@ function tenantCard(t,codes,adm,ov){
         <div><label>Referente</label><input id="c-person-${t.id}" value="${esc(adm.contact_person||'')}" placeholder="Es. Marco Rossi"></div>
         <div><label>Telefono</label><input id="c-phone-${t.id}" value="${esc(adm.contact_phone||'')}" placeholder="+41 …"></div>
         <div><label>Email</label><input id="c-email-${t.id}" value="${esc(adm.contact_email||'')}" placeholder="cliente@email.ch"></div>
-        <div><label>Canone CHF/mese</label><input id="c-price-${t.id}" type="number" min="0" step="1" value="${adm.plan_price!=null?adm.plan_price:''}" placeholder="59"></div>
+        <div><label>Canone CHF/mese</label><input id="c-price-${t.id}" type="number" min="0" step="1" value="${adm.plan_price!=null?adm.plan_price:''}" placeholder="${sp.price}">
+          <div class="tiny" style="margin-top:5px">Corretto dai moduli: <b class="mono">${chfMo(sp.price)}</b>${sp.capped?' <span style="color:var(--ac)">★ Tutto compreso</span>':''} <button type="button" class="sm" style="padding:3px 9px;font-size:11px;margin-left:2px" onclick="document.getElementById('c-price-${t.id}').value=${sp.price}">usa</button></div>
+        </div>
         <div><label>Scadenza / rinnovo</label><input id="c-due-${t.id}" type="date" value="${adm.plan_due||''}"></div>
         <div><label>Stato pagamento</label><select id="c-pay-${t.id}">${opt('in_regola','In regola')}${opt('insoluto','Insoluto')}${opt('sospeso','Sospeso')}</select></div>
       </div>
