@@ -170,6 +170,27 @@ body::before{content:'';position:fixed;inset:0;background:
 .set-arrows .btn:disabled{opacity:.3}
 .set-check{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer}
 .set-check input{width:18px;height:18px;accent-color:var(--cy)}
+/* ---- Vista SETTIMANA ---- */
+.wk-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.wk-col{background:var(--bg1);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.wk-col.today{border-color:var(--cy)}
+.wk-h{display:flex;align-items:baseline;gap:8px;padding:8px 11px;background:var(--bg2);cursor:pointer}
+.wk-col.today .wk-h{background:var(--cy)}
+.wk-dow{font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.5px}
+.wk-dn{font-family:var(--disp);font-weight:700;font-size:16px}
+.wk-col.today .wk-dow,.wk-col.today .wk-dn{color:#04121f}
+.wk-body{padding:8px;display:flex;flex-direction:column;gap:5px;flex:1;min-height:34px}
+.wk-chip{font-size:12px;line-height:1.3;background:var(--bg2);border-left:3px solid var(--line2);border-radius:0 7px 7px 0;padding:5px 8px;cursor:pointer;color:var(--t1)}
+.wk-chip b{font-family:var(--mono);color:var(--t2);font-weight:500;margin-right:3px}
+.wk-empty{color:var(--t3);font-size:12px;padding:2px 4px}
+.wk-add{margin:0 8px 8px;font:inherit;font-size:11px;color:var(--t3);background:transparent;border:1px dashed var(--line2);border-radius:7px;padding:5px;cursor:pointer}
+.wk-add:hover{color:var(--cy);border-color:var(--cy)}
+@media(min-width:900px){
+  .wk-grid{grid-template-columns:repeat(7,1fr);gap:6px}
+  .wk-col{min-height:230px}
+  .wk-chip{font-size:11px;padding:4px 7px}
+  .wk-h{padding:7px 9px}
+}
 /* Desktop: le celle non devono essere quadrate (diventerebbero enormi e il mese non entra a schermo).
    Altezza legata al viewport così tutte le 6 settimane stanno dentro senza scroll. */
 @media(min-width:900px){

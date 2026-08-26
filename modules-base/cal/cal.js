@@ -3,13 +3,24 @@
 
 /* ================= CALENDARIO ================= */
 let calCur=new Date();let calSel=todayIso();let calMode='mese';
+/* helpers date per giorno/settimana (nomi unici: non ridefinire iso/addDaysIso globali) */
+function calAddDays(s,n){const[y,m,d]=s.split('-').map(Number);const dt=new Date(y,m-1,d);dt.setDate(dt.getDate()+n);return iso(dt);}
+function weekMonday(s){const[y,m,d]=s.split('-').map(Number);const dow=(new Date(y,m-1,d).getDay()+6)%7;return calAddDays(s,-dow);}
+function fmtDayLong(s){const[y,m,d]=s.split('-').map(Number);const dt=new Date(y,m-1,d);return GG[dt.getDay()].charAt(0).toUpperCase()+GG[dt.getDay()].slice(1)+' '+d+' '+MESI[m-1];}
+function calStep(mode,n){calSel=calAddDays(calSel||todayIso(),mode==='settimana'?7*n:n);render();}
+function calTabsBar(){
+  const t=[['mese','Mese'],['settimana','Settimana'],['giorno','Giorno'],['agenda','Agenda']];
+  return `<div class="tabs">${t.map(([m,l])=>`<div class="tb ${calMode===m?'on':''}" onclick="calMode='${m}';render()">${l}</div>`).join('')}</div>`;
+}
 function renderCal(){
   if(calMode==='agenda'){renderAgenda();return;}
-  const calTabs=`<div class="tabs"><div class="tb on">Mese</div><div class="tb" onclick="calMode='agenda';render()">Agenda</div></div>`;
+  if(calMode==='giorno'){renderDay();return;}
+  if(calMode==='settimana'){renderWeek();return;}
+  const calTabs=calTabsBar();
   const y=calCur.getFullYear(),m=calCur.getMonth();
   const first=new Date(y,m,1);let startDow=(first.getDay()+6)%7; // lun=0
   const daysIn=new Date(y,m+1,0).getDate();
-  const ev=allEvents();const map={};ev.forEach(e=>{(map[e.date]=map[e.date]||[]).push(e)});
+  const map=calDayMap();
   let cells='';
   const prevDays=new Date(y,m,0).getDate();
   for(let i=0;i<42;i++){
@@ -56,14 +67,81 @@ function renderAgenda(){
   }
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>Calendario</div>
-  <div class="tabs"><div class="tb" onclick="calMode='mese';render()">Mese</div><div class="tb on">Agenda</div></div>
+  ${calTabsBar()}
   ${late.length?`<div class="card" style="border-color:rgba(214,69,40,.35)"><div class="sh"><span class="t" style="color:var(--coral)">⚠ In ritardo</span></div>${late.map(evRow).join('')}</div>`:''}
   ${daysHtml||'<div class="card"><div class="empty"><div class="big">🌊</div>Prossime 2 settimane libere.</div></div>'}`;
+}
+/* mappa giorno→eventi, espandendo gli eventi multi-giorno su ogni giornata coperta.
+   Ogni voce è una copia dell'evento con `seg`: 'solo' | 'start' | 'mid' | 'end' e `day`. */
+function calDayMap(){
+  const map={};
+  allEvents().forEach(e=>{
+    const start=e.date; const end=(e.endDate&&e.endDate>start)?e.endDate:start;
+    let d=start,guard=0;
+    while(guard++<400){
+      const seg=(start===end)?'solo':(d===start?'start':(d===end?'end':'mid'));
+      (map[d]=map[d]||[]).push(Object.assign({},e,{seg,day:d}));
+      if(d===end)break; d=calAddDays(d,1);
+    }
+  });
+  const key=e=>e.seg==='end'?(e.endTime||'99:98'):(e.time||'99:99');
+  Object.keys(map).forEach(k=>map[k].sort((a,b)=>key(a)<key(b)?-1:1));
+  return map;
+}
+function evChipTime(e){if(e.seg==='end')return 'fine '+(e.endTime||'');if(e.seg==='mid')return '⋯';return e.time||'';}
+function weekLabel(a,b){const[,am,ad]=a.split('-').map(Number);const[,bm,bd]=b.split('-').map(Number);return am===bm?`${ad}–${bd} ${MESI[bm-1]}`:`${ad} ${MESI[am-1].slice(0,3)} – ${bd} ${MESI[bm-1].slice(0,3)}`;}
+function renderDay(){
+  const d=calSel||todayIso();
+  const evs=calDayMap()[d]||[];
+  const allday=evs.filter(e=>!e.time&&e.seg!=='end');
+  const timed=evs.filter(e=>e.time||e.seg==='end');
+  $('#main').innerHTML=`
+  <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>Calendario</div>
+  ${calTabsBar()}
+  <div class="card hl">
+    <div class="cal-head">
+      <div class="mon">${fmtDayLong(d)}${d===todayIso()?' <span class="badge" style="border-color:var(--cy);color:var(--cy)">oggi</span>':''}</div>
+      <button class="cal-nav" onclick="calStep('giorno',-1)">‹</button>
+      <button class="cal-nav" onclick="calToday()" style="width:auto;padding:0 12px;font-size:11px;font-family:var(--mono)">oggi</button>
+      <button class="cal-nav" onclick="calStep('giorno',1)">›</button>
+    </div>
+    ${allday.length?`<div class="subtle" style="margin:2px 0 6px">Tutto il giorno</div>${allday.map(evRow).join('')}`:''}
+    ${timed.length?`${allday.length?'<div class="subtle" style="margin:12px 0 6px">Con orario</div>':''}${timed.map(evRow).join('')}`:''}
+    ${!evs.length?'<div class="empty" style="padding:22px"><div class="big">🌊</div>Niente in programma.<br>Giornata libera.</div>':''}
+  </div>
+  <button class="fab" onclick="openQuickAdd('${d}')">+</button>`;
+}
+function renderWeek(){
+  const base=calSel||todayIso();const mon=weekMonday(base);const map=calDayMap();
+  const DOW=['LU','MA','ME','GI','VE','SA','DO'];
+  let cols='';
+  for(let i=0;i<7;i++){
+    const di=calAddDays(mon,i);const dn=+di.split('-')[2];
+    const evs=map[di]||[];const isToday=di===todayIso();
+    const chips=evs.map(e=>{const M=TYPE_META[e.type];return `<div class="wk-chip" onclick="event.stopPropagation();openEv('${e.type}','${e.id}')" style="border-left:3px solid ${M.hex}"><b>${esc(evChipTime(e))}</b> ${esc(e.title)}</div>`;}).join('')||'<div class="wk-empty">—</div>';
+    cols+=`<div class="wk-col ${isToday?'today':''}">
+      <div class="wk-h" onclick="calSel='${di}';calMode='giorno';render()"><span class="wk-dow">${DOW[i]}</span><span class="wk-dn">${dn}</span></div>
+      <div class="wk-body">${chips}</div>
+      <button class="wk-add" onclick="openQuickAdd('${di}')">+ aggiungi</button>
+    </div>`;
+  }
+  $('#main').innerHTML=`
+  <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>Calendario</div>
+  ${calTabsBar()}
+  <div class="card hl">
+    <div class="cal-head">
+      <div class="mon">${weekLabel(mon,calAddDays(mon,6))}</div>
+      <button class="cal-nav" onclick="calStep('settimana',-1)">‹</button>
+      <button class="cal-nav" onclick="calToday()" style="width:auto;padding:0 12px;font-size:11px;font-family:var(--mono)">oggi</button>
+      <button class="cal-nav" onclick="calStep('settimana',1)">›</button>
+    </div>
+    <div class="wk-grid">${cols}</div>
+  </div>`;
 }
 function calToday(){calCur=new Date();calSel=todayIso();render();}
 function calPick(d){calSel=d;render();openDayPreview(d);}
 function openDayPreview(d){
-  const evs=allEvents().filter(e=>e.date===d).sort((a,b)=>((a.time||'99:99')<(b.time||'99:99')?-1:1));
+  const evs=calDayMap()[d]||[];
   const isToday=d===todayIso();
   openSheet(`<h3><span>📅 ${fmtD(d)}${isToday?' <span class="badge" style="border-color:var(--cy);color:var(--cy)">oggi</span>':''} <span class="subtle">(${evs.length})</span></span><span class="x" onclick="closeSheet()">✕</span></h3>
     ${evs.length?evs.map(evRow).join(''):'<div class="empty"><div class="big">🌊</div>Niente in programma.<br>Giornata libera.</div>'}
@@ -74,9 +152,14 @@ function openQuickAdd(date){
   <div class="fld"><label>Cosa</label><input id="qa-t" placeholder="es. Sopralluogo da Bernasconi"></div>
   <div class="frow">
     <div class="fld"><label>Tipo</label><select id="qa-type">${calTypes().map(v=>`<option value="${v.id}">${v.ic||''} ${esc(v.label)}</option>`).join('')}</select></div>
-    <div class="fld"><label>Ora</label><input id="qa-time" type="time"></div>
+    <div class="fld"><label>Ora inizio</label><input id="qa-time" type="time"></div>
+  </div>
+  <div class="frow">
+    <div class="fld"><label>Ora fine (facolt.)</label><input id="qa-endtime" type="time"></div>
+    <div class="fld"><label>Giorno fine (se dura più giorni)</label><input id="qa-enddate" type="date" value="${date}" min="${date}"></div>
   </div>
   <div class="fld"><label>Cliente (opzionale)</label>${cliInput('qa-cl','')}</div>
+  <div class="fld"><label>Luogo (opzionale)</label><input id="qa-place" placeholder="es. Via Motta 3, Lugano"></div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="quickAddSave('${date}')">Salva</button></div>`);
 }
 function quickAddSave(date){
@@ -86,7 +169,11 @@ function quickAddSave(date){
   const clientId=$('#qa-cl').value||null;
   const rawName=(!clientId&&$('#qa-cl').dataset&&$('#qa-cl').dataset.raw)||null;
   const time=$('#qa-time').value||null;
-  const p={type,title:t,date,time,person:clientId?{kind:'client',id:clientId,name:cName(clientId)}:(rawName?{kind:'raw',name:rawName}:null),qty:null,unit:null};
+  const endTime=($('#qa-endtime')&&$('#qa-endtime').value)||null;
+  let endDate=($('#qa-enddate')&&$('#qa-enddate').value)||null;
+  if(endDate&&endDate<=date)endDate=null; // fine oltre il giorno d'inizio → multi-giorno; altrimenti stesso giorno
+  const place=($('#qa-place')&&$('#qa-place').value.trim())||null;
+  const p={type,title:t,date,time,endTime,endDate,place,person:clientId?{kind:'client',id:clientId,name:cName(clientId)}:(rawName?{kind:'raw',name:rawName}:null),qty:null,unit:null};
   const msg=commitParsed(p,'cal');closeSheet();toast(msg);render();
 }
 

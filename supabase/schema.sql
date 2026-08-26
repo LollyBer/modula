@@ -276,6 +276,20 @@ create table if not exists reminders_sent (
 );
 alter table reminders_sent enable row level security;  -- nessuna policy = accesso solo service_role
 
+-- orario + luogo (facoltativi) per i promemoria (note) usati come eventi di calendario;
+-- luogo anche su appuntamenti e manutenzioni:
+alter table notes        add column if not exists time text;
+alter table appointments add column if not exists place text;
+alter table maintenances add column if not exists place text;
+alter table notes        add column if not exists place text;
+-- orario/giorno di FINE (facoltativi): lavoro con inizio e fine, anche su più giorni:
+alter table appointments add column if not exists end_time text;
+alter table appointments add column if not exists end_date date;
+alter table maintenances add column if not exists end_time text;
+alter table maintenances add column if not exists end_date date;
+alter table notes        add column if not exists end_time text;
+alter table notes        add column if not exists end_date date;
+
 -- ─────────────────────────── 4. FUNZIONI CHIAVE ───────────────────────────
 -- tenant dell'utente loggato (letto dal suo record in employees). SECURITY DEFINER
 -- per poter leggere employees ignorando la RLS (evita ricorsione infinita).

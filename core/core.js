@@ -57,11 +57,11 @@ const MAPS={
   toDb:t=>({id:t.id,emp_id:t.empId||null,date:t.date||null,type:t.type||'lavoro',hours:num(t.hours),start_t:t.start||null,end_t:t.end||null,break_min:num(t.brk),note:t.note||''}),
   fromDb:r=>({id:r.id,empId:r.emp_id,date:r.date,type:r.type||'lavoro',hours:r.hours,start:r.start_t||'',end:r.end_t||'',brk:r.break_min,note:r.note||'',created:Date.parse(r.created_at)||Date.now()})},
  maintenances:{tbl:'maintenances',
-  toDb:m=>({id:m.id,title:m.title,client_id:m.clientId||null,client_raw:m.clientRaw||null,employee_id:(m.employees&&m.employees[0])||m.employeeId||null,employees:m.employees||(m.employeeId?[m.employeeId]:[]),date:m.date||null,time:m.time||null,status:m.status||'da_fare',notes:m.notes||'',recur:m.recur||0,price:num(m.price),type:m.type||null,report:m.report||null,via:m.via||'manuale'}),
-  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,status:r.status,notes:r.notes||'',recur:r.recur||0,price:r.price,type:r.type||'',report:r.report,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
+  toDb:m=>({id:m.id,title:m.title,client_id:m.clientId||null,client_raw:m.clientRaw||null,employee_id:(m.employees&&m.employees[0])||m.employeeId||null,employees:m.employees||(m.employeeId?[m.employeeId]:[]),date:m.date||null,time:m.time||null,end_time:m.endTime||null,end_date:m.endDate||null,place:m.place||null,status:m.status||'da_fare',notes:m.notes||'',recur:m.recur||0,price:num(m.price),type:m.type||null,report:m.report||null,via:m.via||'manuale'}),
+  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',status:r.status,notes:r.notes||'',recur:r.recur||0,price:r.price,type:r.type||'',report:r.report,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
  appointments:{tbl:'appointments',
-  toDb:a=>({id:a.id,title:a.title,client_id:a.clientId||null,client_raw:a.clientRaw||null,employee_id:(a.employees&&a.employees[0])||a.employeeId||null,employees:a.employees||(a.employeeId?[a.employeeId]:[]),date:a.date||null,time:a.time||null,done:!!a.done,via:a.via||'manuale'}),
-  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,done:!!r.done,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
+  toDb:a=>({id:a.id,title:a.title,client_id:a.clientId||null,client_raw:a.clientRaw||null,employee_id:(a.employees&&a.employees[0])||a.employeeId||null,employees:a.employees||(a.employeeId?[a.employeeId]:[]),date:a.date||null,time:a.time||null,end_time:a.endTime||null,end_date:a.endDate||null,place:a.place||null,done:!!a.done,via:a.via||'manuale'}),
+  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',done:!!r.done,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
  pellet:{tbl:'pellet',
   toDb:p=>({id:p.id,client_id:p.clientId||null,client_raw:p.clientRaw||null,employee_id:(p.employees&&p.employees[0])||p.employeeId||null,employees:p.employees||(p.employeeId?[p.employeeId]:[]),qty:num(p.qty),unit:p.unit||'sacchi',kind:p.kind||'sacchi',date:p.date||null,time:p.time||null,status:p.status||'da_consegnare',price:num(p.price),signature:p.signature||null,signed_name:p.signedName||'',notes:p.notes||'',via:p.via||'manuale'}),
   fromDb:r=>({id:r.id,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),qty:r.qty,unit:r.unit,kind:r.kind,date:r.date,time:r.time,status:r.status,price:r.price,signature:r.signature,signedName:r.signed_name||'',notes:r.notes||'',via:r.via,created:Date.parse(r.created_at)||Date.now()})},
@@ -78,8 +78,8 @@ const MAPS={
   toDb:d=>({id:d.id,tipo:d.tipo||'fattura',fornitore:d.fornitore||'',vat_no:d.vatNo||'',number:d.number||'',doc_date:d.date||null,due_date:d.dueDate||null,amount:num(d.amount),currency:d.currency||'CHF',category:d.category||'',description:d.description||'',pay_status:d.payStatus||'da_pagare',paid_date:d.paidDate||null,pinned:!!d.pinned,client_id:d.clientId||null,site_id:d.siteId||null,file_name:d.fileName||'',storage_path:d.storagePath||'',mime:d.mime||''}),
   fromDb:r=>({id:r.id,tipo:r.tipo||'fattura',fornitore:r.fornitore||'',vatNo:r.vat_no||'',number:r.number||'',date:r.doc_date,dueDate:r.due_date,amount:r.amount,currency:r.currency||'CHF',category:r.category||'',description:r.description||'',payStatus:r.pay_status||'da_pagare',paidDate:r.paid_date,pinned:!!r.pinned,clientId:r.client_id,siteId:r.site_id,fileName:r.file_name||'',storagePath:r.storage_path||'',mime:r.mime||'',created:Date.parse(r.created_at)||Date.now()})},
  notes:{tbl:'notes',
-  toDb:n=>({id:n.id,text:n.text,client_id:n.clientId||null,group_id:n.groupId||null,employees:n.employees||[],date:n.date||null,pinned:!!n.pinned,archived:!!n.archived,via:n.via||'manuale'}),
-  fromDb:r=>({id:r.id,text:r.text,clientId:r.client_id,groupId:r.group_id,employees:r.employees||[],date:r.date,pinned:!!r.pinned,archived:!!r.archived,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
+  toDb:n=>({id:n.id,text:n.text,client_id:n.clientId||null,group_id:n.groupId||null,employees:n.employees||[],date:n.date||null,time:n.time||null,end_time:n.endTime||null,end_date:n.endDate||null,place:n.place||null,pinned:!!n.pinned,archived:!!n.archived,via:n.via||'manuale'}),
+  fromDb:r=>({id:r.id,text:r.text,clientId:r.client_id,groupId:r.group_id,employees:r.employees||[],date:r.date,time:r.time||'',endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',pinned:!!r.pinned,archived:!!r.archived,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
  noteGroups:{tbl:'note_groups',
   toDb:g=>({id:g.id,name:g.name,members:g.members||[]}),
   fromDb:r=>({id:r.id,name:r.name,members:r.members||[]})},
@@ -469,14 +469,14 @@ function commitParsed(p,via){
   if(TYPE_MOD[p.type]&&!moduleActive(TYPE_MOD[p.type]))p.type='note';
   let msg='';
   if(p.type==='maintenance'){
-    S.maintenances.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,date:p.date,time:p.time,status:p.date?'programmata':'da_fare',notes:'',via,created:Date.now()});
+    S.maintenances.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,date:p.date,time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,status:p.date?'programmata':'da_fare',notes:'',via,created:Date.now()});
     msg='🔧 Manutenzione registrata'+(p.person?' — '+p.person.name:'')+(p.employee?' · 👷 '+p.employee.name:'')+(p.date?' · '+fmtD(p.date):'')+(p.time?' '+p.time:'');
   }else if(p.type==='pellet'){
     const kind=(p.unit==='t'||/\bsfuso\b/i.test(p.raw||''))?'sfuso':'sacchi';
     S.pellet.unshift({id:uid(),clientId,clientRaw:personRaw,employeeId,qty:p.qty,unit:kind==='sfuso'?'t':(p.unit||'sacchi'),kind,date:p.date,time:p.time,status:'da_consegnare',notes:p.title,via,created:Date.now()});
     msg='🪵 Consegna '+(kind==='sfuso'?'sfuso':'sacchi')+' registrata'+(p.qty?' — '+p.qty+' '+(kind==='sfuso'?'t':p.unit||'sacchi'):'')+(p.person?' · '+p.person.name:'')+(p.employee?' · 👷 '+p.employee.name:'')+(p.date?' · '+fmtD(p.date):'');
   }else if(p.type==='appointment'){
-    S.appointments.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,date:p.date||todayIso(),time:p.time,done:false,via,created:Date.now()});
+    S.appointments.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,date:p.date||todayIso(),time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,done:false,via,created:Date.now()});
     msg='📅 Appuntamento segnato — '+fmtD(p.date||todayIso())+(p.time?' '+p.time:'');
   }else if(p.type==='list'){
     const nm=norm(p.listName||'');
@@ -498,8 +498,8 @@ function commitParsed(p,via){
       msg='🏗 Cantiere creato — '+p.title;
     }
   }else{
-    S.notes.unshift({id:uid(),text:p.title,clientId,date:p.date,pinned:false,via,created:Date.now()});
-    msg='📝 Nota salvata';
+    S.notes.unshift({id:uid(),text:p.title,clientId,date:p.date,time:p.time||null,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,pinned:false,via,created:Date.now()});
+    msg='📝 Promemoria salvato'+(p.date?' · '+fmtD(p.date):'')+(p.time?' '+p.time:'');
   }
   save();return msg;
 }
@@ -1246,10 +1246,10 @@ const visSites=()=>isOwner()?S.sites:S.sites.filter(s=>s.employees.includes(S.se
 const visPellet=()=>isOwner()?S.pellet:S.pellet.filter(assignedToMe);
 function allEvents(){
   const ev=[];
-  visApp().forEach(a=>{if(a.date)ev.push({type:'appointment',date:a.date,time:a.time,title:a.title,sub:cName(a.clientId)||a.clientRaw||'',done:a.done,id:a.id});});
-  if(moduleActive('man'))visMan().forEach(m=>{if(m.date)ev.push({type:'maintenance',date:m.date,time:m.time,title:m.title,sub:cName(m.clientId)||m.clientRaw||'',done:m.status==='fatta',id:m.id});});
+  visApp().forEach(a=>{if(a.date)ev.push({type:'appointment',date:a.date,time:a.time,endTime:a.endTime||'',endDate:a.endDate||'',title:a.title,sub:cName(a.clientId)||a.clientRaw||'',place:a.place||'',done:a.done,id:a.id});});
+  if(moduleActive('man'))visMan().forEach(m=>{if(m.date)ev.push({type:'maintenance',date:m.date,time:m.time,endTime:m.endTime||'',endDate:m.endDate||'',title:m.title,sub:cName(m.clientId)||m.clientRaw||'',place:m.place||'',done:m.status==='fatta',id:m.id});});
   (moduleActive('pellet')&&can('pellet')?S.pellet:[]).forEach(p=>{if(p.date)ev.push({type:'pellet',date:p.date,time:p.time,title:(p.qty?p.qty+' '+p.unit:'Consegna pellet'),sub:cName(p.clientId)||p.clientRaw||'',done:p.status==='consegnato',id:p.id});});
-  S.notes.forEach(n=>{if(n.date&&!n.archived)ev.push({type:'note',date:n.date,time:null,title:n.text,sub:'',done:false,id:n.id});});
+  S.notes.forEach(n=>{if(n.date&&!n.archived)ev.push({type:'note',date:n.date,time:n.time||null,endTime:n.endTime||'',endDate:n.endDate||'',title:n.text,sub:cName(n.clientId)||'',place:n.place||'',done:false,id:n.id});});
   if(moduleActive('sites'))visSites().forEach(s=>{if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub:cName(s.clientId)||s.clientRaw||'',done:false,id:s.id});});
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
@@ -1267,12 +1267,20 @@ function openEv(type,id){
   else if(type==='site'){if(typeof openSite==='function')openSite(id);}
   else nav(TYPE_META[type].view);
 }
+function evTimeLabel(e){
+  if(e.seg==='end')return 'fine '+(e.endTime||'');
+  if(e.seg==='mid')return '⋯';
+  let s=e.time||'';
+  if(e.endTime&&(!e.endDate||e.endDate===e.date))s=s?s+'–'+e.endTime:e.endTime;
+  else if(e.endDate&&e.endDate>e.date)s=(s?s+' ':'')+'→';
+  return s;
+}
 function evRow(e){
   const M=TYPE_META[e.type];
   return`<div onclick="openEv('${e.type}','${e.id}')" style="display:flex;align-items:center;gap:10px;background:var(--bg2);border-left:3px solid ${M.hex};border-radius:0 9px 9px 0;padding:9px 10px;margin-bottom:6px;cursor:pointer">
     <div class="avat" style="width:30px;height:30px;background:${M.hex}22;font-size:14px;font-weight:400">${M.ic}</div>
-    <div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.3;${e.done?'text-decoration:line-through;color:var(--t3)':'color:var(--t1)'}">${esc(e.title)}</div>${e.sub?`<div style="font-size:10.5px;color:var(--t2);margin-top:1px">${esc(e.sub)}</div>`:''}</div>
-    <div style="text-align:right;flex-shrink:0;font-family:var(--mono)"><div style="font-size:11px;color:var(--t2)">${e.time||''}</div><div style="font-size:10px;color:var(--t3)">${fmtD(e.date)}</div></div>
+    <div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.3;${e.done?'text-decoration:line-through;color:var(--t3)':'color:var(--t1)'}">${esc(e.title)}</div>${(e.sub||e.place)?`<div style="font-size:10.5px;color:var(--t2);margin-top:1px">${esc(e.sub||'')}${e.sub&&e.place?' · ':''}${e.place?'📍 '+esc(e.place):''}</div>`:''}</div>
+    <div style="text-align:right;flex-shrink:0;font-family:var(--mono)"><div style="font-size:11px;color:var(--t2)">${evTimeLabel(e)}</div><div style="font-size:10px;color:var(--t3)">${fmtD(e.day||e.date)}</div></div>
   </div>`;
 }
 

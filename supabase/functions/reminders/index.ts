@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     let sent = 0, marked = 0;
     for (const k of kinds) {
       const rows = await get(
-        `${k.table}?select=id,tenant_id,title,client_id,client_raw,employee_id,employees,date,time&date=gte.${today}&date=lte.${in2}&${k.filter}`,
+        `${k.table}?select=id,tenant_id,title,client_id,client_raw,employee_id,employees,date,time,place&date=gte.${today}&date=lte.${in2}&${k.filter}`,
       );
       for (const ev of rows) {
         const c = cfg[ev.tenant_id];
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
         const client = ev.client_id ? cName[ev.client_id] : ev.client_raw;
         const whenTxt = c.min >= 1440 ? "domani" : c.min >= 60 ? `tra ${Math.round(c.min / 60)} h` : `tra ${c.min} min`;
         const title = `🔔 Promemoria · ${whenTxt}`;
-        const body = `${ev.time ? ev.time + " · " : ""}${ev.title || (k.kind === "maintenance" ? "Manutenzione" : "Appuntamento")}${client ? " · " + client : ""}`;
+        const body = `${ev.time ? ev.time + " · " : ""}${ev.title || (k.kind === "maintenance" ? "Manutenzione" : "Appuntamento")}${client ? " · " + client : ""}${ev.place ? " · 📍 " + ev.place : ""}`;
         const payload = JSON.stringify({ title, body, url: "./app.html", tag: `rem-${ev.id}` });
 
         for (const s of targets) {
