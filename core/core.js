@@ -247,6 +247,33 @@ async function pushTest(){
   if(!S.session)return;
   try{const{error}=await sb.functions.invoke('send-push',{body:{empIds:[S.session.empId],title:'🔔 Notifica di prova',body:'Funziona! Le notifiche di '+(BRAND.name||'questa app')+' sono attive su questo dispositivo.'}});if(error)throw error;toast('📩 Inviata — dovrebbe arrivarti tra pochi secondi');}catch(e){toast('⚠ '+(e.message||e));}
 }
+/* ---------- promemoria IN-APP (funziona ad app aperta, senza deploy) ----------
+   Avvisa X minuti prima di un evento di oggi con orario (toast + notifica del browser
+   se le notifiche sono attive). Rispetta ciò che l'utente vede: al titolare tutti,
+   al dipendente i suoi (via allEvents). La soglia è settings.reminders.minutesBefore. */
+let _remindTimer=null,_remindedDay=null,_reminded=new Set();
+const _remindKey=()=>'modula_reminded_'+((S.session&&S.session.empId)||'x');
+function _remindLoad(){const today=todayIso();if(_remindedDay===today)return;_remindedDay=today;_reminded=new Set();try{const v=JSON.parse(localStorage.getItem(_remindKey())||'null');if(v&&v.date===today&&Array.isArray(v.ids))_reminded=new Set(v.ids);}catch(e){}}
+function _remindSave(){try{localStorage.setItem(_remindKey(),JSON.stringify({date:_remindedDay,ids:[..._reminded]}));}catch(e){}}
+function remindTick(){
+  if(!S.session||!me())return;
+  const r=(S.settings&&S.settings.reminders)||{};
+  if(r.enabled===false)return;
+  const thr=Number(r.minutesBefore!=null?r.minutesBefore:30);
+  _remindLoad();
+  const today=todayIso();const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
+  allEvents().forEach(e=>{
+    if(e.done||e.date!==today||!e.time)return;
+    const p=String(e.time).split(':');const h=+p[0],m=+(p[1]||0);if(isNaN(h))return;
+    const lead=(h*60+m)-nowMin;
+    if(lead<0||lead>thr||_reminded.has(e.id))return;
+    _reminded.add(e.id);_remindSave();
+    const when=lead<=0?'adesso':('tra '+lead+' min');
+    toast('🔔 '+when+' · '+e.time+' '+(e.title||'appuntamento'));
+    try{if('Notification'in window&&Notification.permission==='granted'){new Notification('🔔 '+e.time+' · '+(e.title||'Appuntamento'),{body:[e.sub,e.place?'📍 '+e.place:''].filter(Boolean).join(' · ')||('Promemoria '+when),tag:'rem-'+e.id});}}catch(_){}
+  });
+}
+function remindStart(){if(_remindTimer)return;try{remindTick();}catch(e){}_remindTimer=setInterval(()=>{try{remindTick();}catch(e){}},30000);}
 /* ================= UTILS ================= */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1077,6 +1104,7 @@ function render(){
   const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,settings:window.renderSettings};
   $('#main').innerHTML='';(R[view]||window.renderHub)();
   if(view==='notif'&&notifTab==='chat'){const sc=$('#chatscroll');if(sc)sc.scrollTop=sc.scrollHeight;}
+  if(typeof remindStart==='function')remindStart();
 }
 
 

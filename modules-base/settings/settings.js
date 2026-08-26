@@ -70,13 +70,13 @@ function renderSettings(){
 
   const rm=(S.settings&&S.settings.reminders)||{};
   const rmOn=rm.enabled!==false; // default acceso
-  const rmMin=rm.minutesBefore!=null?rm.minutesBefore:60;
+  const rmMin=rm.minutesBefore!=null?rm.minutesBefore:30;
   const rmTime=rm.allDayTime||'08:00';
   const minOpt=(v,l)=>`<option value="${v}" ${rmMin===v?'selected':''}>${l}</option>`;
   const remindersCard=owner?`
     <div class="card">
       <div class="set-h">🔔 Promemoria appuntamenti</div>
-      <div class="subtle" style="margin-bottom:12px">Invia una notifica prima di ogni appuntamento/manutenzione segnati. Al titolare arrivano quelli di tutta l'azienda; a ogni dipendente solo i propri. Richiede le notifiche attive sul dispositivo.</div>
+      <div class="subtle" style="margin-bottom:12px">Ti avvisa prima di ogni appuntamento/manutenzione segnati. Al titolare arrivano quelli di tutta l'azienda; a ogni dipendente solo i propri.<br><b>Ad app aperta</b> funziona già (avviso + notifica se attive). Per riceverlo <b>anche ad app chiusa</b> serve attivare le notifiche push (vedi guida di deploy).</div>
       <label class="set-check"><input type="checkbox" id="rm-on" ${rmOn?'checked':''} onchange="saveReminders()"> Promemoria attivi</label>
       <div class="fld" style="margin-top:12px"><label>Quanto prima avvisare</label>
         <select id="rm-min" onchange="saveReminders()">${minOpt(15,'15 minuti prima')}${minOpt(30,'30 minuti prima')}${minOpt(60,'1 ora prima')}${minOpt(120,'2 ore prima')}${minOpt(180,'3 ore prima')}${minOpt(1440,'1 giorno prima')}</select></div>

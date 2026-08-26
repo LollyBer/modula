@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       const r = t.reminders || {};
       if (r.enabled === false) continue; // default: acceso
       cfg[t.tenant_id] = {
-        min: Number(r.minutesBefore ?? 60),
+        min: Number(r.minutesBefore ?? 30),
         allDay: r.allDayTime || "08:00",
       };
     }
