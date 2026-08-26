@@ -1,4 +1,5 @@
 :root{
+  color-scheme:light; /* i controlli nativi (popup del datalist, scrollbar, date picker) seguono il tema → nomi leggibili */
   --bg0:#F5F2EA; --bg1:#FFFFFF; --bg2:#F2EEE4; --bg3:#E9E3D5;
   --line:rgba(70,55,30,.12); --line2:rgba(70,55,30,.24);
   --cy:#5BA02C; --teal:#2E9E5E; --amber:#C77F12; --fire:#E2722E; --coral:#D64528; --blue:#A9742F;
@@ -9,6 +10,7 @@
 }
 /* ---------- TEMA SCURO (notte natura, accento verde invariato) ---------- */
 html[data-theme="dark"]{
+  color-scheme:dark; /* popup del datalist scuro con testo chiaro (prima: bianco con nomi quasi trasparenti) */
   --bg0:#14160F; --bg1:#1D2016; --bg2:#24281A; --bg3:#303525;
   --line:rgba(170,200,120,.13); --line2:rgba(170,200,120,.27);
   --t1:#ECEADF; --t2:#A8A793; --t3:#75745F;
