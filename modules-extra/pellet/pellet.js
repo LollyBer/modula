@@ -56,7 +56,8 @@ function renderPellet(){
   if(pelView==='dash'){renderPelDash();return;}
   pelKind=pelView;
   const mine=visPellet();
-  const open=mine.filter(p=>(p.kind||'sacchi')===pelKind&&p.status!=='consegnato').sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
+  const booked=mine.filter(p=>(p.kind||'sacchi')===pelKind&&p.status==='prenotato').sort((a,b)=>(b.created||0)-(a.created||0));
+  const open=mine.filter(p=>(p.kind||'sacchi')===pelKind&&p.status!=='consegnato'&&p.status!=='prenotato').sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
   const done=mine.filter(p=>(p.kind||'sacchi')===pelKind&&p.status==='consegnato').sort((a,b)=>((a.date||'')>(b.date||'')?-1:1));
   const fc=pelKind==='sfuso'?sfusoForecast():[];
   const alerts=fc.filter(f=>f.days!=null&&f.days<=30);
@@ -79,6 +80,10 @@ function renderPellet(){
       <div class="right"><div class="d1" style="color:${col}">${f.nextDate?(urgent?'ADESSO':f.days+' gg'):'—'}</div><div class="d2">${f.nextDate?fmtD(f.nextDate):''}</div></div></div>`;
     }).join('')}
   </div>`:''}
+  <div class="card" style="${booked.length?'border-color:rgba(199,127,18,.45)':''}"><div class="sh"><span class="t" style="color:var(--amber)">📋 Prenotazioni (${booked.length})</span></div>
+    <div class="subtle" style="margin:0 0 8px">Chi ha già prenotato ma non sai ancora quando arriva. Tocca «📅 Programma» quando hai la data.</div>
+    ${booked.length?booked.map(pelRow).join(''):'<div class="empty">Nessuna prenotazione in attesa.</div>'}
+  </div>
   <div class="card"><div class="sh"><span class="t">Da consegnare (${open.length})</span></div>
     ${open.length?open.map(pelRow).join(''):`<div class="empty">Niente in coda. Dall'Hub: «${pelKind==='sfuso'?'3 tonnellate sfuso a Rossi martedì':'30 sacchi a Bianchi venerdì'}»</div>`}
   </div>
@@ -88,14 +93,15 @@ function renderPellet(){
   <button class="fab" onclick="openPel(null)">+</button>`;
 }
 const pelRow=p=>{
-  const late=p.date&&p.date<todayIso()&&p.status!=='consegnato';const done=p.status==='consegnato';
-  const col=done?'#2E9E5E':(late?'#D64528':'#5E9E2E');
+  const booked=p.status==='prenotato';
+  const late=p.date&&p.date<todayIso()&&p.status!=='consegnato'&&!booked;const done=p.status==='consegnato';
+  const col=done?'#2E9E5E':booked?'#C77F12':(late?'#D64528':'#5E9E2E');
   const who=cName(p.clientId)||p.clientRaw||'';
   return`<div class="frw" style="border-left-color:${col}" onclick="openPel('${p.id}')">
-    <div class="avat" style="width:34px;height:34px;background:${col}22;border:1px solid ${col}55;font-size:15px;font-weight:400">${p.kind==='sfuso'?'🪵':'📦'}</div>
+    <div class="avat" style="width:34px;height:34px;background:${col}22;border:1px solid ${col}55;font-size:15px;font-weight:400">${booked?'📋':(p.kind==='sfuso'?'🪵':'📦')}</div>
     <div class="bd"><div class="ti">${p.qty?fmtQty(p.qty)+' '+esc(p.unit||'sacchi'):'Consegna'}${p.price?` · <span style="color:var(--teal)">CHF ${fmtQty(p.price)}</span>`:''}${who?` — <b>${esc(who)}</b>`:''}</div>
-    <div class="su">${p.date?'📅 '+fmtD(p.date)+(p.time?' · '+p.time:''):'senza data'}${empNames(p)?' · 👷 '+esc(empNames(p)):''}${p.signature?' · ✍':''}${late?' · <span style="color:#D64528">in ritardo</span>':''}</div></div>
-    ${done?'':`<button class="qbtn" onclick="event.stopPropagation();startBolla('${p.id}')">✍ Bolla</button>`}
+    <div class="su">${booked?'<span style="color:var(--amber)">📋 Prenotato — in attesa di data</span>':(p.date?'📅 '+fmtD(p.date)+(p.time?' · '+p.time:''):'senza data')}${empNames(p)?' · 👷 '+esc(empNames(p)):''}${p.signature?' · ✍':''}${late?' · <span style="color:#D64528">in ritardo</span>':''}</div></div>
+    ${booked?`<button class="qbtn" onclick="event.stopPropagation();schedulePel('${p.id}')">📅 Programma</button>`:done?'':`<button class="qbtn" onclick="event.stopPropagation();startBolla('${p.id}')">✍ Bolla</button>`}
   </div>`;};
 function renderPelDash(){
   const mT=monthlyTotals('sfuso');
@@ -182,16 +188,20 @@ function newPelForClient(cid){
 function openPel(id,preset){
   const p=id?byId(S.pellet,id):Object.assign({clientId:null,qty:'',unit:pelKind==='sfuso'?'t':'sacchi',kind:pelKind,date:'',time:'',status:'da_consegnare',notes:''},preset||{});
   if(preset&&preset.kind==='sfuso')p.unit='t';
-  openSheet(`<h3>${id?'Consegna pellet':'Nuova consegna'} <span class="x" onclick="closeSheet()">✕</span></h3>
+  openSheet(`<h3>${id?(p.status==='prenotato'?'Prenotazione pellet':'Consegna pellet'):'Nuova consegna / prenotazione'} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Tipo</label><div class="seg" id="pl-k">
     <div class="sg ${p.kind==='sfuso'?'on':''}" data-k="sfuso" onclick="pelKindPick(this)">🪵 Sfuso (t)</div>
     <div class="sg ${p.kind!=='sfuso'?'on':''}" data-k="sacchi" onclick="pelKindPick(this)">📦 Sacchi</div>
   </div></div>
   <div class="frow">
   <div class="fld"><label>Quantità</label><input id="pl-q" type="number" inputmode="decimal" step="any" value="${p.qty||''}"></div>
-  <div class="fld"><label>Unità</label><select id="pl-u">${(p.kind==='sfuso'?['t']:['sacchi','kg']).map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div>
+  <div class="fld"><label>Unità</label><select id="pl-u">${(p.kind==='sfuso'?['t']:['sacchi','bancali','kg']).map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div>
   <div class="fld"><label>Cliente</label>${cliInput('pl-c',p.clientId,'pl-cprev')}<div id="pl-cprev">${clientPreviewHTML(p.clientId)}</div></div>
   <div class="fld"><label>Assegna a (uno o più)</label>${empSeg('pl-e',empIdsOf(p))}</div>
+  ${p.status!=='consegnato'?`<div class="fld"><label>Stato</label><div class="seg" id="pl-s">
+    <div class="sg ${p.status==='prenotato'?'on':''}" data-s="prenotato" onclick="pelStatusPick(this)">📋 Prenotato</div>
+    <div class="sg ${p.status!=='prenotato'?'on':''}" data-s="da_consegnare" onclick="pelStatusPick(this)">🚚 Da consegnare</div>
+  </div><div class="subtle" style="margin-top:4px">📋 Prenotato = ha ordinato ma non sai ancora quando arriva (data non obbligatoria).</div></div>`:''}
   <div class="frow"><div class="fld"><label>Data</label><input id="pl-d" type="date" value="${p.date||''}"></div>
   <div class="fld"><label>Ora</label><input id="pl-h" type="time" value="${p.time||''}"></div></div>
   ${dateChips('pl-d')}
@@ -208,8 +218,11 @@ function openPel(id,preset){
 function pelKindPick(el){
   el.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));el.classList.add('on');
   const k=el.dataset.k;
-  $('#pl-u').innerHTML=(k==='sfuso'?['t']:['sacchi','kg']).map(u=>`<option>${u}</option>`).join('');
+  $('#pl-u').innerHTML=(k==='sfuso'?['t']:['sacchi','bancali','kg']).map(u=>`<option>${u}</option>`).join('');
 }
+function pelStatusPick(el){el.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));el.classList.add('on');}
+/* da una prenotazione → programmata: si sposta in «Da consegnare», poi aggiungi la data */
+function schedulePel(id){const p=byId(S.pellet,id);if(p&&p.status==='prenotato'){p.status='da_consegnare';save();}openPel(id);}
 const autoPrice=p=>{
   if(!p.qty)return null;
   if(p.kind==='sfuso'&&S.settings.pricePerTon)return Math.round(p.qty*S.settings.pricePerTon*100)/100;
@@ -220,10 +233,13 @@ function savePel(id){
   const kind=$('#pl-k .sg.on')?.dataset.k||'sacchi';
   const data={qty:parseFloat($('#pl-q').value)||null,unit:$('#pl-u').value,kind,clientId:$('#pl-c').value||null,employees:empSegRead('pl-e'),date:$('#pl-d').value||null,time:$('#pl-h').value||null,notes:$('#pl-n').value.trim()};
   data.price=parseFloat($('#pl-pr').value)||autoPrice({...data})||null;
+  const stSel=document.querySelector('#pl-s .sg.on')?.dataset.s;
   const oldP=id?byId(S.pellet,id):null;const prevEmps=oldP?empIdsOf(oldP):[];
-  if(id){Object.assign(oldP,data);}else{S.pellet.unshift({id:uid(),status:'da_consegnare',clientRaw:null,via:'manuale',created:Date.now(),...data});}
+  if(id){Object.assign(oldP,data);if(oldP.status!=='consegnato'&&stSel)oldP.status=stSel;}
+  else{S.pellet.unshift({id:uid(),status:stSel||'da_consegnare',clientRaw:null,via:'manuale',created:Date.now(),...data});}
+  const effStatus=id?oldP.status:(stSel||'da_consegnare');
   const added=data.employees.filter(e=>!prevEmps.includes(e));
-  if(added.length&&(oldP?oldP.status:'da_consegnare')!=='consegnato')pushNotify(added,'🪵 Consegna pellet assegnata',`${data.qty?fmtQty(data.qty)+' '+(data.unit||'sacchi'):'Consegna'} a ${cName(data.clientId)||(oldP&&oldP.clientRaw)||''}${data.date?' · '+fmtD(data.date):''}`);
+  if(added.length&&effStatus==='da_consegnare')pushNotify(added,'🪵 Consegna pellet assegnata',`${data.qty?fmtQty(data.qty)+' '+(data.unit||'sacchi'):'Consegna'} a ${cName(data.clientId)||(oldP&&oldP.clientRaw)||''}${data.date?' · '+fmtD(data.date):''}`);
   save();closeSheet();render();toast('🪵 Salvato');
 }
 function togglePel(id){const p=byId(S.pellet,id);p.status=p.status==='consegnato'?'da_consegnare':'consegnato';save();closeSheet();render();}
