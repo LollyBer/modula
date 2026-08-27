@@ -596,6 +596,10 @@ const MODULE_CATALOG={
   ],
 };
 const catName=id=>{for(const k of['base','pronti','arrivo']){const m=MODULE_CATALOG[k].find(x=>x.id===id);if(m)return m.nome;}return id;};
+/* Prezzo per modulo/mese (allineato alla landing e alla Regia). base=0. Se cambi qui,
+   aggiorna anche landing/landing.js (MODS px) e admin/index.html (MODULE_PX). */
+const MODULE_PRICE={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,todo:9,conti:12,lavagna:12,documenti:15,man:19,pellet:19,reports:19,fatture:19,sites:29,zone:29};
+const modPrice=id=>MODULE_PRICE[id];
 /* moduli attivi oggi sul tenant (base sempre + extra accesi dal super-admin) */
 const activeModuleIds=()=>{const base=MODULE_CATALOG.base.map(m=>m.id);const extra=(ACTIVE_MODULES||[]).filter(id=>!base.includes(id)&&id!=='notif');return[...base,...extra];};
 /* ---- accesso (Supabase Auth) ---- */
@@ -701,14 +705,20 @@ function openModuleStore(){
   const card=(m,state)=>{
     // state: 'on' = già attivo · 'add' = richiedibile (pronto) · 'soon' = su misura/in arrivo
     const on=state==='on';
+    const px=modPrice(m.id);
     const tag=on?'<span class="badge" style="border-color:var(--teal);color:var(--teal)">attivo</span>'
       :state==='soon'?'<span class="badge" style="border-color:var(--amber);color:var(--amber)">su misura</span>':'';
+    // prezzo: base = incluso · standard = CHF X/mese · su misura = da concordare
+    const priceHtml=state==='soon'?'<span class="modstore-px" style="color:var(--amber)">su misura</span>'
+      :px===0?'<span class="modstore-px" style="color:var(--teal)">incluso</span>'
+      :px>0?`<span class="modstore-px">CHF ${px}<small>/mese</small></span>`:'';
     const click=on?'':`onclick="this.classList.toggle('on')"`;
     return `<div class="sg modpick ${on?'lock':''}" data-id="${m.id}" data-state="${state}" ${click}
       style="padding:12px;justify-content:flex-start;align-items:flex-start;gap:10px;${on?'opacity:.7;cursor:default':''}">
       <span style="font-size:20px">${m.ic}</span>
       <div style="text-align:left;flex:1"><div style="font-weight:600">${esc(m.nome)} ${tag}</div>
       <div class="subtle" style="font-size:11.5px;margin-top:2px">${esc(m.desc)}</div></div>
+      ${priceHtml?`<div style="flex-shrink:0;text-align:right">${priceHtml}</div>`:''}
     </div>`;
   };
   const baseCards=MODULE_CATALOG.base.map(m=>card(m,'on')).join('');
@@ -716,7 +726,7 @@ function openModuleStore(){
   const prontiAdd=MODULE_CATALOG.pronti.filter(m=>!active.has(m.id)).map(m=>card(m,'add')).join('');
   const arrivo=MODULE_CATALOG.arrivo.map(m=>card(m,'soon')).join('');
   openSheet(`<h3>🧩 Moduli & richieste <span class="x" onclick="closeSheet()">✕</span></h3>
-  <div class="subtle" style="margin-bottom:12px">Questi sono i moduli della tua app. Spunta quelli che vorresti <b>aggiungere</b> o descrivi un <b>modulo su misura</b>: la richiesta arriva a Modula, che lo attiva o lo costruisce per te.</div>
+  <div class="subtle" style="margin-bottom:12px">Il negozio dei moduli: vedi cosa fa ognuno e quanto costa. Spunta quelli che vuoi <b>aggiungere</b> (col loro prezzo al mese) o descrivi un <b>modulo su misura</b> → la richiesta arriva a Modula, che lo attiva o lo costruisce per te.</div>
 
   <div class="modstore-sec">✓ Attivi nella tua app</div>
   <div class="seg" style="flex-direction:column;gap:8px">${baseCards}${prontiAttivi}</div>
