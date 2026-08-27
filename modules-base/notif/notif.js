@@ -101,10 +101,10 @@ function openApp(id){
 }
 function saveApp(id){
   const rawName=(!$('#ap-c').value&&$('#ap-c').dataset&&$('#ap-c').dataset.raw)||null;
-  const data={title:$('#ap-t').value.trim(),clientId:$('#ap-c').value||null,employees:empSegRead('ap-e'),date:$('#ap-d').value||null,time:$('#ap-h').value||null,endTime:$('#ap-et').value||null,endDate:$('#ap-ed').value||null,place:$('#ap-pl').value.trim()||null,done:$('#ap-s .sg.on')?.dataset.d==='1'};
+  const data={title:$('#ap-t').value.trim(),clientId:$('#ap-c').value||null,clientRaw:rawName,employees:empSegRead('ap-e'),date:$('#ap-d').value||null,time:$('#ap-h').value||null,endTime:$('#ap-et').value||null,endDate:$('#ap-ed').value||null,place:$('#ap-pl').value.trim()||null,done:$('#ap-s .sg.on')?.dataset.d==='1'};
   if(!data.title){toast('Manca il titolo');return;}
   const oldA=id?byId(S.appointments,id):null;const prevEmps=oldA?empIdsOf(oldA):[];
-  if(id){Object.assign(oldA,data);}else{S.appointments.unshift({id:uid(),clientRaw:rawName,via:'manuale',created:Date.now(),...data});}
+  if(id){Object.assign(oldA,data);}else{S.appointments.unshift({id:uid(),via:'manuale',created:Date.now(),...data});}
   const added=data.employees.filter(e=>!prevEmps.includes(e)&&!(S.session&&e===S.session.empId));
   if(added.length&&!data.done)pushNotify(added,'📅 Appuntamento assegnato',`${data.title}${data.date?' · '+fmtD(data.date):''}${data.time?' '+data.time:''}`);
   save();closeSheet();render();toast('📅 Salvato');

@@ -584,7 +584,7 @@ const MODULE_CATALOG={
     {id:'reports',ic:'📸',nome:'Rapportini',desc:'Rapporti di cantiere giornalieri con foto.'},
     {id:'fatture',ic:'🧾',nome:'Fatture',desc:'Fatture con QR-fattura svizzera, collegate a Conti.'},
     {id:'documenti',ic:'📁',nome:'Documenti',desc:'Archivio documenti/fatture fornitori con scadenze.'},
-    {id:'macchine',ic:'⚙️',nome:'Macchine',desc:'Parco macchine e schede.'},
+    {id:'macchine',ic:'⚙️',nome:'Macchine',desc:'Parco macchine e schede.',custom:'ptek'},
     {id:'pellet',ic:'🪵',nome:'Consegne',desc:'Consegne, bolle e scorte.'},
     {id:'zone',ic:'🗺️',nome:'Zone & Mappa',desc:'Zone e clienti sulla mappa.'},
     {id:'lavagna',ic:'📋',nome:'Lavagna',desc:'Dashboard componibile: post-it e widget.'},
@@ -726,7 +726,7 @@ function openModuleStore(){
   };
   const baseCards=MODULE_CATALOG.base.map(m=>card(m,'on')).join('');
   const prontiAttivi=MODULE_CATALOG.pronti.filter(m=>active.has(m.id)).map(m=>card(m,'on')).join('');
-  const prontiAdd=MODULE_CATALOG.pronti.filter(m=>!active.has(m.id)).map(m=>card(m,'add')).join('');
+  const prontiAdd=MODULE_CATALOG.pronti.filter(m=>!active.has(m.id)&&!m.custom).map(m=>card(m,'add')).join(''); /* i moduli su misura (custom) non si propongono agli altri tenant */
   const arrivo=MODULE_CATALOG.arrivo.map(m=>card(m,'soon')).join('');
   openSheet(`<h3>🧩 Moduli & richieste <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="subtle" style="margin-bottom:12px">Il negozio dei moduli: vedi cosa fa ognuno e quanto costa. Spunta quelli che vuoi <b>aggiungere</b> (col loro prezzo al mese) o descrivi un <b>modulo su misura</b> → la richiesta arriva a Modula, che lo attiva o lo costruisce per te.</div>
@@ -1124,7 +1124,8 @@ function undoImport(){
 function render(){
   if(!S.session||!me()){renderLock();return;}
   const lk=document.querySelector('.lock');if(lk)lk.remove();
-  if((!can(view)||!moduleActive(view))&&view!=='hub'&&view!=='notif'&&view!=='settings')view='hub';
+  const vperm=view==='zone'?'clients':view; /* la Mappa/Zone si sblocca col permesso Clienti (non esiste un permesso 'zone') */
+  if((!can(vperm)||!moduleActive(view))&&view!=='hub'&&view!=='notif'&&view!=='settings')view='hub';
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
@@ -1305,10 +1306,10 @@ function allEvents(){
   const ev=[];
   visApp().forEach(a=>{if(a.date)ev.push({type:'appointment',date:a.date,time:a.time,endTime:a.endTime||'',endDate:a.endDate||'',title:a.title,sub:cName(a.clientId)||a.clientRaw||'',place:a.place||'',done:a.done,id:a.id});});
   if(moduleActive('man'))visMan().forEach(m=>{if(m.date)ev.push({type:'maintenance',date:m.date,time:m.time,endTime:m.endTime||'',endDate:m.endDate||'',title:m.title,sub:cName(m.clientId)||m.clientRaw||'',place:m.place||'',done:m.status==='fatta',id:m.id});});
-  (moduleActive('pellet')&&can('pellet')?S.pellet:[]).forEach(p=>{if(p.date)ev.push({type:'pellet',date:p.date,time:p.time,title:(p.qty?p.qty+' '+p.unit:'Consegna pellet'),sub:cName(p.clientId)||p.clientRaw||'',done:p.status==='consegnato',id:p.id});});
-  S.notes.forEach(n=>{if(n.date&&!n.archived)ev.push({type:'note',date:n.date,time:n.time||null,endTime:n.endTime||'',endDate:n.endDate||'',title:n.text,sub:cName(n.clientId)||'',place:n.place||'',done:false,id:n.id});});
-  if(moduleActive('todo'))(S.todos||[]).forEach(t=>{if(t.due&&!t.done)ev.push({type:'todo',date:t.due,time:t.time||null,title:t.text,sub:cName(t.clientId)||'',place:'',done:!!t.done,id:t.id});});
-  if(moduleActive('sites'))visSites().forEach(s=>{if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub:cName(s.clientId)||s.clientRaw||'',done:false,id:s.id});});
+  (moduleActive('pellet')&&can('pellet')?visPellet():[]).forEach(p=>{if(p.date)ev.push({type:'pellet',date:p.date,time:p.time,title:(p.qty?p.qty+' '+p.unit:'Consegna pellet'),sub:cName(p.clientId)||p.clientRaw||'',done:p.status==='consegnato',id:p.id});});
+  S.notes.forEach(n=>{if(n.date&&!n.archived&&(!n.groupId||typeof groupVisible!=='function'||groupVisible(byId(S.noteGroups,n.groupId))))ev.push({type:'note',date:n.date,time:n.time||null,endTime:n.endTime||'',endDate:n.endDate||'',title:n.text,sub:cName(n.clientId)||'',place:n.place||'',done:false,id:n.id});});
+  if(moduleActive('todo'))(S.todos||[]).forEach(t=>{if(t.due&&!t.done&&(isOwner()||assignedToMe(t)||!empIdsOf(t).length))ev.push({type:'todo',date:t.due,time:t.time||null,title:t.text,sub:cName(t.clientId)||'',place:'',done:!!t.done,id:t.id});});
+  if(moduleActive('sites'))visSites().forEach(s=>{const sub=cName(s.clientId)||s.clientRaw||'';if(s.startDate&&(s.status==='aperto'||s.status==='previsto'))ev.push({type:'site',date:s.startDate,time:null,title:'🏗 Inizio: '+s.name,sub,done:false,id:s.id});if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub,done:false,id:s.id});});
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
 

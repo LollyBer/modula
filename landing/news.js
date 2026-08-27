@@ -5,6 +5,9 @@
    La più recente va in cima.
    ============================================================ */
 const NEWS = [
+  { tipo:'Funzione', data:'Agosto 2026',
+    titolo:'Mappa & Zone rinnovata', testo:'Tutti i clienti sulla mappa, con i punti fissi che usi ogni giorno (magazzino, ufficio) e i giri di consegna per zona.' },
+
   { tipo:'Nuovo modulo', data:'Agosto 2026',
     titolo:'Da fare', testo:'Le cose da fare in liste spuntabili, con o senza scadenza — e le scadenze finiscono nel calendario con l’avviso prima che scadano.' },
 

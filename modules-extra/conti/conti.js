@@ -46,7 +46,7 @@ function entrate(mk){
 const entrRow=(label,val)=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px"><span class="subtle">${label}</span><span style="font-family:var(--mono);color:var(--teal)">CHF ${fmtQty(val)}</span></div>`;
 function expRow(e){const sn=e.siteId?(byId(S.sites,e.siteId)||{}).name:'';const rl=recurLabel(e.recur);return`<div class="item" onclick="openExpense('${e.id}')"><div class="bd"><div class="ti">${esc(e.category||'Spesa')} · <span style="color:var(--coral)">CHF ${fmtQty(e.amount||0)}</span>${rl?` <span class="badge" style="border-color:var(--cy);color:var(--cy)">${rl}</span>`:''}</div><div class="su">${fmtD(e.date)}${e.note?' · '+esc(e.note):''}${sn?' · 🏗 '+esc(sn):''}</div></div></div>`;}
 function renderConti(){
-  if(!isOwner()){view='hub';renderHub();return;}
+  if(!can('conti')){view='hub';renderHub();return;}
   const mk=cMonth();
   const tabs=[['riepilogo','📊 Riepilogo'],['spese','💸 Spese'],['cantieri','🏗 Cantieri'],['listino','🏷 Listino']];
   let body='';

@@ -5,7 +5,7 @@
 let siteTab='aperto';
 function siteHours(s){const diary=s.log.reduce((t,l)=>t+(l.hours||0),0);const rep=(moduleActive('reports')&&typeof repHours==='function'&&typeof repForSite==='function')?repHours(repForSite(s.id)):0;return diary+rep;}
 function renderSites(){
-  const groups={aperto:[],da_fatturare:[],chiuso:[]};
+  const groups={previsto:[],aperto:[],da_fatturare:[],chiuso:[]};
   visSites().forEach(s=>{const g=groups[s.status||'aperto'];if(g)g.push(s);});
   const list=groups[siteTab]||[];
   const card=s=>{
@@ -13,8 +13,8 @@ function renderSites(){
     const pct=s.estHours?Math.min(100,Math.round(hrs/s.estHours*100)):null;
     const dd=s.dueDate?relDays(s.dueDate):null;
     const ddCol=dd==null?'var(--t3)':dd<0?'var(--coral)':dd<=7?'var(--amber)':'var(--t3)';
-    const stCol=s.status==='chiuso'?'#8A8170':s.status==='da_fatturare'?'#C77F12':'#A9742F';
-    const stLbl=s.status==='chiuso'?'ARCHIVIO':s.status==='da_fatturare'?'DA FATTURARE':'IN CORSO';
+    const stCol=s.status==='chiuso'?'#8A8170':s.status==='da_fatturare'?'#C77F12':s.status==='previsto'?'#2E9E5E':'#A9742F';
+    const stLbl=s.status==='chiuso'?'ARCHIVIO':s.status==='da_fatturare'?'DA FATTURARE':s.status==='previsto'?'PREVISTO':'IN CORSO';
     return`<div class="card" style="border-left:3px solid ${stCol};padding:12px;margin-bottom:10px;cursor:pointer" onclick="openSite('${s.id}')">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px">
       <span style="font-size:13.5px;color:var(--t1);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
@@ -29,7 +29,7 @@ function renderSites(){
     </div></div>`;
   };
   const totFatt=groups.da_fatturare.reduce((t,s)=>t+(s.amount||0),0);
-  const totSites=groups.aperto.length+groups.da_fatturare.length+groups.chiuso.length;
+  const totSites=groups.previsto.length+groups.aperto.length+groups.da_fatturare.length+groups.chiuso.length;
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--blue)"></span>Cantieri <span class="subtle">(${totSites})</span></div>
   <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
@@ -38,11 +38,12 @@ function renderSites(){
     ${isOwner()?`<div class="kpi"><div class="n" style="color:var(--teal);font-size:15px">${fmtQty(totFatt)}</div><div class="l">CHF in attesa</div></div>`:`<div class="kpi"><div class="n">${groups.chiuso.length}</div><div class="l">Archiviati</div></div>`}
   </div>
   <div class="tabs">
+    ${groups.previsto.length?`<div class="tb ${siteTab==='previsto'?'on':''}" onclick="siteTab='previsto';render()" style="${siteTab==='previsto'?'':'border-color:var(--teal);color:var(--teal)'}">📋 Previsti (${groups.previsto.length})</div>`:''}
     <div class="tb ${siteTab==='aperto'?'on':''}" onclick="siteTab='aperto';render()">🔨 In corso (${groups.aperto.length})</div>
     <div class="tb ${siteTab==='da_fatturare'?'on':''}" onclick="siteTab='da_fatturare';render()" style="${groups.da_fatturare.length?'border-color:var(--amber);color:var(--amber)':''}">💰 Da fatturare (${groups.da_fatturare.length})</div>
     <div class="tb ${siteTab==='chiuso'?'on':''}" onclick="siteTab='chiuso';render()">🗄 Archivio (${groups.chiuso.length})</div>
   </div>
-  ${list.length?list.map(card).join(''):`<div class="empty tall"><div class="big">${siteTab==='da_fatturare'?'💰':siteTab==='chiuso'?'🗄':'🏗'}</div>${siteTab==='aperto'?'Nessun cantiere in corso.':siteTab==='da_fatturare'?'Niente da fatturare. 👌':'Archivio vuoto.'}${siteTab==='aperto'?'<button class="btn pri sm cta" onclick="editSite(null)">+ Nuovo cantiere</button>':''}</div>`}
+  ${list.length?list.map(card).join(''):`<div class="empty tall"><div class="big">${siteTab==='da_fatturare'?'💰':siteTab==='chiuso'?'🗄':siteTab==='previsto'?'📋':'🏗'}</div>${siteTab==='aperto'?'Nessun cantiere in corso.':siteTab==='da_fatturare'?'Niente da fatturare. 👌':siteTab==='previsto'?'Nessun lavoro futuro in programma.':'Archivio vuoto.'}${siteTab==='aperto'?'<button class="btn pri sm cta" onclick="editSite(null)">+ Nuovo cantiere</button>':''}</div>`}
   <button class="fab" onclick="editSite(null)">+</button>`;
 }
 function openSite(id){

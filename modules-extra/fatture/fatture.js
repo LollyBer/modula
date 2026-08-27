@@ -15,7 +15,7 @@ const INV_ST={bozza:['Bozza','#9C9384'],inviata:['Inviata','#C77F12'],pagata:['P
 /* ---- elenco ---- */
 let invTab='tutte';
 function renderFatture(){
-  if(!isOwner()){view='hub';renderHub();return;}
+  if(!can('fatture')){view='hub';renderHub();return;}
   const b=S.settings.billing||{};
   const list=[...S.invoices].sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:(b.created||0)-(a.created||0)));
   const shown=invTab==='tutte'?list:list.filter(f=>f.status===invTab);

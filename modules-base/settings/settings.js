@@ -131,7 +131,7 @@ function renderSettings(){
 function saveReminders(){
   if(!isOwner())return;
   const on=$('#rm-on')?$('#rm-on').checked:true;
-  const min=$('#rm-min')?parseInt($('#rm-min').value)||60:60;
+  const min=$('#rm-min')?parseInt($('#rm-min').value)||30:30;
   const time=$('#rm-time')?($('#rm-time').value||'08:00'):'08:00';
   S.settings.reminders=Object.assign({},S.settings.reminders,{enabled:on,minutesBefore:min,allDayTime:time});
   save();toast('✓ Promemoria salvati');

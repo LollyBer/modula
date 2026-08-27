@@ -151,17 +151,29 @@ function openQuickAdd(date){
   openSheet(`<h3>Aggiungi al ${fmtD(date)} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Cosa</label><input id="qa-t" placeholder="es. Sopralluogo da Bernasconi"></div>
   <div class="frow">
-    <div class="fld"><label>Tipo</label><select id="qa-type">${calTypes().map(v=>`<option value="${v.id}">${v.ic||''} ${esc(v.label)}</option>`).join('')}</select></div>
-    <div class="fld"><label>Ora inizio</label><input id="qa-time" type="time"></div>
+    <div class="fld"><label>Tipo</label><select id="qa-type" onchange="qaSyncFields()">${calTypes().map(v=>`<option value="${v.id}">${v.ic||''} ${esc(v.label)}</option>`).join('')}</select></div>
+    <div class="fld" id="qa-fld-time"><label>Ora inizio</label><input id="qa-time" type="time"></div>
   </div>
-  <div class="frow">
+  <div class="frow" id="qa-frow-end">
     <div class="fld"><label>Ora fine (facolt.)</label><input id="qa-endtime" type="time"></div>
     <div class="fld"><label>Giorno fine (se dura più giorni)</label><input id="qa-enddate" type="date" value="${date}" min="${date}"></div>
   </div>
   <div class="fld"><label>Cliente (opzionale)</label>${cliInput('qa-cl','','qa-clprev')}<div id="qa-clprev"></div></div>
-  <div class="fld"><label>Luogo (opzionale)</label><input id="qa-place" placeholder="es. Via Motta 3, Lugano"></div>
+  <div class="fld" id="qa-fld-place"><label>Luogo (opzionale)</label><input id="qa-place" placeholder="es. Via Motta 3, Lugano"></div>
   <div class="fld"><label>Assegna a (opzionale)</label>${empSeg('qa-e',[])}</div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="quickAddSave('${date}')">Salva</button></div>`);
+  qaSyncFields();
+}
+/* Mostra solo i campi che la voce scelta usa davvero:
+   pellet → data+ora (niente luogo/ora-fine); cantiere → solo il giorno (niente ora/luogo/ora-fine).
+   Così non si inseriscono dati che il modulo collegato ignorerebbe silenziosamente. */
+function qaSyncFields(){
+  const v=calTypeById(($('#qa-type')||{}).value)||calTypes()[0];
+  const k=v?v.kind:'note';
+  const showEnd=(k==='appointment'||k==='maintenance'||k==='note'); // luogo + ora-fine + giorno-fine
+  const showTime=(k!=='site');                                      // il cantiere usa solo la data d'inizio
+  const set=(id,show)=>{const el=document.getElementById(id);if(el)el.style.display=show?'':'none';};
+  set('qa-fld-time',showTime);set('qa-frow-end',showEnd);set('qa-fld-place',showEnd);
 }
 function quickAddSave(date){
   const t=$('#qa-t').value.trim();if(!t){toast('Scrivi cosa devi fare');return;}
