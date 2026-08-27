@@ -81,10 +81,13 @@ function openSite(id){
   ${moduleActive('reports')?`<div class="fld"><label>📸 Rapportini — archivio (${repForSite(id).length})${(()=>{const h=repHours(repForSite(id));return h?' · '+fmtQty(h)+'h totali':'';})()}</label>
     ${(()=>{const rs=repForSite(id);return rs.length?`<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:9px">`+rs.map(r=>`<div style="display:flex;gap:8px;align-items:baseline;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer" onclick="closeSheet();openReport('${r.id}')">
       <span style="font-family:var(--mono);color:var(--t2);flex-shrink:0">${fmtD(r.date)}</span>
-      <span style="flex:1;min-width:0"><b>${esc(eName(r.empId)||'—')}</b>${r.work?' · '+esc(r.work.slice(0,50)):''}</span>
+      <span style="flex:1;min-width:0"><b>${esc((typeof repEmpNames==='function'?repEmpNames(r):eName(r.empId))||'—')}</b>${r.work?' · '+esc(r.work.slice(0,50)):''}</span>
       ${r.photos&&r.photos.length?`<span style="color:var(--t3)">📷${r.photos.length}</span>`:''}
       ${r.hours?`<span style="font-family:var(--mono);color:var(--cy)">${fmtQty(r.hours)}h</span>`:''}</div>`).join('')+`</div>`:'<div class="subtle">Nessun rapportino per questo cantiere.</div>';})()}
-    <button class="btn sm" style="margin-top:8px" onclick="closeSheet();openReport(null,'${id}')">+ Nuovo rapportino</button>
+    <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn sm" onclick="closeSheet();openReport(null,'${id}')">+ Nuovo rapportino</button>
+      ${repForSite(id).length?`<button class="btn sm" style="border-color:var(--blue);color:var(--blue)" onclick="siteSummary('${id}')">📄 Riepilogo (stampa/PDF)</button>`:''}
+    </div>
   </div>`:''}
   ${moduleActive('fatture')&&isOwner()?`<button class="btn pri" style="width:100%;margin-bottom:10px" onclick="closeSheet();invoiceFromSite('${id}')">🧾 Fattura questo cantiere</button>`:''}
   <div class="fld"><label>Diario lavori (${s.log.length})</label>

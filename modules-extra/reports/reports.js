@@ -6,17 +6,22 @@
    Dipende dal core (S, uid, save, render, openSheet, closeSheet, esc, toast, isOwner,
    me, eName, cName, byId, fmtD, fmtQty, todayIso, moduleActive, TENANT_ID, sb, $). */
 
+/* ---- operai di un rapportino (uno o più) ---- */
+const repPeople=r=>(r&&r.employees&&r.employees.length)?r.employees:((r&&r.empId)?[r.empId]:[]);
+const repHas=(r,empId)=>repPeople(r).includes(empId);
+const repEmpNames=r=>repPeople(r).map(eName).filter(Boolean).join(', ');
 /* ---- viste per ruolo ---- */
-const repVis=()=>isOwner()?S.reports:S.reports.filter(r=>r.empId===(S.session&&S.session.empId));
+const repVis=()=>isOwner()?S.reports:S.reports.filter(r=>repHas(r,S.session&&S.session.empId));
 const repForSite=id=>S.reports.filter(r=>r.siteId===id).sort((a,b)=>(a.date<b.date?1:-1));
-const repHours=list=>list.reduce((t,r)=>t+(+r.hours||0),0);
+/* ore-uomo: le ore del rapporto sono a testa → moltiplicate per il numero di operai */
+const repHours=list=>list.reduce((t,r)=>t+((+r.hours||0)*Math.max(1,repPeople(r).length)),0);
 
 /* ---- promemoria: cantieri aperti dove l'operaio è in squadra e manca il rapportino di OGGI ---- */
 function myOpenSites(empId){return S.sites.filter(s=>s.status==='aperto'&&(s.employees||[]).includes(empId));}
 function reportsToFill(empId){
   if(!moduleActive('reports')||!moduleActive('sites')||!empId)return [];
   const t=todayIso();
-  return myOpenSites(empId).filter(s=>!S.reports.some(r=>r.siteId===s.id&&r.empId===empId&&r.date===t));
+  return myOpenSites(empId).filter(s=>!S.reports.some(r=>r.siteId===s.id&&repHas(r,empId)&&r.date===t));
 }
 
 /* ---- elenco ---- */
@@ -39,7 +44,7 @@ function repList(list){
   return sorted.map(r=>{const s=byId(S.sites,r.siteId);return `<div class="card" style="cursor:pointer" onclick="openReport('${r.id}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
       <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(s?s.name:'Cantiere')}</div>
-      <div class="subtle" style="font-size:11px">${r.date?fmtD(r.date):''} · 👷 ${esc(eName(r.empId)||'—')}${r.hours?' · ⏱ '+fmtQty(r.hours)+'h':''}</div></div>
+      <div class="subtle" style="font-size:11px">${r.date?fmtD(r.date):''} · 👷 ${esc(repEmpNames(r)||'—')}${r.hours?' · ⏱ '+fmtQty(r.hours)+'h'+(repPeople(r).length>1?'/testa':''):''}</div></div>
       ${r.photos&&r.photos.length?`<span class="badge" style="border-color:var(--line2);color:var(--t2)">📷 ${r.photos.length}</span>`:''}
     </div>
     ${r.work?`<div style="font-size:12.5px;color:var(--t2);margin-top:6px">${esc(r.work.slice(0,140))}${r.work.length>140?'…':''}</div>`:''}
@@ -61,10 +66,8 @@ function openReport(id,presetSite){
      <div class="fld"><label>Cantiere</label><select id="rp-site">${sites.length?sites.map(s=>`<option value="${s.id}" ${repDraft.siteId===s.id?'selected':''}>${esc(s.name)}</option>`).join(''):'<option value="">— nessun cantiere aperto —</option>'}</select></div>
      <div class="fld"><label>Data</label><input id="rp-date" type="date" value="${repDraft.date||todayIso()}"></div>
    </div>
-   <div class="frow">
-     ${owner?`<div class="fld"><label>Operaio</label><select id="rp-emp">${emps.map(e=>`<option value="${e.id}" ${repDraft.empId===e.id?'selected':''}>${esc(e.name)}${e.isOwner?' 👑':''}</option>`).join('')}</select></div>`:`<input type="hidden" id="rp-emp" value="${meId||''}">`}
-     <div class="fld"><label>Ore</label><input id="rp-hours" type="number" inputmode="decimal" step="any" value="${repDraft.hours||''}" placeholder="es. 8"></div>
-   </div>
+   <div class="fld"><label>Chi ha lavorato (spunta anche il collega se eravate in due)</label>${empSeg('rp-emp',(repDraft.employees&&repDraft.employees.length)?repDraft.employees:(repDraft.empId?[repDraft.empId]:(meId?[meId]:[])))}</div>
+   <div class="fld"><label>Ore (a testa)</label><input id="rp-hours" type="number" inputmode="decimal" step="any" value="${repDraft.hours||''}" placeholder="es. 8"></div>
    <div class="fld"><label>Lavoro svolto</label><textarea id="rp-work" rows="3" placeholder="Cosa è stato fatto oggi in cantiere…">${esc(repDraft.work||'')}</textarea></div>
    <div class="fld"><label>Materiali usati</label><textarea id="rp-mat" rows="2" placeholder="es. 20 m² gres, 3 sacchi colla, fuga grigia">${esc(repDraft.materials||'')}</textarea></div>
    <div class="fld"><label>📷 Foto</label>
@@ -107,12 +110,61 @@ function repDelPhoto(pid){
 function saveReport(id){
   if(!repDraft)return;
   const siteId=$('#rp-site')?$('#rp-site').value:'';
-  const empId=$('#rp-emp')?$('#rp-emp').value:(S.session&&S.session.empId);
+  const meId=S.session&&S.session.empId;
+  let employees=(typeof empSegRead==='function')?empSegRead('rp-emp'):[];
+  if(!employees.length)employees=meId?[meId]:[];
+  const empId=employees[0]||meId; // autore/primario = primo selezionato
   if(!siteId){toast('Scegli il cantiere');return;}
-  const data={siteId,empId,date:($('#rp-date').value||todayIso()),hours:parseFloat($('#rp-hours').value)||null,work:$('#rp-work').value.trim(),materials:$('#rp-mat').value.trim(),photos:repDraft.photos,status:'inviato'};
+  const data={siteId,empId,employees,date:($('#rp-date').value||todayIso()),hours:parseFloat($('#rp-hours').value)||null,work:$('#rp-work').value.trim(),materials:$('#rp-mat').value.trim(),photos:repDraft.photos,status:'inviato'};
   if(id){const r=byId(S.reports,id);if(r)Object.assign(r,data);}
   else S.reports.unshift({id:repDraft.id,created:Date.now(),...data});
   repDraft=null;save();closeSheet();render();toast('✓ Rapportino salvato');
+}
+/* ---- RIEPILOGO CANTIERE: un unico file stampabile con tutti i rapporti,
+   totale ore (uomo), materiali e foto. Da archiviare a lavoro finito. ---- */
+async function siteSummary(id){
+  const s=byId(S.sites,id);if(!s)return;
+  const list=repForSite(id).slice().sort((a,b)=>(a.date<b.date?-1:1)); // cronologico
+  toast('📄 Preparo il riepilogo…');
+  const allPhotos=[];list.forEach(r=>(r.photos||[]).forEach(p=>{if(p.storagePath)allPhotos.push(p);}));
+  const urls={};
+  try{await Promise.all(allPhotos.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data})=>{if(data)urls[p.storagePath]=data.signedUrl;}).catch(()=>{})));}catch(e){}
+  const cli=s.clientId?byId(S.clients,s.clientId):null;const addr=cli&&typeof cAddr==='function'?cAddr(cli):'';
+  const totH=repHours(list);const STAT={previsto:'Lavoro futuro',aperto:'In corso',da_fatturare:'Da fatturare',chiuso:'Archiviato'};
+  const rows=list.map(r=>`<tr>
+    <td class="mono">${fmtD(r.date)}</td>
+    <td>${esc(repEmpNames(r)||'—')}</td>
+    <td class="r mono">${r.hours?fmtQty(r.hours)+(repPeople(r).length>1?' ×'+repPeople(r).length:''):''}</td>
+    <td>${esc(r.work||'')}</td>
+    <td>${esc(r.materials||'')}</td>
+    <td class="c">${(r.photos||[]).length||''}</td>
+  </tr>`).join('')||'<tr><td colspan="6" style="color:#888">Nessun rapportino.</td></tr>';
+  const photosHTML=allPhotos.length?`<h2>Foto (${allPhotos.length})</h2><div class="ph">${allPhotos.map(p=>urls[p.storagePath]?`<img src="${urls[p.storagePath]}">`:'').join('')}</div>`:'';
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Riepilogo cantiere — ${esc(s.name)}</title>
+  <style>
+   *{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1a1a1a;margin:26px;font-size:12px}
+   h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:22px 0 8px;border-bottom:1px solid #ccc;padding-bottom:3px}
+   .meta{color:#555;margin-bottom:12px;line-height:1.5}
+   .tot{background:#f3f1ea;border:1px solid #ddd;border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:13px}
+   table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}
+   th{background:#f3f1ea;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+   .r{text-align:right}.c{text-align:center}.mono{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+   .ph{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.ph img{width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd}
+   @media print{body{margin:12mm}a{color:inherit;text-decoration:none}}
+  </style></head><body>
+   <h1>${esc(s.name)}</h1>
+   <div class="meta"><b>${esc(cName(s.clientId)||s.clientRaw||'—')}</b>${addr?' · 📍 '+esc(addr):''}${cli&&cli.phone?' · '+esc(cli.phone):''}<br>
+   Stato: ${STAT[s.status]||s.status||'—'}${s.startDate?' · Inizio '+fmtD(s.startDate):''}${s.dueDate?' · Fine prevista '+fmtD(s.dueDate):''}${s.closedDate?' · Chiuso il '+fmtD(s.closedDate):''}<br>
+   Riepilogo generato il ${fmtD(todayIso())}</div>
+   <div class="tot"><b>${list.length}</b> rapporti · <b>${fmtQty(totH)} h</b> totali (ore-uomo)${s.estHours?' / '+fmtQty(s.estHours)+' h stimate':''} · <b>${allPhotos.length}</b> foto</div>
+   <h2>Rapporti</h2>
+   <table><thead><tr><th>Data</th><th>Chi</th><th>Ore/testa</th><th>Lavoro svolto</th><th>Materiali</th><th>Foto</th></tr></thead><tbody>${rows}</tbody></table>
+   ${photosHTML}
+   <script>window.onload=()=>setTimeout(()=>window.print(),450)<\/script>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){toast('Consenti i pop-up per aprire il riepilogo da stampare');return;}
+  w.document.write(html);w.document.close();
 }
 function delReport(id){
   if(!confirm('Eliminare il rapportino?'))return;

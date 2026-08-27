@@ -291,6 +291,8 @@ alter table maintenances add column if not exists end_time text;
 alter table maintenances add column if not exists end_date date;
 alter table notes        add column if not exists end_time text;
 alter table notes        add column if not exists end_date date;
+-- rapportino svolto da PIÙ operai (in due sullo stesso cantiere): lista emp_id oltre all'autore:
+alter table reports      add column if not exists employees jsonb not null default '[]'::jsonb;
 
 -- ─────────────────────────── 4. FUNZIONI CHIAVE ───────────────────────────
 -- tenant dell'utente loggato (letto dal suo record in employees). SECURITY DEFINER
