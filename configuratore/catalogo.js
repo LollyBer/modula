@@ -20,6 +20,7 @@ const MODULI_BASE = [
 const MODULI_EXTRA = [
   /* già pronti (ereditati dal gestionale esistente) */
   { id:'conti',    ic:'💰',  nome:'Conti',                desc:'Entrate, spese e utile sotto controllo.',  stato:'pronto' },
+  { id:'todo',     ic:'✅',  nome:'Da fare',              desc:'Liste di cose da fare, con o senza scadenza.', stato:'pronto' },
   { id:'man',      ic:'🔧',  nome:'Manutenzioni',         desc:'Interventi, assistenza e storico.',        stato:'pronto' },
   { id:'sites',    ic:'🏗',  nome:'Cantieri / Commesse',  desc:'Lavori in corso, ore e avanzamento.',      stato:'pronto' },
   { id:'reports',  ic:'📸',  nome:'Rapportini',           desc:'Rapporti di cantiere giornalieri con ore, materiali e foto.', stato:'pronto' },

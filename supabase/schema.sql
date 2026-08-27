@@ -244,6 +244,17 @@ create table if not exists documents (
   created_at timestamptz not null default now()
 );
 
+create table if not exists todos (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  text text default '', done boolean default false,
+  due date, time text, priority int default 0,
+  client_id uuid references clients(id) on delete set null,
+  employees jsonb default '[]'::jsonb,
+  list_name text default '', via text default 'manuale',
+  created_at timestamptz not null default now()
+);
+
 -- settings: UNA riga per azienda (non piu' id=1 globale)
 create table if not exists settings (
   tenant_id uuid primary key references tenants(id) on delete cascade,
@@ -325,7 +336,7 @@ begin
   foreach t in array array[
     'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
-    'expenses','maint_prices','push_subs'
+    'expenses','maint_prices','push_subs','todos'
   ] loop
     execute format('drop trigger if exists trg_tenant on %I', t);
     execute format('create trigger trg_tenant before insert on %I for each row execute function set_tenant_id()', t);
@@ -341,7 +352,7 @@ begin
   foreach t in array array[
     'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
-    'expenses','maint_prices','settings','push_subs'
+    'expenses','maint_prices','settings','push_subs','todos'
   ] loop
     execute format('alter table %I enable row level security', t);
     execute format('drop policy if exists tenant_isolation on %I', t);
@@ -367,7 +378,7 @@ begin
   foreach t in array array[
     'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
-    'expenses','maint_prices','settings','push_subs'
+    'expenses','maint_prices','settings','push_subs','todos'
   ] loop
     execute format($p$create policy tenant_isolation on %I for all
       using (tenant_id = current_tenant() or is_super_admin())
@@ -445,7 +456,7 @@ begin
   foreach t in array array[
     'clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents','attachments','client_attachments',
     'notes','note_groups','lists','list_items','chat','call_log','expenses','maint_prices',
-    'employees','time_entries','settings'
+    'employees','time_entries','settings','todos'
   ] loop
     begin execute format('alter publication supabase_realtime add table %I', t);
     exception when duplicate_object then null; end;

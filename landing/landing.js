@@ -23,6 +23,8 @@ const MODS = [
 
   {id:'conti', ic:'💰', nm:'Conti', px:12, pitch:'Entrate, spese e utile sempre sotto controllo.',
    f:['Incassi e spese aggiornati in tempo reale','Categorie e spese ricorrenti','Utile del mese a colpo d’occhio','Export pulito per il commercialista']},
+  {id:'todo', ic:'✅', nm:'Da fare', px:9, pitch:'Le cose da fare, con o senza scadenza, sempre sott’occhio.',
+   f:['Liste spuntabili condivise col team','Scadenze che finiscono nel calendario','Avviso prima che scada','Assegna una cosa da fare a un collega']},
   {id:'fatture', ic:'🧾', nm:'Fatture', px:19, pitch:'Fatture con QR-fattura svizzera, pronte da inviare.',
    f:['Righe, IVA e totali calcolati in automatico','QR-fattura svizzera: il cliente paga subito','Le fatture pagate entrano nei Conti','Salvi il PDF e lo mandi al cliente']},
   {id:'documenti', ic:'📁', nm:'Documenti', px:15, pitch:'L’archivio dei documenti aziendali, sempre a portata.',

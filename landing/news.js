@@ -6,6 +6,9 @@
    ============================================================ */
 const NEWS = [
   { tipo:'Nuovo modulo', data:'Agosto 2026',
+    titolo:'Da fare', testo:'Le cose da fare in liste spuntabili, con o senza scadenza — e le scadenze finiscono nel calendario con l’avviso prima che scadano.' },
+
+  { tipo:'Nuovo modulo', data:'Agosto 2026',
     titolo:'Documenti', testo:'Archivio dei documenti e delle fatture fornitori: carichi, cerchi e tieni d’occhio le scadenze da pagare.' },
 
   { tipo:'Nuovo modulo', data:'Agosto 2026',

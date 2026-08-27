@@ -127,13 +127,13 @@ const MODULES=[
   {id:'clients',label:'Clienti'},{id:'emps',label:'Personale'},
   {id:'man',label:'Manutenzioni'},{id:'pellet',label:'Pellet'},{id:'sites',label:'Cantieri'},{id:'reports',label:'Rapportini'},{id:'fatture',label:'Fatture'},{id:'documenti',label:'Documenti'},
   {id:'macchine',label:'Macchine',custom:'ptek'},{id:'zone',label:'Zone'},{id:'conti',label:'Conti'},
-  {id:'lavagna',label:'Lavagna'},
+  {id:'lavagna',label:'Lavagna'},{id:'todo',label:'Da fare'},
 ];
 const BASE_IDS=new Set(['hub','notif','cal','notes','clients','emps']);
 /* --- PREZZO ABBONAMENTO (allineato alla landing: BASE + moduli extra, tetto "Tutto compreso") --- */
 /* px per modulo/mese; base=0. I moduli su misura (macchine) NON entrano nel canone: si pagano una tantum. */
 const BASE_PX=59, TUTTO_PX=190, INCL_USERS_PX=4;
-const MODULE_PX={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,conti:12,lavagna:12,documenti:15,man:19,pellet:19,reports:19,fatture:19,sites:29,zone:29};
+const MODULE_PX={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,todo:9,conti:12,lavagna:12,documenti:15,man:19,pellet:19,reports:19,fatture:19,sites:29,zone:29};
 const CUSTOM_IDS=new Set(MODULES.filter(m=>m.custom).map(m=>m.id)); // es. macchine → fuori canone
 /* Prezzo mensile corretto dai moduli attivi di un tenant. Ritorna {price, capped}. */
 function subPrice(mods){

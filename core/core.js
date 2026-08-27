@@ -40,7 +40,7 @@ function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.i
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},billing:{},reminders:{}},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},billing:{},reminders:{}},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -95,6 +95,9 @@ const MAPS={
  maintPrices:{tbl:'maint_prices',
   toDb:p=>({id:p.id,kind:p.kind,price:num(p.price)}),
   fromDb:r=>({id:r.id,kind:r.kind,price:r.price})},
+ todos:{tbl:'todos',
+  toDb:t=>({id:t.id,text:t.text||'',done:!!t.done,due:t.due||null,time:t.time||null,priority:t.priority||0,client_id:t.clientId||null,employees:t.employees||[],list_name:t.list||'',via:t.via||'manuale'}),
+  fromDb:r=>({id:r.id,text:r.text||'',done:!!r.done,due:r.due,time:r.time||'',priority:r.priority||0,clientId:r.client_id,employees:r.employees||[],list:r.list_name||'',via:r.via,created:Date.parse(r.created_at)||Date.now()})},
 };
 /* figli annidati */
 const logToDb=(s,l)=>({id:l.id,site_id:s.id,date:l.date||null,text:l.text,hours:num(l.hours),emp_id:l.empId||null});
@@ -105,12 +108,12 @@ let snapshot={};
 function snapRows(key,rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r));snapshot[key]=o;}
 async function loadAll(){
   const q=t=>sb.from(t).select('*');
-  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp,iv,dc]=await Promise.all([
+  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp,iv,dc,td]=await Promise.all([
     q('clients'),q('employees'),q('time_entries'),q('maintenances'),q('appointments'),q('pellet'),
     q('sites'),q('site_logs').order('created_at'),q('attachments'),
     q('notes'),q('note_groups'),q('lists'),q('list_items').order('position'),
     sb.from('chat').select('*').order('created_at',{ascending:true}).limit(300),
-    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports'),q('invoices'),q('documents')
+    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports'),q('invoices'),q('documents'),q('todos')
   ]);
   /* te (time_entries) è ESCLUSO dal controllo bloccante: se la tabella non è ancora
      stata creata su Supabase, l'app parte comunque (presenze vuote) invece di crashare. */
@@ -120,6 +123,7 @@ async function loadAll(){
   if(rp&&rp.error)console.warn('reports non disponibile (esegui schema.sql):',rp.error.message);
   if(iv&&iv.error)console.warn('invoices non disponibile (esegui schema.sql):',iv.error.message);
   if(dc&&dc.error)console.warn('documents non disponibile (esegui schema.sql):',dc.error.message);
+  if(td&&td.error)console.warn('todos non disponibile (esegui schema.sql):',td.error.message);
   S.clients=(cl.data||[]).map(MAPS.clients.fromDb);
   S.employees=(em.data||[]).map(MAPS.employees.fromDb);
   S.timeEntries=(te.data||[]).map(MAPS.timeEntries.fromDb);
@@ -140,6 +144,7 @@ async function loadAll(){
   S.reports=(rp&&rp.data||[]).map(MAPS.reports.fromDb).sort((a,b)=>b.created-a.created);
   S.invoices=(iv&&iv.data||[]).map(MAPS.invoices.fromDb).sort((a,b)=>b.created-a.created);
   S.documents=(dc&&dc.data||[]).map(MAPS.documents.fromDb).sort((a,b)=>b.created-a.created);
+  S.todos=(td&&td.data||[]).map(MAPS.todos.fromDb).sort((a,b)=>b.created-a.created);
   if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),boards:(st.data.boards&&typeof st.data.boards==='object'&&!Array.isArray(st.data.boards))?st.data.boards:{},billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{}),reminders:(st.data.reminders&&typeof st.data.reminders==='object'&&!Array.isArray(st.data.reminders))?st.data.reminders:(st.data.reminders?JSON.parse(st.data.reminders):{})};
   rebuildSnapshot();
 }
@@ -163,11 +168,12 @@ function dbRows(){
     callLog:S.callLog.map(MAPS.callLog.toDb),
     expenses:S.expenses.map(MAPS.expenses.toDb),
     maintPrices:S.maintPrices.map(MAPS.maintPrices.toDb),
+    todos:(S.todos||[]).map(MAPS.todos.toDb),
   };
 }
-const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',reports:'reports',invoices:'invoices',documents:'documents',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices'};
-const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','reports','invoices','documents','expenses','notes','listItems','siteLogs','callLog','maintPrices'];
-const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','expenses','documents','invoices','reports','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
+const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',reports:'reports',invoices:'invoices',documents:'documents',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices',todos:'todos'};
+const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','reports','invoices','documents','expenses','notes','listItems','siteLogs','callLog','maintPrices','todos'];
+const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','todos','expenses','documents','invoices','reports','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
 function rebuildSnapshot(){const r=dbRows();for(const k of UP_ORDER)snapRows(k,r[k]);snapshot._settings=JSON.stringify(S.settings);}
 
 /* ---------- sync: diff e push ---------- */
@@ -461,6 +467,7 @@ const TYPE_META={
   note:{label:'Nota',color:'var(--teal)',hex:'#2E9E5E',ic:'📝',view:'notes'},
   site:{label:'Cantiere',color:'var(--blue)',hex:'#A9742F',ic:'🏗',view:'sites'},
   list:{label:'Lista',color:'#2E9E5E',hex:'#2E9E5E',ic:'☑️',view:'hub'},
+  todo:{label:'Da fare',color:'#7C5CBF',hex:'#7C5CBF',ic:'✅',view:'todo'},
 };
 /* ===== VOCI del calendario (configurabili per azienda) =====
    Ogni voce: {id,label,ic,hex,kind}. `kind` = tipo con cui l'evento viene salvato:
@@ -540,6 +547,7 @@ const VIEWS=[
   {id:'hub',ic:'⚡',label:'Hub'},
   {id:'cal',ic:'📅',label:'Calendario'},
   {id:'notes',ic:'📝',label:'Note'},
+  {id:'todo',ic:'✅',label:'Da fare'},
   {id:'notif',ic:'🔔',label:'Notifiche'},
   {id:'man',ic:'🔧',label:'Manut.'},
   {id:'pellet',ic:'🪵',label:'Pellet'},
@@ -568,6 +576,7 @@ const MODULE_CATALOG={
   ],
   pronti:[
     {id:'conti',ic:'💰',nome:'Conti',desc:'Entrate, spese e utile.'},
+    {id:'todo',ic:'✅',nome:'Da fare',desc:'Liste di cose da fare, con scadenze.'},
     {id:'man',ic:'🔧',nome:'Manutenzioni',desc:'Interventi e storico.'},
     {id:'sites',ic:'🏗',nome:'Cantieri',desc:'Lavori in corso e ore.'},
     {id:'reports',ic:'📸',nome:'Rapportini',desc:'Rapporti di cantiere giornalieri con foto.'},
@@ -1106,7 +1115,7 @@ function render(){
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
-  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,settings:window.renderSettings};
+  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,todo:window.renderTodo,settings:window.renderSettings};
   $('#main').innerHTML='';(R[view]||window.renderHub)();
   if(view==='notif'&&notifTab==='chat'){const sc=$('#chatscroll');if(sc)sc.scrollTop=sc.scrollHeight;}
   if(typeof remindStart==='function')remindStart();
@@ -1285,6 +1294,7 @@ function allEvents(){
   if(moduleActive('man'))visMan().forEach(m=>{if(m.date)ev.push({type:'maintenance',date:m.date,time:m.time,endTime:m.endTime||'',endDate:m.endDate||'',title:m.title,sub:cName(m.clientId)||m.clientRaw||'',place:m.place||'',done:m.status==='fatta',id:m.id});});
   (moduleActive('pellet')&&can('pellet')?S.pellet:[]).forEach(p=>{if(p.date)ev.push({type:'pellet',date:p.date,time:p.time,title:(p.qty?p.qty+' '+p.unit:'Consegna pellet'),sub:cName(p.clientId)||p.clientRaw||'',done:p.status==='consegnato',id:p.id});});
   S.notes.forEach(n=>{if(n.date&&!n.archived)ev.push({type:'note',date:n.date,time:n.time||null,endTime:n.endTime||'',endDate:n.endDate||'',title:n.text,sub:cName(n.clientId)||'',place:n.place||'',done:false,id:n.id});});
+  if(moduleActive('todo'))(S.todos||[]).forEach(t=>{if(t.due&&!t.done)ev.push({type:'todo',date:t.due,time:t.time||null,title:t.text,sub:cName(t.clientId)||'',place:'',done:!!t.done,id:t.id});});
   if(moduleActive('sites'))visSites().forEach(s=>{if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub:cName(s.clientId)||s.clientRaw||'',done:false,id:s.id});});
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
@@ -1300,6 +1310,7 @@ function openEv(type,id){
   else if(type==='pellet'){if(typeof openPel==='function')openPel(id);}
   else if(type==='note')openNote(id);
   else if(type==='site'){if(typeof openSite==='function')openSite(id);}
+  else if(type==='todo'){if(typeof openTodo==='function')openTodo(id);}
   else nav(TYPE_META[type].view);
 }
 function evTimeLabel(e){
