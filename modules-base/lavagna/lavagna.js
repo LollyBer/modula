@@ -6,6 +6,7 @@
 
 let boardEdit=false;
 let lavFresh=false; /* true subito dopo aver generato i default → un riordino automatico iniziale */
+const LAV_PAD=12; /* margine interno: le tessere non toccano mai la cornice */
 
 /* ---- catalogo widget (Fase 1). module = modulo richiesto per mostrarlo ---- */
 const LAV_WIDGETS={
@@ -60,15 +61,25 @@ function renderLavagna(){
   <div class="lav-canvas ${boardEdit?'editing':''}" id="lavcanvas">
     ${tiles.length?tiles.map(tileHTML).join(''):'<div class="empty" style="padding:40px 10px">Lavagna vuota. Tocca ➕ per aggiungere.</div>'}
   </div>`;
-  requestAnimationFrame(()=>{if(lavFresh){lavFresh=false;lavStack();}lavFit();lavBindDrag();});
+  requestAnimationFrame(()=>{if(lavFresh){lavFresh=false;lavStack();}lavClamp();lavFit();lavBindDrag();});
 }
 /* riordino automatico a colonna (misura le altezze reali) — usato solo al primo avvio */
-function lavStack(){const c=$('#lavcanvas');if(!c)return;let y=10;const b=board();c.querySelectorAll('.lav-tile').forEach(el=>{const t=b.find(x=>x.id===el.dataset.id);if(!t)return;t.x=10;t.y=y;el.style.left='10px';el.style.top=y+'px';y+=el.offsetHeight+12;});save();lavFit();}
+function lavStack(){const c=$('#lavcanvas');if(!c)return;let y=LAV_PAD;const b=board();c.querySelectorAll('.lav-tile').forEach(el=>{const t=b.find(x=>x.id===el.dataset.id);if(!t)return;t.x=LAV_PAD;t.y=y;el.style.left=LAV_PAD+'px';el.style.top=y+'px';y+=el.offsetHeight+12;});save();lavFit();}
+/* riporta dentro la cornice le tessere finite fuori/sul bordo (posizioni vecchie) */
+function lavClamp(){const c=$('#lavcanvas');if(!c)return;const cw=c.clientWidth;let changed=false;const b=board();
+  c.querySelectorAll('.lav-tile').forEach(el=>{const t=b.find(x=>x.id===el.dataset.id);if(!t)return;const ew=el.offsetWidth;
+    const maxX=Math.max(LAV_PAD,cw-ew-LAV_PAD);
+    const nx=Math.max(LAV_PAD,Math.min(t.x||LAV_PAD,maxX)),ny=Math.max(LAV_PAD,t.y||LAV_PAD);
+    if(nx!==t.x||ny!==t.y){t.x=Math.round(nx);t.y=Math.round(ny);el.style.left=t.x+'px';el.style.top=t.y+'px';changed=true;}});
+  if(changed){save();lavFit();}
+}
 function lavToggleEdit(){boardEdit=!boardEdit;render();}
 
 function tileHTML(t){
   const w=t.w||(t.kind==='postit'?170:320);
-  const pos=`left:${t.x||0}px;top:${t.y||0}px;width:min(${w}px, calc(100% - 16px))`;
+  const x=Math.max(LAV_PAD,t.x||LAV_PAD),y=Math.max(LAV_PAD,t.y||LAV_PAD);
+  /* larghezza limitata così il bordo destro non supera mai il margine: la tessera resta dentro la cornice */
+  const pos=`left:${x}px;top:${y}px;width:min(${w}px, calc(100% - ${x+LAV_PAD}px))`;
   const handle=boardEdit?`<div class="lav-drag" data-id="${t.id}">⠿</div><button class="lav-del" onclick="lavDel('${t.id}')">✕</button>`:'';
   if(t.kind==='postit'){
     const bg=t.color||'#FBEAC9',fg=postitFg(bg);
@@ -141,7 +152,7 @@ function lavBindDrag(){
       const sx=e.clientX,sy=e.clientY,ox=t.x||0,oy=t.y||0,cw=c.clientWidth,ew=el.offsetWidth;
       let nx=ox,ny=oy;
       h.setPointerCapture(e.pointerId);el.classList.add('dragging');
-      const mv=ev=>{nx=Math.max(0,Math.min(ox+(ev.clientX-sx),cw-ew));ny=Math.max(0,oy+(ev.clientY-sy));el.style.left=nx+'px';el.style.top=ny+'px';};
+      const mv=ev=>{nx=Math.max(LAV_PAD,Math.min(ox+(ev.clientX-sx),Math.max(LAV_PAD,cw-ew-LAV_PAD)));ny=Math.max(LAV_PAD,oy+(ev.clientY-sy));el.style.left=nx+'px';el.style.top=ny+'px';};
       const up=()=>{h.releasePointerCapture(e.pointerId);h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',up);el.classList.remove('dragging');t.x=Math.round(nx);t.y=Math.round(ny);save();lavFit();};
       h.addEventListener('pointermove',mv);h.addEventListener('pointerup',up);
     });
