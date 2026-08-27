@@ -110,9 +110,10 @@ function lavwOggi(){
 function lavEmpToday(id){
   const t=todayIso(),out=[];
   if(moduleActive('man'))S.maintenances.forEach(m=>{if(m.date===t&&empIdsOf(m).includes(id))out.push('🔧 '+(cName(m.clientId)||m.clientRaw||m.title||'manutenzione'));});
-  if(moduleActive('sites'))S.sites.forEach(s=>{if(s.status==='aperto'&&(s.employees||[]).includes(id))out.push('🏗 '+s.name);});
   S.appointments.forEach(a=>{if(a.date===t&&empIdsOf(a).includes(id))out.push('📅 '+(a.title||'appuntamento'));});
   if(moduleActive('pellet'))S.pellet.forEach(p=>{if(p.date===t&&empIdsOf(p).includes(id))out.push('🪵 '+(cName(p.clientId)||p.clientRaw||'consegna'));});
+  /* cantiere di OGGI = ha fatto un rapportino oggi lì (non la sola appartenenza alla squadra, che vale sempre) */
+  if(moduleActive('reports'))S.reports.forEach(r=>{if(r.date===t&&(typeof repHas==='function'?repHas(r,id):r.empId===id)){const s=byId(S.sites,r.siteId);out.push('🏗 '+(s?s.name:'cantiere'));}});
   return out;
 }
 const LAV_AV=['#C77F12','#5E9E2E','#A9742F','#2E9E5E','#D64528','#7C5CBF','#3B6D91'];
