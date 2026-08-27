@@ -55,7 +55,12 @@ Prima (giu-lug): catalogo settori→moduli · richiesta modulo su misura · land
 2026-08-26: modulo FISSO **Impostazioni** (ordine moduli per-utente + account + preferenze + promemoria +
 strumenti titolare; consolida la sidebar) · **Promemoria appuntamenti** push con scope per ruolo (Edge Function
 `reminders` + pg_cron, da deployare) · **prezzo abbonamento corretto** dai moduli in Regia · fix calendario
-desktop (mese intero a schermo).
+desktop (mese intero a schermo) · calendario viste **Giorno/Settimana** + campo **Luogo** + **orario fine/eventi
+multi-giorno** (fix salvataggio promemoria) · **Lavagna** con aspetto ardesia+cornice. ⚠️ richiede `schema.sql`.
+2026-08-27: nuovo modulo **Da fare** (todo, liste+scadenze→calendario) · **promemoria in-app** X min prima ·
+Lavagna **per-utente** · **Mappa** rework + **punti salvati** (magazzino/ufficio) · Pellet **prenotato** + bancali ·
+Rapportini **multi-operaio** + **riepilogo cantiere** stampabile · **negozio moduli** col prezzo in-app ·
+Conti **anti-doppioni** · nome utente non modificabile · audit multi-agente + ~20 fix. ⚠️ richiede `schema.sql`.
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.
