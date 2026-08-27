@@ -490,20 +490,21 @@ const calTypeById=id=>calTypes().find(v=>v.id===id);
 function commitParsed(p,via){
   const clientId=p.person&&p.person.kind==='client'?p.person.id:null;
   const employeeId=p.employee?p.employee.id:null;
+  const employees=(p.employees&&p.employees.length)?p.employees:(employeeId?[employeeId]:[]);
   const personRaw=p.person&&p.person.kind==='raw'?p.person.name:null;
   /* non creare record in un modulo spento per questo tenant → ricadi su nota (niente record orfani) */
   const TYPE_MOD={maintenance:'man',pellet:'pellet',site:'sites'};
   if(TYPE_MOD[p.type]&&!moduleActive(TYPE_MOD[p.type]))p.type='note';
   let msg='';
   if(p.type==='maintenance'){
-    S.maintenances.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,date:p.date,time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,status:p.date?'programmata':'da_fare',notes:'',via,created:Date.now()});
+    S.maintenances.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,employees,date:p.date,time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,status:p.date?'programmata':'da_fare',notes:'',via,created:Date.now()});
     msg='🔧 Manutenzione registrata'+(p.person?' — '+p.person.name:'')+(p.employee?' · 👷 '+p.employee.name:'')+(p.date?' · '+fmtD(p.date):'')+(p.time?' '+p.time:'');
   }else if(p.type==='pellet'){
     const kind=(p.unit==='t'||/\bsfuso\b/i.test(p.raw||''))?'sfuso':'sacchi';
-    S.pellet.unshift({id:uid(),clientId,clientRaw:personRaw,employeeId,qty:p.qty,unit:kind==='sfuso'?'t':(p.unit||'sacchi'),kind,date:p.date,time:p.time,status:'da_consegnare',notes:p.title,via,created:Date.now()});
+    S.pellet.unshift({id:uid(),clientId,clientRaw:personRaw,employeeId,employees,qty:p.qty,unit:kind==='sfuso'?'t':(p.unit||'sacchi'),kind,date:p.date,time:p.time,status:'da_consegnare',notes:p.title,via,created:Date.now()});
     msg='🪵 Consegna '+(kind==='sfuso'?'sfuso':'sacchi')+' registrata'+(p.qty?' — '+p.qty+' '+(kind==='sfuso'?'t':p.unit||'sacchi'):'')+(p.person?' · '+p.person.name:'')+(p.employee?' · 👷 '+p.employee.name:'')+(p.date?' · '+fmtD(p.date):'');
   }else if(p.type==='appointment'){
-    S.appointments.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,date:p.date||todayIso(),time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,done:false,via,created:Date.now()});
+    S.appointments.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,employees,date:p.date||todayIso(),time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,done:false,via,created:Date.now()});
     msg='📅 Appuntamento segnato — '+fmtD(p.date||todayIso())+(p.time?' '+p.time:'');
   }else if(p.type==='list'){
     const nm=norm(p.listName||'');
@@ -521,12 +522,16 @@ function commitParsed(p,via){
       s.log.push({id:uid(),date:p.date||todayIso(),text:p.siteText||'Aggiornamento',hours:p.hours||null});
       msg='🏗 «'+s.name+'» aggiornato'+(p.hours?' — +'+p.hours+'h':'')+(p.siteText?' · '+p.siteText:'');
     }else{
-      S.sites.unshift({id:uid(),name:p.title,clientId,clientRaw:personRaw,status:'aperto',employees:[],log:[],attachments:[],estHours:null,startDate:p.date||todayIso(),dueDate:null,notes:'',via,created:Date.now()});
+      S.sites.unshift({id:uid(),name:p.title,clientId,clientRaw:personRaw,status:'aperto',employees,log:[],attachments:[],estHours:null,startDate:p.date||todayIso(),dueDate:null,notes:'',via,created:Date.now()});
       msg='🏗 Cantiere creato — '+p.title;
     }
   }else{
-    S.notes.unshift({id:uid(),text:p.title,clientId,date:p.date,time:p.time||null,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,pinned:false,via,created:Date.now()});
+    S.notes.unshift({id:uid(),text:p.title,clientId,employees,date:p.date,time:p.time||null,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,pinned:false,via,created:Date.now()});
     msg='📝 Promemoria salvato'+(p.date?' · '+fmtD(p.date):'')+(p.time?' '+p.time:'');
+  }
+  if(employees.length&&['appointment','maintenance','site','note'].includes(p.type)){
+    const ex=employees.filter(e=>!(S.session&&e===S.session.empId));
+    if(ex.length)pushNotify(ex,'📌 Ti è stato assegnato',(p.title||'')+(p.date?' · '+fmtD(p.date):'')+(p.time?' '+p.time:''));
   }
   save();return msg;
 }
@@ -1255,7 +1260,9 @@ function openSheet(html){
   closeSheet();
   const o=document.createElement('div');o.className='overlay';o.id='overlay';
   o.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">${html}</div>`;
-  o.onclick=closeSheet;document.body.appendChild(o);
+  /* NIENTE chiusura cliccando fuori: si chiude solo con ✕ o «Annulla», così non si
+     perde per sbaglio quello che si è appena inserito. */
+  document.body.appendChild(o);
 }
 function closeSheet(){const o=$('#overlay');if(o)o.remove();}
 
@@ -1404,7 +1411,7 @@ function editSite(id,preset){
   const SST=[['previsto','Previsto'],['aperto','In corso'],['da_fatturare','Da fatturare'],['chiuso','Archivio']];
   openSheet(`<h3>${id?'Modifica cantiere':(preset==='previsto'?'Nuovo lavoro futuro':'Nuovo cantiere')} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Nome</label><input id="st-n" value="${esc(s.name)}" placeholder="es. Installazione caldaia Via Roma"></div>
-  <div class="fld"><label>Cliente</label>${cliInput('st-c',s.clientId)}</div>
+  <div class="fld"><label>Cliente</label>${cliInput('st-c',s.clientId,'st-cprev')}<div id="st-cprev">${clientPreviewHTML(s.clientId)}</div></div>
   <div class="frow">
     <div class="fld"><label>Stima ore lavoro</label><input id="st-h" type="number" inputmode="decimal" value="${s.estHours||''}" placeholder="es. 40"></div>
     ${isOwner()?`<div class="fld"><label>Importo CHF</label><input id="st-am" type="number" inputmode="decimal" step="any" value="${s.amount||''}" placeholder="da fatturare"></div>`:''}
@@ -1414,7 +1421,7 @@ function editSite(id,preset){
     <div class="fld"><label>Fine prevista</label><input id="st-dd" type="date" value="${s.dueDate||''}"></div>
   </div>
   ${isOwner()?`<div class="fld"><label>Stato</label><div class="seg" id="st-st">${SST.map(([v,l])=>`<div class="sg ${(s.status||'aperto')===v?'on':''}" data-s="${v}" onclick="this.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${l}</div>`).join('')}</div></div>`:''}
-  <div class="fld"><label>Squadra</label><div class="seg" id="st-e">${S.employees.map(e=>`<div class="sg ${s.employees.includes(e.id)?'on':''}" data-id="${e.id}" onclick="this.classList.toggle('on')">${esc(e.name)}</div>`).join('')}</div></div>
+  <div class="fld"><label>Squadra (assegna a una o più persone)</label>${empSeg('st-e',s.employees)}</div>
   <div class="fld"><label>Note</label><textarea id="st-no">${esc(s.notes||'')}</textarea></div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="saveSite('${id||''}')">Salva</button></div>`);
 }

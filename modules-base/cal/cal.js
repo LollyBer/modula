@@ -158,8 +158,9 @@ function openQuickAdd(date){
     <div class="fld"><label>Ora fine (facolt.)</label><input id="qa-endtime" type="time"></div>
     <div class="fld"><label>Giorno fine (se dura più giorni)</label><input id="qa-enddate" type="date" value="${date}" min="${date}"></div>
   </div>
-  <div class="fld"><label>Cliente (opzionale)</label>${cliInput('qa-cl','')}</div>
+  <div class="fld"><label>Cliente (opzionale)</label>${cliInput('qa-cl','','qa-clprev')}<div id="qa-clprev"></div></div>
   <div class="fld"><label>Luogo (opzionale)</label><input id="qa-place" placeholder="es. Via Motta 3, Lugano"></div>
+  <div class="fld"><label>Assegna a (opzionale)</label>${empSeg('qa-e',[])}</div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="quickAddSave('${date}')">Salva</button></div>`);
 }
 function quickAddSave(date){
@@ -173,7 +174,8 @@ function quickAddSave(date){
   let endDate=($('#qa-enddate')&&$('#qa-enddate').value)||null;
   if(endDate&&endDate<=date)endDate=null; // fine oltre il giorno d'inizio → multi-giorno; altrimenti stesso giorno
   const place=($('#qa-place')&&$('#qa-place').value.trim())||null;
-  const p={type,title:t,date,time,endTime,endDate,place,person:clientId?{kind:'client',id:clientId,name:cName(clientId)}:(rawName?{kind:'raw',name:rawName}:null),qty:null,unit:null};
+  const employees=(typeof empSegRead==='function')?empSegRead('qa-e'):[];
+  const p={type,title:t,date,time,endTime,endDate,place,employees,person:clientId?{kind:'client',id:clientId,name:cName(clientId)}:(rawName?{kind:'raw',name:rawName}:null),qty:null,unit:null};
   const msg=commitParsed(p,'cal');closeSheet();toast(msg);render();
 }
 

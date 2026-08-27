@@ -52,8 +52,10 @@ function openSite(id){
   const pct=s.estHours?Math.min(100,Math.round(hrs/s.estHours*100)):null;
   const STAT={previsto:['📋 Lavoro futuro','var(--teal)'],aperto:['🏗 In corso','var(--blue)'],da_fatturare:['💰 Da fatturare','var(--amber)'],chiuso:['🗄 Archiviato','var(--t3)']};
   const[sl,sc]=STAT[s.status]||STAT.aperto;
+  const cli=s.clientId?byId(S.clients,s.clientId):null;const cliAddr=cli?cAddr(cli):'';
   openSheet(`<h3>${esc(s.name)} <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="subtle" style="margin-bottom:10px">${esc(cName(s.clientId)||s.clientRaw||'Nessun cliente')} · <b style="color:${sc}">${sl}</b><br>
+  ${cliAddr?'📍 '+esc(cliAddr):''}${cli&&cli.phone?(cliAddr?' · ':'')+'📞 <a href="tel:'+esc(cli.phone)+'" style="color:var(--cy)">'+esc(cli.phone)+'</a>':''}${cliAddr||(cli&&cli.phone)?'<br>':''}
   ${s.startDate?'Inizio: '+fmtD(s.startDate):''}${s.dueDate?' · Fine prevista: '+fmtD(s.dueDate):''}</div>
   ${s.estHours?`<div class="fld"><label>Avanzamento ore — ${hrs}h / ${s.estHours}h (${pct}%)</label>
     <div class="ck-bar" style="height:6px"><i style="width:${pct}%;${pct>=100?'background:var(--amber)':''}"></i></div>
@@ -76,12 +78,12 @@ function openSite(id){
       <input type="file" id="att-file" accept=".pdf,.xls,.xlsx,.csv,.doc,.docx" style="display:none" onchange="addFile('${id}',event)">
     </div>
   </div>
-  ${moduleActive('reports')?`<div class="fld"><label>📸 Rapportini (${repForSite(id).length})${(()=>{const h=repHours(repForSite(id));return h?' · '+fmtQty(h)+'h totali':'';})()}</label>
-    ${repForSite(id).slice(0,12).map(r=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer" onclick="closeSheet();openReport('${r.id}')">
-      <span style="font-family:var(--mono);color:var(--t3);flex-shrink:0">${fmtD(r.date)}</span>
-      <span style="flex:1;min-width:0">${esc(eName(r.empId)||'—')}${r.work?' · '+esc(r.work.slice(0,40)):''}</span>
+  ${moduleActive('reports')?`<div class="fld"><label>📸 Rapportini — archivio (${repForSite(id).length})${(()=>{const h=repHours(repForSite(id));return h?' · '+fmtQty(h)+'h totali':'';})()}</label>
+    ${(()=>{const rs=repForSite(id);return rs.length?`<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:9px">`+rs.map(r=>`<div style="display:flex;gap:8px;align-items:baseline;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer" onclick="closeSheet();openReport('${r.id}')">
+      <span style="font-family:var(--mono);color:var(--t2);flex-shrink:0">${fmtD(r.date)}</span>
+      <span style="flex:1;min-width:0"><b>${esc(eName(r.empId)||'—')}</b>${r.work?' · '+esc(r.work.slice(0,50)):''}</span>
       ${r.photos&&r.photos.length?`<span style="color:var(--t3)">📷${r.photos.length}</span>`:''}
-      ${r.hours?`<span style="font-family:var(--mono);color:var(--cy)">${fmtQty(r.hours)}h</span>`:''}</div>`).join('')||'<div class="subtle">Nessun rapportino per questo cantiere.</div>'}
+      ${r.hours?`<span style="font-family:var(--mono);color:var(--cy)">${fmtQty(r.hours)}h</span>`:''}</div>`).join('')+`</div>`:'<div class="subtle">Nessun rapportino per questo cantiere.</div>';})()}
     <button class="btn sm" style="margin-top:8px" onclick="closeSheet();openReport(null,'${id}')">+ Nuovo rapportino</button>
   </div>`:''}
   ${moduleActive('fatture')&&isOwner()?`<button class="btn pri" style="width:100%;margin-bottom:10px" onclick="closeSheet();invoiceFromSite('${id}')">🧾 Fattura questo cantiere</button>`:''}
