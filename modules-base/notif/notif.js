@@ -89,7 +89,10 @@ function openApp(id){
   <div class="fld"><label>Cliente</label>${cliInput('ap-c',a.clientId,'ap-cprev')}<div id="ap-cprev">${clientPreviewHTML(a.clientId)}</div></div>
   <div class="fld"><label>Assegna a (uno o più)</label>${empSeg('ap-e',empIdsOf(a))}</div>
   <div class="frow"><div class="fld"><label>Data</label><input id="ap-d" type="date" value="${a.date||''}"></div>
-  <div class="fld"><label>Ora</label><input id="ap-h" type="time" value="${a.time||''}"></div></div>
+  <div class="fld"><label>Ora inizio</label><input id="ap-h" type="time" value="${a.time||''}"></div></div>
+  <div class="frow"><div class="fld"><label>Ora fine (opz.)</label><input id="ap-et" type="time" value="${a.endTime||''}"></div>
+  <div class="fld"><label>Giorno fine (se dura più giorni)</label><input id="ap-ed" type="date" value="${a.endDate||''}"></div></div>
+  <div class="fld"><label>Luogo (opz.)</label><input id="ap-pl" value="${esc(a.place||'')}" placeholder="es. Via Motta 3, Lugano"></div>
   ${dateChips('ap-d')}
   <div class="fld"><label>Stato</label><div class="seg" id="ap-s"><div class="sg ${!a.done?'on':''}" data-d="0" onclick="this.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));this.classList.add('on')">Da fare</div><div class="sg ${a.done?'on':''}" data-d="1" onclick="this.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));this.classList.add('on')">Fatto</div></div></div>
   <div class="actions">
@@ -97,11 +100,12 @@ function openApp(id){
     <button class="btn pri" onclick="saveApp('${id||''}')">Salva</button></div>`);
 }
 function saveApp(id){
-  const data={title:$('#ap-t').value.trim(),clientId:$('#ap-c').value||null,employees:empSegRead('ap-e'),date:$('#ap-d').value||null,time:$('#ap-h').value||null,done:$('#ap-s .sg.on')?.dataset.d==='1'};
+  const rawName=(!$('#ap-c').value&&$('#ap-c').dataset&&$('#ap-c').dataset.raw)||null;
+  const data={title:$('#ap-t').value.trim(),clientId:$('#ap-c').value||null,employees:empSegRead('ap-e'),date:$('#ap-d').value||null,time:$('#ap-h').value||null,endTime:$('#ap-et').value||null,endDate:$('#ap-ed').value||null,place:$('#ap-pl').value.trim()||null,done:$('#ap-s .sg.on')?.dataset.d==='1'};
   if(!data.title){toast('Manca il titolo');return;}
   const oldA=id?byId(S.appointments,id):null;const prevEmps=oldA?empIdsOf(oldA):[];
-  if(id){Object.assign(oldA,data);}else{S.appointments.unshift({id:uid(),clientRaw:null,via:'manuale',created:Date.now(),...data});}
-  const added=data.employees.filter(e=>!prevEmps.includes(e));
+  if(id){Object.assign(oldA,data);}else{S.appointments.unshift({id:uid(),clientRaw:rawName,via:'manuale',created:Date.now(),...data});}
+  const added=data.employees.filter(e=>!prevEmps.includes(e)&&!(S.session&&e===S.session.empId));
   if(added.length&&!data.done)pushNotify(added,'📅 Appuntamento assegnato',`${data.title}${data.date?' · '+fmtD(data.date):''}${data.time?' '+data.time:''}`);
   save();closeSheet();render();toast('📅 Salvato');
 }
@@ -140,6 +144,7 @@ async function sendChat(){
     S.chat.push({id:rows[1].id,who:null,text:msg,sys:true,ts:Date.now()});
   }
   render();
+  if(!sb)return; // demo: nessun backend
   const{error}=await sb.from('chat').insert(rows);
   if(error)toast('⚠ Chat: '+error.message);
 }

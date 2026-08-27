@@ -103,11 +103,7 @@ function renderSettings(){
 
   <div class="card">
     <div class="set-h">👤 Il mio account</div>
-    <div class="fld"><label>Il mio nome</label><input id="set-name" value="${esc(m?m.name:'')}" placeholder="Come ti chiami"></div>
-    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn sm pri" onclick="saveMyName()">Salva nome</button>
-      <span class="ok" id="set-name-ok"></span>
-    </div>
+    <div class="fld"><label>Il mio nome</label><div style="font-size:14px;padding:5px 0;font-weight:600">${esc(m?m.name:'—')}</div><div class="subtle">Il nome lo gestisce il titolare in «Personale».</div></div>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px">
       <button class="btn sm ghost" onclick="openChangePassword()">🔑 Cambia password</button>
       <button class="btn sm" style="border-color:rgba(214,69,40,.4);color:var(--coral)" onclick="logout()">🚪 Esci${m?' ('+esc(m.name)+')':''}</button>
@@ -131,13 +127,6 @@ function renderSettings(){
   ${ownerTools}
 
   <div class="subtle" style="text-align:center;margin:6px 0 2px">Nome azienda, logo, colore e moduli attivi si gestiscono con Modula.</div>`;
-}
-function saveMyName(){
-  const m=me();if(!m)return;
-  const v=($('#set-name').value||'').trim();
-  if(!v){toast('Scrivi il tuo nome');return;}
-  m.name=v;save();renderNav();
-  const el=$('#set-name-ok');if(el){el.textContent='✓ salvato';setTimeout(()=>{el.textContent='';},2000);}
 }
 function saveReminders(){
   if(!isOwner())return;

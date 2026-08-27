@@ -155,18 +155,19 @@ function openMan(id){
   ${id&&m.status!=='fatta'?`<button class="btn pri" style="width:100%;margin-bottom:10px" onclick="startBollettino('${id}')">▶ Avvia intervento (bollettino)</button>`:''}
   ${id&&typeof macCanCatalog==='function'&&macCanCatalog()?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--cy);color:var(--cy)" onclick="macFromMaint('${id}')">⚙️ Scheda macchina · compila tagliando</button>`:''}
   ${id&&m.report?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--teal);color:var(--teal)" onclick="viewBollettino('${id}')">📄 Vedi bollettino firmato</button>`:''}
-  ${m.clientId?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--blue);color:var(--blue)" onclick="zoneFromSheet('mn-c')">📍 Vedi il cliente sulla mappa</button>`:''}
+  ${m.clientId&&moduleActive('zone')?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--blue);color:var(--blue)" onclick="zoneFromSheet('mn-c')">📍 Vedi il cliente sulla mappa</button>`:''}
   <div class="actions">
     ${id?`<button class="btn danger" onclick="delItem('maintenances','${id}')">Elimina</button>`:''}
     <button class="btn pri" onclick="saveMan('${id||''}')">Salva</button></div>`);
 }
 function saveMan(id){
-  const data={title:$('#mn-t').value.trim(),clientId:$('#mn-c').value||null,employees:empSegRead('mn-e'),date:$('#mn-d').value||null,time:$('#mn-h').value||null,status:$('#mn-s .sg.on')?.dataset.s||'da_fare',notes:$('#mn-n').value.trim(),recur:+($('#mn-r')?.value||0),type:$('#mn-tp')?.value||null};
+  const mcid=$('#mn-c').value||null;const mraw=(!mcid&&$('#mn-c').dataset&&$('#mn-c').dataset.raw)||null;
+  const data={title:$('#mn-t').value.trim(),clientId:mcid,clientRaw:mraw,employees:empSegRead('mn-e'),date:$('#mn-d').value||null,time:$('#mn-h').value||null,status:$('#mn-s .sg.on')?.dataset.s||'da_fare',notes:$('#mn-n').value.trim(),recur:+($('#mn-r')?.value||0),type:$('#mn-tp')?.value||null};
   if(!data.title){toast('Manca la descrizione');return;}
   const old=id?byId(S.maintenances,id):null;
   const wasFatta=old?old.status==='fatta':false;const prevEmps=old?empIdsOf(old):[];
-  if(id){Object.assign(old,data);}else{S.maintenances.unshift({id:uid(),clientRaw:null,via:'manuale',created:Date.now(),...data});}
-  const added=data.employees.filter(e=>!prevEmps.includes(e));
+  if(id){Object.assign(old,data);}else{S.maintenances.unshift({id:uid(),via:'manuale',created:Date.now(),...data});}
+  const added=data.employees.filter(e=>!prevEmps.includes(e)&&!(S.session&&e===S.session.empId));
   if(added.length&&data.status!=='fatta')pushNotify(added,'🔧 Manutenzione assegnata',`${cName(data.clientId)||(old&&old.clientRaw)||''} — ${data.title}${data.date?' · '+fmtD(data.date):''}${data.time?' '+data.time:''}`);
   let extra='';
   if(data.status==='fatta'&&!wasFatta&&data.recur>0){

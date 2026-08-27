@@ -40,7 +40,7 @@ function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.i
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},billing:{},reminders:{}},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{}},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -145,7 +145,7 @@ async function loadAll(){
   S.invoices=(iv&&iv.data||[]).map(MAPS.invoices.fromDb).sort((a,b)=>b.created-a.created);
   S.documents=(dc&&dc.data||[]).map(MAPS.documents.fromDb).sort((a,b)=>b.created-a.created);
   S.todos=(td&&td.data||[]).map(MAPS.todos.fromDb).sort((a,b)=>b.created-a.created);
-  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),boards:(st.data.boards&&typeof st.data.boards==='object'&&!Array.isArray(st.data.boards))?st.data.boards:{},billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{}),reminders:(st.data.reminders&&typeof st.data.reminders==='object'&&!Array.isArray(st.data.reminders))?st.data.reminders:(st.data.reminders?JSON.parse(st.data.reminders):{})};
+  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),boards:(st.data.boards&&typeof st.data.boards==='object'&&!Array.isArray(st.data.boards))?st.data.boards:{},places:Array.isArray(st.data.places)?st.data.places:[],billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{}),reminders:(st.data.reminders&&typeof st.data.reminders==='object'&&!Array.isArray(st.data.reminders))?st.data.reminders:(st.data.reminders?JSON.parse(st.data.reminders):{})};
   rebuildSnapshot();
 }
 function dbRows(){
@@ -199,7 +199,7 @@ async function syncNow(){
       if(dels.length){const{error}=await sb.from(TBL[k]).delete().in('id',dels);if(error)throw error;}
     }
     if(isOwner()&&snapshot._settings!==JSON.stringify(S.settings)){
-      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[],boards:S.settings.boards||{},billing:S.settings.billing||{},reminders:S.settings.reminders||{}}).eq('tenant_id',TENANT_ID);
+      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[],boards:S.settings.boards||{},places:S.settings.places||[],billing:S.settings.billing||{},reminders:S.settings.reminders||{}}).eq('tenant_id',TENANT_ID);
       if(error)throw error;
     }
     rebuildSnapshot();
@@ -266,17 +266,19 @@ function remindTick(){
   const r=(S.settings&&S.settings.reminders)||{};
   if(r.enabled===false)return;
   const thr=Number(r.minutesBefore!=null?r.minutesBefore:30);
+  const allDay=r.allDayTime||'08:00'; // orario di trigger per gli eventi/scadenze senza ora
   _remindLoad();
   const today=todayIso();const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
   allEvents().forEach(e=>{
-    if(e.done||e.date!==today||!e.time)return;
-    const p=String(e.time).split(':');const h=+p[0],m=+(p[1]||0);if(isNaN(h))return;
+    if(e.done||e.date!==today)return;
+    const tm=e.time||allDay; // eventi senza orario → avvisa all'ora impostata
+    const p=String(tm).split(':');const h=+p[0],m=+(p[1]||0);if(isNaN(h))return;
     const lead=(h*60+m)-nowMin;
     if(lead<0||lead>thr||_reminded.has(e.id))return;
     _reminded.add(e.id);_remindSave();
     const when=lead<=0?'adesso':('tra '+lead+' min');
-    toast('🔔 '+when+' · '+e.time+' '+(e.title||'appuntamento'));
-    try{if('Notification'in window&&Notification.permission==='granted'){new Notification('🔔 '+e.time+' · '+(e.title||'Appuntamento'),{body:[e.sub,e.place?'📍 '+e.place:''].filter(Boolean).join(' · ')||('Promemoria '+when),tag:'rem-'+e.id});}}catch(_){}
+    toast('🔔 '+when+' · '+tm+' '+(e.title||'promemoria'));
+    try{if('Notification'in window&&Notification.permission==='granted'){new Notification('🔔 '+tm+' · '+(e.title||'Promemoria'),{body:[e.sub,e.place?'📍 '+e.place:''].filter(Boolean).join(' · ')||('Promemoria '+when),tag:'rem-'+e.id});}}catch(_){}
   });
 }
 function remindStart(){if(_remindTimer)return;try{remindTick();}catch(e){}_remindTimer=setInterval(()=>{try{remindTick();}catch(e){}},30000);}
@@ -585,6 +587,7 @@ const MODULE_CATALOG={
     {id:'macchine',ic:'⚙️',nome:'Macchine',desc:'Parco macchine e schede.'},
     {id:'pellet',ic:'🪵',nome:'Consegne',desc:'Consegne, bolle e scorte.'},
     {id:'zone',ic:'🗺️',nome:'Zone & Mappa',desc:'Zone e clienti sulla mappa.'},
+    {id:'lavagna',ic:'📋',nome:'Lavagna',desc:'Dashboard componibile: post-it e widget.'},
   ],
   arrivo:[
     {id:'prenota',ic:'🗓️',nome:'Prenotazioni',desc:'Appuntamenti online.'},
@@ -1416,14 +1419,16 @@ async function delClientAtt(clientId,aid){
 /* cancellazione cantiere: rimuove anche foto/file dallo Storage (i log spariscono via sync) */
 async function delSite(id){
   const s=byId(S.sites,id);if(!s)return;
-  const n=(s.attachments||[]).length;
-  if(!confirm(`Eliminare il cantiere "${s.name}"?`+(n?`\nVerranno cancellate anche ${n} foto/file.`:'')+'\nNon si può annullare.'))return;
+  const reps=(S.reports||[]).filter(r=>r.siteId===id);
+  const n=(s.attachments||[]).length+reps.reduce((a,r)=>a+((r.photos||[]).length),0);
+  if(!confirm(`Eliminare il cantiere "${s.name}"?`+(reps.length?`\nVerranno cancellati anche ${reps.length} rapportini.`:'')+(n?`\nE ${n} foto/file.`:'')+'\nNon si può annullare.'))return;
   try{
-    const paths=(s.attachments||[]).map(a=>a.storagePath).filter(Boolean);
+    const paths=[...(s.attachments||[]).map(a=>a.storagePath),...reps.flatMap(r=>(r.photos||[]).map(p=>p.storagePath))].filter(Boolean);
     if(paths.length)await sb.storage.from('allegati').remove(paths);
     const aids=(s.attachments||[]).map(a=>a.id);
     if(aids.length)await sb.from('attachments').delete().in('id',aids);
   }catch(e){toast('⚠ Pulizia allegati: '+(e.message||e));}
+  if(reps.length)S.reports=S.reports.filter(r=>r.siteId!==id); // i rapportini spariscono via sync (DEL_ORDER)
   S.sites=S.sites.filter(x=>x.id!==id);
   save();closeSheet();render();toast('🗑 Cantiere eliminato');
 }
@@ -1449,7 +1454,8 @@ function editSite(id,preset){
 function saveSite(id){
   const name=$('#st-n').value.trim();if(!name){toast('Manca il nome');return;}
   const employees=[...document.querySelectorAll('#st-e .sg.on')].map(x=>x.dataset.id);
-  const data={name,clientId:$('#st-c').value||null,employees,estHours:parseFloat($('#st-h').value)||null,startDate:$('#st-sd').value||null,dueDate:$('#st-dd').value||null,notes:$('#st-no').value.trim()};
+  const scid=$('#st-c').value||null;const sraw=(!scid&&$('#st-c').dataset&&$('#st-c').dataset.raw)||null;
+  const data={name,clientId:scid,clientRaw:sraw,employees,estHours:parseFloat($('#st-h').value)||null,startDate:$('#st-sd').value||null,dueDate:$('#st-dd').value||null,notes:$('#st-no').value.trim()};
   const amEl=$('#st-am');if(amEl)data.amount=parseFloat(amEl.value)||null;
   const stEl=document.querySelector('#st-st .sg.on');if(stEl)data.status=stEl.dataset.s;
   const oldS=id?byId(S.sites,id):null;const prevEmps=oldS?(oldS.employees||[]):[];

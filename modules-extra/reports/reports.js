@@ -113,7 +113,7 @@ function saveReport(id){
   const meId=S.session&&S.session.empId;
   let employees=(typeof empSegRead==='function')?empSegRead('rp-emp'):[];
   if(!employees.length)employees=meId?[meId]:[];
-  const empId=employees[0]||meId; // autore/primario = primo selezionato
+  const empId=(meId&&employees.includes(meId))?meId:(employees[0]||meId); // autore = chi compila se presente
   if(!siteId){toast('Scegli il cantiere');return;}
   const data={siteId,empId,employees,date:($('#rp-date').value||todayIso()),hours:parseFloat($('#rp-hours').value)||null,work:$('#rp-work').value.trim(),materials:$('#rp-mat').value.trim(),photos:repDraft.photos,status:'inviato'};
   if(id){const r=byId(S.reports,id);if(r)Object.assign(r,data);}

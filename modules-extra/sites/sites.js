@@ -3,7 +3,7 @@
 
 /* ================= CANTIERI ================= */
 let siteTab='aperto';
-function siteHours(s){return s.log.reduce((t,l)=>t+(l.hours||0),0);}
+function siteHours(s){const diary=s.log.reduce((t,l)=>t+(l.hours||0),0);const rep=(moduleActive('reports')&&typeof repHours==='function'&&typeof repForSite==='function')?repHours(repForSite(s.id)):0;return diary+rep;}
 function renderSites(){
   const groups={aperto:[],da_fatturare:[],chiuso:[]};
   visSites().forEach(s=>{const g=groups[s.status||'aperto'];if(g)g.push(s);});
@@ -105,7 +105,7 @@ function openSite(id){
   <div class="fld"><label>⚙️ Macchine sul cantiere</label><div id="site-machines"><div class="subtle">…</div></div></div>
   <div class="actions" style="flex-wrap:wrap">
     <button class="btn danger" onclick="delSite('${id}')">Elimina</button>
-    ${s.clientId?`<button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="zoneFocusClient('${s.clientId}')">📍 Mappa</button>`:''}
+    ${s.clientId&&moduleActive('zone')?`<button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="zoneFocusClient('${s.clientId}')">📍 Mappa</button>`:''}
     ${s.status==='previsto'?`<button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="setSiteStatus('${id}','aperto')">▶ Avvia → cantiere attivo</button>`:''}
     ${s.status==='aperto'?`<button class="btn" style="border-color:var(--amber);color:var(--amber)" onclick="setSiteStatus('${id}','da_fatturare')">✓ Finito → fattura</button>`:''}
     ${s.status==='da_fatturare'?`<button class="btn" onclick="setSiteStatus('${id}','aperto')">↩ Riapri</button>

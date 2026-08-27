@@ -51,8 +51,9 @@ function docFornitori(){
   S.documents.forEach(d=>{const k=((d.fornitore||'').trim())||'—';if(!by[k])by[k]={n:0,tot:0,dap:0};by[k].n++;by[k].tot+=(+d.amount||0);if(d.payStatus==='da_pagare')by[k].dap+=(+d.amount||0);});
   const keys=Object.keys(by).sort((a,b)=>by[b].tot-by[a].tot);
   if(!keys.length)return '<div class="card"><div class="empty">Nessun fornitore ancora.</div></div>';
-  return `<div class="card">${keys.map(k=>`<div class="frw" style="cursor:pointer" onclick="docTab='tutti';docQ=${JSON.stringify(k)};render()"><div class="bd"><div class="ti">${esc(k)}</div><div class="su">${by[k].n} doc.${by[k].dap?' · <span style="color:var(--amber)">da pagare '+docChf(by[k].dap)+'</span>':''}</div></div><span style="font-family:var(--mono);font-weight:600">${docChf(by[k].tot)}</span></div>`).join('')}</div>`;
+  return `<div class="card">${keys.map(k=>`<div class="frw" style="cursor:pointer" data-forn="${esc(k)}" onclick="docPickForn(this)"><div class="bd"><div class="ti">${esc(k)}</div><div class="su">${by[k].n} doc.${by[k].dap?' · <span style="color:var(--amber)">da pagare '+docChf(by[k].dap)+'</span>':''}</div></div><span style="font-family:var(--mono);font-weight:600">${docChf(by[k].tot)}</span></div>`).join('')}</div>`;
 }
+function docPickForn(el){docTab='tutti';docQ=(el&&el.dataset.forn)||'';render();}
 
 /* ---- editor ---- */
 let docDraft=null, docUrl=null;

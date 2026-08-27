@@ -75,14 +75,18 @@ function newNote(){
   <div class="fld"><label>Assegna a (uno o più, facoltativo)</label>${empSeg('nn-e',[])}</div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="saveNewNote()">Salva</button></div>`);
 }
-function saveNewNote(){const t=$('#nn-t').value.trim();if(!t)return;const employees=empSegRead('nn-e');S.notes.unshift({id:uid(),text:t,clientId:$('#nn-c').value||null,groupId:$('#nn-g').value||null,employees,date:$('#nn-d').value||null,pinned:false,archived:false,via:'manuale',created:Date.now()});if(employees.length)pushNotify(employees,'📝 Nota per te',t.slice(0,90));save();closeSheet();render();toast('📝 Nota salvata');}
+function saveNewNote(){const t=$('#nn-t').value.trim();if(!t)return;const employees=empSegRead('nn-e');S.notes.unshift({id:uid(),text:t,clientId:$('#nn-c').value||null,groupId:$('#nn-g').value||null,employees,date:$('#nn-d').value||null,pinned:false,archived:false,via:'manuale',created:Date.now()});const notify=employees.filter(e=>!(S.session&&e===S.session.empId));if(notify.length)pushNotify(notify,'📝 Nota per te',t.slice(0,90));save();closeSheet();render();toast('📝 Nota salvata');}
 function openNote(id){
   const n=byId(S.notes,id);if(!n)return;
   openSheet(`<h3>Nota <span class="x" onclick="closeSheet()">✕</span></h3>
   <div class="fld"><label>Testo</label><textarea id="en-t">${esc(n.text)}</textarea></div>
   <div class="fld"><label>Gruppo</label><select id="en-g">${groupOpts(n.groupId)}</select></div>
   <div class="frow"><div class="fld"><label>Data (va a calendario)</label><input id="en-d" type="date" value="${n.date||''}"></div>
-  <div class="fld"><label>Cliente</label>${cliInput('en-c',n.clientId)}</div></div>
+  <div class="fld"><label>Ora (opz.)</label><input id="en-h" type="time" value="${n.time||''}"></div></div>
+  <div class="frow"><div class="fld"><label>Ora fine (opz.)</label><input id="en-et" type="time" value="${n.endTime||''}"></div>
+  <div class="fld"><label>Giorno fine (se dura più giorni)</label><input id="en-ed" type="date" value="${n.endDate||''}"></div></div>
+  <div class="fld"><label>Luogo (opz.)</label><input id="en-pl" value="${esc(n.place||'')}" placeholder="es. Via Motta 3, Lugano"></div>
+  <div class="fld"><label>Cliente</label>${cliInput('en-c',n.clientId)}</div>
   <div class="fld"><label>Assegna a (uno o più, facoltativo)</label>${empSeg('en-e',empIdsOf(n))}</div>
   <div class="actions">
     <button class="btn danger" onclick="delItem('notes','${id}')">Elimina</button>
@@ -90,7 +94,7 @@ function openNote(id){
     <button class="btn" onclick="togglePin('${id}')">${n.pinned?'Stacca':'📌 Fissa'}</button>
     <button class="btn pri" onclick="saveNote('${id}')">Salva</button></div>`);
 }
-function saveNote(id){const n=byId(S.notes,id);const prevEmps=empIdsOf(n);n.text=$('#en-t').value.trim()||n.text;n.date=$('#en-d').value||null;n.clientId=$('#en-c').value||null;n.groupId=$('#en-g').value||null;n.employees=empSegRead('en-e');const added=n.employees.filter(e=>!prevEmps.includes(e));if(added.length)pushNotify(added,'📝 Nota per te',(n.text||'').slice(0,90));save();closeSheet();render();toast('Salvato');}
+function saveNote(id){const n=byId(S.notes,id);const prevEmps=empIdsOf(n);n.text=$('#en-t').value.trim()||n.text;n.date=$('#en-d').value||null;n.time=$('#en-h').value||null;n.endTime=$('#en-et').value||null;n.endDate=$('#en-ed').value||null;n.place=$('#en-pl').value.trim()||null;n.clientId=$('#en-c').value||null;n.groupId=$('#en-g').value||null;n.employees=empSegRead('en-e');const added=n.employees.filter(e=>!prevEmps.includes(e)&&!(S.session&&e===S.session.empId));if(added.length)pushNotify(added,'📝 Nota per te',(n.text||'').slice(0,90));save();closeSheet();render();toast('Salvato');}
 function togglePin(id){const n=byId(S.notes,id);n.pinned=!n.pinned;save();closeSheet();render();}
 function delItem(coll,id){if(!confirm('Eliminare definitivamente?'))return;S[coll]=S[coll].filter(x=>x.id!==id);save();closeSheet();render();toast('Eliminato');}
 

@@ -117,8 +117,20 @@ function zHav(a,b){const R=6371,r=Math.PI/180;const dLa=(b.la-a.la)*r,dLo=(b.lo-
 const ZONE_BASE=[46.2444,9.0981];
 
 /* ---- stato vista ---- */
-let zoneSel='all', zoneMode='lavori', zoneWin='all', zoneShowAll=false, zoneQuery='', zoneRoute=[];
+let zoneSel='all', zoneMode='clienti', zoneWin='all', zoneShowAll=false, zoneQuery='', zoneRoute=[];
+const zoneHasWork=()=>(typeof moduleActive==='function')&&(moduleActive('man')||moduleActive('pellet'));
 let zMap=null, zMarkers=[], zoneFocusId=null;
+
+/* ---------- PUNTI SALVATI (magazzino, ufficio, deposito…) — per azienda ---------- */
+const zonePlaces=()=>(S.settings&&Array.isArray(S.settings.places))?S.settings.places:[];
+/* centro iniziale mappa: media dei punti/clienti geolocalizzati; se non ce ne sono, ripiego (Lugano) */
+function zoneCenter(){
+  const pts=[];
+  S.clients.forEach(c=>{if(zoneHasExact(c))pts.push([c.lat,c.lng]);});
+  zonePlaces().forEach(p=>{if(typeof p.lat==='number'&&typeof p.lng==='number')pts.push([p.lat,p.lng]);});
+  if(pts.length){const la=pts.reduce((s,p)=>s+p[0],0)/pts.length,lo=pts.reduce((s,p)=>s+p[1],0)/pts.length;return[la,lo];}
+  return HAS_ZONES?ZONE_CENTER:[46.005,8.955]; // ripiego: Lugano/Ticino invece del centro Italia
+}
 
 /* base/officina: paese di partenza per ordinare il giro (salvata sul dispositivo) */
 function zoneBaseTown(){try{return localStorage.getItem('ptek_base')||'';}catch(e){return '';}}
@@ -137,9 +149,39 @@ function zoneFocusClient(cid){
   zoneFocusId=cid;zoneMode='clienti';zoneSel='all';zoneQuery='';
   const z=zoneOfClient(c);
   nav('zone');
-  if(!z&&typeof toast==='function')setTimeout(()=>toast('📍 '+(c.town||'Questo cliente')+': paese senza zona riconosciuta'),60);
+  if(HAS_ZONES&&!z&&typeof toast==='function')setTimeout(()=>toast('📍 '+(c.town||'Questo cliente')+': paese senza zona riconosciuta'),60);
 }
 function zoneFromSheet(selId){const s=document.getElementById(selId);zoneFocusClient(s&&s.value);}
+/* ---- punti salvati: aggiungi/modifica/elimina/vola ---- */
+function zoneFlyPlace(id){const p=zonePlaces().find(x=>x.id===id);if(!p||typeof p.lat!=='number')return;if(zMap)zMap.flyTo([p.lat,p.lng],16,{duration:.6});}
+function openZonePlace(id){
+  const p=id?zonePlaces().find(x=>x.id===id):null;const cur=p||{name:'',icon:'🏬',lat:null,lng:null};
+  const hasPos=typeof cur.lat==='number';
+  openSheet(`<h3>${id?'Modifica punto':'Nuovo punto salvato'} <span class="x" onclick="closeSheet()">✕</span></h3>
+   <div class="frow"><div class="fld" style="max-width:92px"><label>Icona</label><input id="zp-ic" value="${esc(cur.icon||'🏬')}" maxlength="2" style="text-align:center;font-size:18px"></div>
+   <div class="fld"><label>Nome</label><input id="zp-n" value="${esc(cur.name||'')}" placeholder="es. Magazzino, Ufficio"></div></div>
+   <div class="fld"><label>Indirizzo (per trovarlo sulla mappa)</label><input id="zp-a" placeholder="es. Via Motta 3, 6900 Lugano"></div>
+   <label class="set-check" style="margin:2px 0"><input type="checkbox" id="zp-center"> Oppure usa il centro della mappa (sposta la mappa dove vuoi, poi spunta)</label>
+   ${hasPos?`<div class="subtle" style="margin-top:4px">Posizione salvata ✓ — lascia vuoto per tenerla com'è.</div>`:''}
+   <div class="actions">${id?`<button class="btn danger" onclick="delZonePlace('${id}')">Elimina</button>`:''}<button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="saveZonePlace('${id||''}')">Salva</button></div>`);
+}
+async function saveZonePlace(id){
+  const name=($('#zp-n').value||'').trim();if(!name){toast('Dai un nome al punto');return;}
+  const icon=($('#zp-ic').value||'').trim()||'🏬';
+  const addr=($('#zp-a').value||'').trim();
+  const useCenter=$('#zp-center')&&$('#zp-center').checked;
+  const cur=id?zonePlaces().find(x=>x.id===id):null;
+  let lat=null,lng=null;
+  if(useCenter&&zMap){const cc=zMap.getCenter();lat=+cc.lat.toFixed(6);lng=+cc.lng.toFixed(6);}
+  else if(addr){toast('🔎 Cerco l\'indirizzo…');try{const g=await zoneGeocode({street:addr,town:'',cap:''});if(g){lat=g.lat;lng=g.lng;}else{toast('Indirizzo non trovato — sposta la mappa e usa «centro mappa»');return;}}catch(e){toast('⚠ '+(e.message||e));return;}}
+  else if(cur&&typeof cur.lat==='number'){lat=cur.lat;lng=cur.lng;}
+  else{toast('Metti un indirizzo o usa «centro mappa»');return;}
+  if(!Array.isArray(S.settings.places))S.settings.places=[];
+  if(id&&cur){cur.name=name;cur.icon=icon;cur.lat=lat;cur.lng=lng;}
+  else S.settings.places.push({id:uid(),name,icon,lat,lng});
+  save();closeSheet();renderZone();toast('✓ Punto salvato');
+}
+function delZonePlace(id){if(!confirm('Eliminare questo punto?'))return;S.settings.places=zonePlaces().filter(x=>x.id!==id);save();closeSheet();renderZone();toast('Punto eliminato');}
 
 /* clienti elencati: filtrati per modalità + zona + ricerca */
 function zoneListClients(){
@@ -160,6 +202,7 @@ function zoneCounts(){
 
 function renderZone(){
   zoneIndex();
+  if(!zoneHasWork())zoneMode='clienti'; // la modalità "Lavori" ha senso solo con Manutenzioni/Pellet
   const {counts,tot}=zoneCounts();
   const noZone=S.clients.filter(c=>!c.blocked&&!zoneOfClient(c)&&((c.town||'').trim()||(c.cap||'').trim()));
   /* clienti geolocalizzabili ma ancora senza pin (indirizzo presente, coordinate no):
@@ -169,16 +212,19 @@ function renderZone(){
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--teal)"></span>${HAS_ZONES?'Zone':'Mappa clienti'}</div>
   <div class="zsearch"><input id="zone-q" class="searchbar" style="margin:0" placeholder="🔍 Cerca ${HAS_ZONES?'paese o ':''}cliente…" value="${esc(zoneQuery)}" oninput="zoneQuery=this.value;zoneRenderList()" onkeydown="if(event.key==='Enter')zoneSearchFly()"></div>
-  <div class="zmodes">
+  ${zoneHasWork()?`<div class="zmodes">
     <div class="zmode${zoneMode==='lavori'?' on':''}" onclick="zoneSetMode('lavori')">🔧 Lavori da fare</div>
     <div class="zmode${zoneMode==='clienti'?' on':''}" onclick="zoneSetMode('clienti')">👥 Tutti i clienti</div>
-  </div>
+  </div>`:''}
   ${zoneMode==='lavori'?`<div class="zwin">${[['oggi','Oggi'],['7','Questa settimana'],['all','Tutti']].map(([v,l])=>`<div class="zw${zoneWin===v?' on':''}" onclick="zoneSetWin('${v}')">${l}</div>`).join('')}</div>`:''}
   ${HAS_ZONES?`<div id="zone-chips">${zoneChipsHTML(counts,tot)}</div>`:''}
   <div id="zone-map" class="zone-map"></div>
   ${HAS_ZONES?`<label class="ztoggle"><input type="checkbox" ${zoneShowAll?'checked':''} onchange="zoneShowAll=this.checked;renderZone()"> Mostra tutti i ${ZONE_PAESI.length} paesi sulla mappa</label>`:''}
   ${(!placed&&unplaced.length)?`<div class="card" style="border-color:var(--amber);background:rgba(199,127,18,.08);padding:11px 13px;margin-top:8px"><b>📍 Nessun cliente ancora sulla mappa.</b><br><span class="subtle">${unplaced.length} client${unplaced.length===1?'e ha':'i hanno'} un indirizzo: trova la posizione per vederli come pin.</span>${isOwner()?`<div style="margin-top:8px"><button class="btn pri" style="padding:8px 12px" onclick="zoneGeocodeMissing()">🎯 Trova le posizioni</button></div>`:''}</div>`:''}
   <div id="zone-routebar"></div>
+  ${(isOwner()||zonePlaces().length)?`<div class="card" style="margin-top:10px"><div class="sh"><span class="t">📍 Punti salvati</span>${isOwner()?`<span class="a" onclick="openZonePlace()">+ Aggiungi</span>`:''}</div>
+    ${zonePlaces().length?zonePlaces().map(p=>`<div class="frw" style="cursor:pointer" onclick="zoneFlyPlace('${p.id}')"><div class="avat" style="width:32px;height:32px;font-size:16px">${esc(p.icon||'📍')}</div><div class="bd"><div class="ti">${esc(p.name)}</div></div>${isOwner()?`<button class="qbtn" onclick="event.stopPropagation();openZonePlace('${p.id}')">✏️</button>`:''}</div>`).join(''):'<div class="subtle" style="padding:2px 2px 4px">Salva i punti fissi che usi — magazzino, ufficio, deposito… compaiono sulla mappa.</div>'}
+  </div>`:''}
   <div id="zone-list"></div>
   ${HAS_ZONES&&noZone.length?`<details class="znozone"><summary>⚠️ ${noZone.length} client${noZone.length===1?'e':'i'} senza zona (paese non riconosciuto)</summary><div class="card" style="margin-top:8px">${noZone.sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<div class="item" onclick="openClient('${c.id}')"><div class="bd"><div class="ti">${esc(c.name)}</div><div class="su">${esc([c.town||'(nessun paese)',c.cap].filter(Boolean).join(' · '))}</div></div></div>`).join('')}</div></details>`:''}
   ${isOwner()?`<div style="text-align:center;margin:16px 0 4px;display:flex;flex-direction:column;gap:8px">${HAS_ZONES?`<span class="zlink" onclick="zoneAssignAll()">🔄 Assegna le zone ai clienti (gruppo = zona)</span>`:''}<span class="zlink" onclick="zoneGeocodeMissing()">🎯 Trova la posizione dei clienti senza pin</span></div>`:''}`;
@@ -219,7 +265,7 @@ function zoneInitMap(){
   if(typeof L==='undefined'){el.innerHTML='<div class="subtle" style="padding:20px;text-align:center">Mappa non disponibile offline (serve connessione).</div>';return;}
   if(zMap){try{zMap.remove();}catch(e){}zMap=null;}
   zMarkers=[];
-  zMap=L.map(el,{center:ZONE_CENTER,zoom:10,scrollWheelZoom:true});
+  zMap=L.map(el,{center:zoneCenter(),zoom:10,scrollWheelZoom:true});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(zMap);
   const due=zoneDueByClient();const tindex=zoneTownIndex();
   const byTown={};const exact=[];
@@ -249,6 +295,14 @@ function zoneInitMap(){
     m.bindPopup(zoneClientPopupHTML(c,due),{maxWidth:280});
     m.bindTooltip(esc(c.name),{direction:'top'});
     m.addTo(zMap);zMarkers.push({m,z,exact:true,c});
+  });
+  /* punti salvati (magazzino/ufficio…) */
+  zonePlaces().forEach(pl=>{if(typeof pl.lat!=='number'||typeof pl.lng!=='number')return;
+    const icon=L.divIcon({className:'zplace',html:`<span>${esc(pl.icon||'📍')}</span>`,iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-12]});
+    const m=L.marker([pl.lat,pl.lng],{icon,zIndexOffset:1000});
+    m.bindPopup(`<b>${esc(pl.icon||'📍')} ${esc(pl.name)}</b>`+(isOwner()?`<br><span class="zlink" onclick="openZonePlace('${pl.id}')">Modifica</span>`:''),{maxWidth:220});
+    m.bindTooltip(esc(pl.name),{direction:'top'});
+    m.addTo(zMap);zMarkers.push({m,place:true});
   });
   const fc=zoneFocusId?byId(S.clients,zoneFocusId):null;
   const fll=fc?zoneClientLL(fc):null;

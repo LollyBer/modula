@@ -32,7 +32,7 @@ function renderTodo(){
   <div class="pagetitle"><span class="accent" style="background:#7C5CBF"></span>Da fare</div>
   <button class="btn pri" style="width:100%;margin-bottom:12px" onclick="openTodo()">+ Nuova cosa da fare</button>
   ${overdue.length?`<div class="card" style="border-color:rgba(214,69,40,.4)"><div class="sh"><span class="t" style="color:var(--coral)">⚠ In ritardo (${overdue.length})</span></div>${overdue.map(todoRow).join('')}</div>`:''}
-  <div class="card"><div class="sh"><span class="t">Da fare (${open.length})</span></div>
+  <div class="card"><div class="sh"><span class="t">Da fare (${open.length-overdue.length})</span></div>
     ${open.length?(withDue.filter(t=>!todoOverdue(t)).map(todoRow).join('')+noDue.map(todoRow).join('')):'<div class="empty"><div class="big">✅</div>Niente da fare. 🎉<br><span class="subtle">Aggiungi le cose da ricordare, con o senza scadenza.</span></div>'}
   </div>
   ${done.length?`<details style="margin-top:8px"><summary style="cursor:pointer;padding:9px 4px;color:var(--t2);font-size:13px">✓ Fatte (${done.length})</summary><div class="card" style="margin-top:6px">${done.slice(0,50).map(todoRow).join('')}</div></details>`:''}`;

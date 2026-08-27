@@ -51,7 +51,7 @@ function renderCal(){
   ${isOwner()?`<div style="display:flex;justify-content:flex-end;margin:-2px 0 8px"><button class="btn sm ghost" onclick="openCalTypes()">⚙️ Voci calendario</button></div>`:''}
   <button class="fab" onclick="openQuickAdd('${calSel}')">+</button>`;
 }
-function calShift(n){calCur=new Date(calCur.getFullYear(),calCur.getMonth()+n,1);render();}
+function calShift(n){calCur=new Date(calCur.getFullYear(),calCur.getMonth()+n,1);calSel=iso(calCur);render();}
 function renderAgenda(){
   const ev=allEvents().filter(e=>!e.done);
   const t=todayIso();

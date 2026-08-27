@@ -485,7 +485,7 @@ function printMonthAll(ym){
 /* ================= GESTIONE (solo titolare) ================= */
 function renderEmpsManage(){
   const mKey=todayIso().slice(0,7);
-  const PI={cal:['📅','Cal.'],man:['🔧','Manut.'],pellet:['🪵','Pellet'],sites:['🏗','Cant.'],reports:['📸','Rapp.'],documenti:['📁','Doc.'],notes:['📝','Note'],todo:['✅','Da fare'],chat:['💬','Chat'],clients:['👥','Clienti']};
+  const PI={cal:['📅','Cal.'],man:['🔧','Manut.'],pellet:['🪵','Pellet'],sites:['🏗','Cant.'],reports:['📸','Rapp.'],documenti:['📁','Doc.'],macchine:['⚙️','Macch.'],notes:['📝','Note'],todo:['✅','Da fare'],chat:['💬','Chat'],clients:['👥','Clienti']};
   const seatInfo=MAX_EMP!=null?`${seatCount()} / ${MAX_EMP} posti`:`${S.employees.length}`;
   $('#main').innerHTML=`
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">

@@ -266,6 +266,8 @@ alter table settings add column if not exists event_types jsonb not null default
 alter table settings add column if not exists board jsonb not null default '[]'::jsonb;
 -- lavagne PER-UTENTE: oggetto { "<emp_id>": [ ...tessere ] } → ogni amministratore ha la sua:
 alter table settings add column if not exists boards jsonb not null default '{}'::jsonb;
+-- punti salvati sulla mappa (magazzino, ufficio, deposito…): [{id,name,icon,lat,lng}]:
+alter table settings add column if not exists places jsonb not null default '[]'::jsonb;
 -- dati fatturazione azienda (ragione sociale, indirizzo, IBAN, IVA default, progressivo):
 alter table settings add column if not exists billing jsonb not null default '{}'::jsonb;
 -- promemoria appuntamenti: {enabled, minutesBefore, allDayTime}. Letto dalla Edge Function "reminders".

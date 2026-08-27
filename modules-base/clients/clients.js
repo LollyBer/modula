@@ -91,15 +91,15 @@ function openClient(id){
   ${not.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--teal)">📝 Note (${not.length})</div>${mini(not,n=>`<div class="subtle" style="padding:2px 0 2px 8px">• ${esc(n.text)}</div>`)}`:''}
   ${!man.length&&!pel.length&&!sit.length&&!app.length&&!not.length?'<div class="subtle">Ancora vuoto — si riempirà da solo man mano che registri.</div>':''}
   </div>
-  <div class="fld"><label>⚙️ Macchine installate</label><div id="cli-machines"><div class="subtle">…</div></div></div>
+  ${moduleActive('macchine')?`<div class="fld"><label>⚙️ Macchine installate</label><div id="cli-machines"><div class="subtle">…</div></div></div>`:''}
   <div class="fld"><label>📷 Foto e file del cliente</label><div id="cli-att"><div class="subtle">…</div></div></div>
   <div class="actions" style="flex-wrap:wrap">
     <button class="btn danger" onclick="delClient('${id}')">Elimina</button>
-    <button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="zoneFocusClient('${id}')">📍 Mappa</button>
+    ${moduleActive('zone')?`<button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="zoneFocusClient('${id}')">📍 Mappa</button>`:''}
     <button class="btn" style="border-color:var(--teal);color:var(--teal)" onclick="openClientGeo('${id}')">🎯 Posizione${(c.lat!=null&&c.lng!=null)?' ✓':''}</button>
     <button class="btn" style="border-color:var(--coral);color:var(--coral)" onclick="toggleBlock('${id}')">${c.blocked?'🔓 Sblocca':'🚫 Blocca'}</button>
     <button class="btn pri" onclick="editClient('${id}')">Modifica</button></div>`);
-  if(typeof macRenderClientMachines==='function') macRenderClientMachines(id,'cli-machines');
+  if(moduleActive('macchine')&&typeof macRenderClientMachines==='function') macRenderClientMachines(id,'cli-machines');
   loadClientAtt(id);
 }
 function toggleBlock(id){const c=byId(S.clients,id);if(!c)return;c.blocked=!c.blocked;save();closeSheet();render();toast(c.blocked?'🚫 Cliente bloccato':'🔓 Cliente sbloccato');}
@@ -149,16 +149,19 @@ async function delClient(id){
   const not=S.notes.filter(n=>n.clientId===id);
   const cal=S.callLog.filter(x=>x.clientId===id);
   const atts=sit.flatMap(s=>s.attachments||[]);
+  const reps=(S.reports||[]).filter(r=>sit.some(s=>s.id===r.siteId));
+  const rphotos=reps.flatMap(r=>r.photos||[]);
   const parts=[];
   if(man.length)parts.push(man.length+' manutenzioni');
   if(app.length)parts.push(app.length+' appuntamenti');
   if(pel.length)parts.push(pel.length+' consegne pellet');
   if(sit.length)parts.push(sit.length+' cantieri');
+  if(reps.length)parts.push(reps.length+' rapportini');
   if(not.length)parts.push(not.length+' note');
-  if(atts.length)parts.push(atts.length+' foto/file');
+  if(atts.length+rphotos.length)parts.push((atts.length+rphotos.length)+' foto/file');
   if(!confirm(`Eliminare DEFINITIVAMENTE il cliente "${c.name}"?`+(parts.length?'\n\nVerranno cancellati anche:\n• '+parts.join('\n• '):'')+'\n\nNon si può annullare. (In alternativa puoi BLOCCARE il cliente.)'))return;
   try{
-    const paths=atts.map(a=>a.storagePath).filter(Boolean);
+    const paths=[...atts.map(a=>a.storagePath),...rphotos.map(p=>p.storagePath)].filter(Boolean);
     if(paths.length)await sb.storage.from('allegati').remove(paths);
     const aids=atts.map(a=>a.id);
     if(aids.length)await sb.from('attachments').delete().in('id',aids);
@@ -170,6 +173,7 @@ async function delClient(id){
   S.maintenances=S.maintenances.filter(m=>m.clientId!==id);
   S.appointments=S.appointments.filter(a=>a.clientId!==id);
   S.pellet=S.pellet.filter(p=>p.clientId!==id);
+  if(reps.length)S.reports=(S.reports||[]).filter(r=>!sit.some(s=>s.id===r.siteId));
   S.sites=S.sites.filter(s=>s.clientId!==id);
   S.notes=S.notes.filter(n=>n.clientId!==id);
   S.callLog=S.callLog.filter(x=>x.clientId!==id);

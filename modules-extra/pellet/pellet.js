@@ -32,7 +32,7 @@ function monthlyTotals(kind,unit){
   for(let i=11;i>=0;i--){
     const d=new Date(now.getFullYear(),now.getMonth()-i,1);
     const key=d.getFullYear()+'-'+pad(d.getMonth()+1);
-    const val=S.pellet.filter(p=>(p.kind||'sacchi')===kind&&p.status==='consegnato'&&p.date&&p.date.startsWith(key)&&(!unit||p.unit===unit)).reduce((s,p)=>s+(p.qty||0),0);
+    const val=S.pellet.filter(p=>(p.kind||'sacchi')===kind&&p.status==='consegnato'&&p.date&&p.date.startsWith(key)&&(!unit||p.unit===unit||(kind==='sacchi'&&p.unit==='bancali'))).reduce((s,p)=>s+((p.unit==='bancali'?(p.qty||0)*(S.settings.bagsPerPallet||70):(p.qty||0))),0);
     out.push({label:MESI[d.getMonth()].slice(0,3),key,val});
   }
   return out;
@@ -110,7 +110,8 @@ function renderPelDash(){
   const totB=mB.reduce((s,d)=>s+d.val,0);
   const topT=mT.slice().sort((a,b)=>b.val-a.val)[0];
   const topB=mB.slice().sort((a,b)=>b.val-a.val)[0];
-  const openN=S.pellet.filter(p=>p.status!=='consegnato').length;
+  const openN=S.pellet.filter(p=>p.status!=='consegnato'&&p.status!=='prenotato').length;
+  const bookedN=S.pellet.filter(p=>p.status==='prenotato').length;
   const yago=addMonthsIso(todayIso(),-12);
   const rev=S.pellet.filter(p=>p.status==='consegnato'&&p.date&&p.date>=yago).reduce((t,p)=>t+(p.price||0),0);
   const fc=sfusoForecast();const alerts=fc.filter(f=>f.days!=null&&f.days<=30);
@@ -126,6 +127,7 @@ function renderPelDash(){
     <div class="kpi"><div class="n" style="color:#5E9E2E;font-size:16px">${fmtQty(totT)}t</div><div class="l">Sfuso 12m</div></div>
     <div class="kpi"><div class="n" style="color:var(--amber);font-size:16px">${totB}</div><div class="l">Sacchi 12m</div></div>
     <div class="kpi"><div class="n" style="font-size:16px">${openN}</div><div class="l">Da cons.</div></div>
+    ${bookedN?`<div class="kpi"><div class="n" style="color:var(--amber);font-size:16px">${bookedN}</div><div class="l">Prenotati</div></div>`:''}
     ${rev?`<div class="kpi"><div class="n" style="color:var(--teal);font-size:16px">${fmtQty(rev)}</div><div class="l">CHF 12m</div></div>`:`<div class="kpi"><div class="n" style="color:${alerts.length?'var(--amber)':'var(--t2)'};font-size:16px">${alerts.length}</div><div class="l">Rifornimenti</div></div>`}
   </div>
   ${alerts.length?`<div class="card" style="border-color:rgba(199,127,18,.45)"><div class="sh"><span class="t" style="color:var(--amber)">⏳ Da pianificare</span><span class="a" onclick="pelView='sfuso';render()">Sfuso →</span></div>
@@ -209,7 +211,7 @@ function openPel(id,preset){
   <div class="fld"><label>Note</label><textarea id="pl-n">${esc(p.notes||'')}</textarea></div>
   ${id&&p.status!=='consegnato'?`<button class="btn pri" style="width:100%;margin-bottom:10px" onclick="startBolla('${id}')">✍ Consegna con firma (bolla)</button>`:''}
   ${id&&p.signature?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--teal);color:var(--teal)" onclick="printBolla('${id}')">📄 Stampa bolla firmata</button>`:''}
-  ${p.clientId?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--blue);color:var(--blue)" onclick="zoneFromSheet('pl-c')">📍 Vedi il cliente sulla mappa</button>`:''}
+  ${p.clientId&&moduleActive('zone')?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--blue);color:var(--blue)" onclick="zoneFromSheet('pl-c')">📍 Vedi il cliente sulla mappa</button>`:''}
   <div class="actions">
     ${id?`<button class="btn danger" onclick="delItem('pellet','${id}')">Elimina</button>
     <button class="btn" onclick="togglePel('${id}')">${p.status==='consegnato'?'Riapri':'✓ Consegnato'}</button>`:''}
@@ -231,14 +233,15 @@ const autoPrice=p=>{
 };
 function savePel(id){
   const kind=$('#pl-k .sg.on')?.dataset.k||'sacchi';
-  const data={qty:parseFloat($('#pl-q').value)||null,unit:$('#pl-u').value,kind,clientId:$('#pl-c').value||null,employees:empSegRead('pl-e'),date:$('#pl-d').value||null,time:$('#pl-h').value||null,notes:$('#pl-n').value.trim()};
+  const cid=$('#pl-c').value||null;const rawName=(!cid&&$('#pl-c').dataset&&$('#pl-c').dataset.raw)||null;
+  const data={qty:parseFloat($('#pl-q').value)||null,unit:$('#pl-u').value,kind,clientId:cid,clientRaw:rawName,employees:empSegRead('pl-e'),date:$('#pl-d').value||null,time:$('#pl-h').value||null,notes:$('#pl-n').value.trim()};
   data.price=parseFloat($('#pl-pr').value)||autoPrice({...data})||null;
   const stSel=document.querySelector('#pl-s .sg.on')?.dataset.s;
   const oldP=id?byId(S.pellet,id):null;const prevEmps=oldP?empIdsOf(oldP):[];
   if(id){Object.assign(oldP,data);if(oldP.status!=='consegnato'&&stSel)oldP.status=stSel;}
-  else{S.pellet.unshift({id:uid(),status:stSel||'da_consegnare',clientRaw:null,via:'manuale',created:Date.now(),...data});}
+  else{S.pellet.unshift({id:uid(),status:stSel||'da_consegnare',via:'manuale',created:Date.now(),...data});}
   const effStatus=id?oldP.status:(stSel||'da_consegnare');
-  const added=data.employees.filter(e=>!prevEmps.includes(e));
+  const added=data.employees.filter(e=>!prevEmps.includes(e)&&!(S.session&&e===S.session.empId));
   if(added.length&&effStatus==='da_consegnare')pushNotify(added,'🪵 Consegna pellet assegnata',`${data.qty?fmtQty(data.qty)+' '+(data.unit||'sacchi'):'Consegna'} a ${cName(data.clientId)||(oldP&&oldP.clientRaw)||''}${data.date?' · '+fmtD(data.date):''}`);
   save();closeSheet();render();toast('🪵 Salvato');
 }
