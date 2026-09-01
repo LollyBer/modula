@@ -61,6 +61,12 @@ multi-giorno** (fix salvataggio promemoria) · **Lavagna** con aspetto ardesia+c
 Lavagna **per-utente** · **Mappa** rework + **punti salvati** (magazzino/ufficio) · Pellet **prenotato** + bancali ·
 Rapportini **multi-operaio** + **riepilogo cantiere** stampabile · **negozio moduli** col prezzo in-app ·
 Conti **anti-doppioni** · nome utente non modificabile · audit multi-agente + ~20 fix. ⚠️ richiede `schema.sql`.
+2026-08-27 (2ª sessione): audit 4-agenti + 11 fix di consistenza (privacy note nel calendario, quick-add
+campi per tipo voce, gating Zone, clientRaw appuntamenti, Macchine fuori dal negozio moduli, cantieri
+**Previsto** visibili + inizio sul calendario, filtri per assegnatario) · permessi **Conti/Fatture delegabili** ·
+**Da fatturare**: manutenzioni fatte / cantieri da_fatturare / consegne pellet compaiono in una sezione nel
+modulo **Fatture** (raggruppate per cliente, "Crea fattura"; legame via ref sulle righe, nessun cambio schema).
+Nessun `schema.sql` da rieseguire.
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.

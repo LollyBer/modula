@@ -110,7 +110,7 @@ function saveApp(id){
   save();closeSheet();render();toast('📅 Salvato');
 }
 function delApp(id){if(!confirm('Eliminare questo appuntamento?'))return;S.appointments=S.appointments.filter(x=>x.id!==id);save();closeSheet();render();toast('🗑 Eliminato');}
-function markPelDone(id){const p=byId(S.pellet,id);if(!p)return;p.status='consegnato';const doer=(me()&&me().name)||'';pushNotify(ownerIds(),'🪵 Consegna fatta',`${doer}: ${p.qty?fmtQty(p.qty)+' '+(p.unit||'sacchi'):'consegna'} a ${cName(p.clientId)||p.clientRaw||''}`);save();render();toast('🪵 Consegna registrata');}
+function markPelDone(id){const p=byId(S.pellet,id);if(!p)return;p.status='consegnato';const doer=(me()&&me().name)||'';pushNotify(ownerIds(),'🪵 Consegna fatta',`${doer}: ${p.qty?fmtQty(p.qty)+' '+(p.unit||'sacchi'):'consegna'} a ${cName(p.clientId)||p.clientRaw||''}`);save();render();toast('🪵 Consegna registrata'+(typeof billToast==='function'?billToast():''));}
 function renderChatPanel(){
   $('#notifbody').innerHTML=`
   <div class="wa-note">📲 <b>WhatsApp:</b> il ponte diretto richiede un server (WhatsApp Business API) — non è possibile da app locale. Il parser qui sotto è già pronto: quando attiveremo il server, gli stessi comandi funzioneranno anche via WhatsApp.</div>

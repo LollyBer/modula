@@ -245,7 +245,7 @@ function savePel(id){
   if(added.length&&effStatus==='da_consegnare')pushNotify(added,'🪵 Consegna pellet assegnata',`${data.qty?fmtQty(data.qty)+' '+(data.unit||'sacchi'):'Consegna'} a ${cName(data.clientId)||(oldP&&oldP.clientRaw)||''}${data.date?' · '+fmtD(data.date):''}`);
   save();closeSheet();render();toast('🪵 Salvato');
 }
-function togglePel(id){const p=byId(S.pellet,id);p.status=p.status==='consegnato'?'da_consegnare':'consegnato';save();closeSheet();render();}
+function togglePel(id){const p=byId(S.pellet,id);p.status=p.status==='consegnato'?'da_consegnare':'consegnato';save();closeSheet();render();toast(p.status==='consegnato'?('🪵 Consegnato'+(typeof billToast==='function'?billToast():'')):'↩ Riaperto');}
 
 /* ================= BOLLA CONSEGNA PELLET ================= */
 let bolla=null;
@@ -289,7 +289,7 @@ function saveBolla(){
   if(!p.date)p.date=todayIso();
   if(!p.price)p.price=autoPrice(p)||null;
   if(!wasDone){const doer=(me()&&me().name)||'';pushNotify(ownerIds(),'🪵 Consegna fatta',`${doer}: ${p.qty?fmtQty(p.qty)+' '+(p.unit||'sacchi'):'consegna'} a ${cName(p.clientId)||p.clientRaw||''}`);}
-  save();closeSheet();render();toast('🪵 Consegnato'+(p.signature?' e firmato':''));
+  save();closeSheet();render();toast('🪵 Consegnato'+(p.signature?' e firmato':'')+(typeof billToast==='function'?billToast():''));
   if(p.signature)setTimeout(()=>printBollaAsk(p.id),350);
 }
 function printBollaAsk(id){

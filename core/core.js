@@ -1464,7 +1464,8 @@ function saveSite(id){
   else{const st=data.status||'aperto';const ns={id:uid(),status:st,log:[],attachments:[],clientRaw:null,via:'manuale',created:Date.now(),...data};if(st==='chiuso'&&!ns.closedDate)ns.closedDate=todayIso();S.sites.unshift(ns);}
   const added=employees.filter(e=>!prevEmps.includes(e));
   if(added.length&&(data.status||'aperto')!=='chiuso'&&(data.status||'aperto')!=='previsto')pushNotify(added,'🏗 Cantiere assegnato',`${name}${data.clientId?' · '+(cName(data.clientId)||''):''}`);
-  save();closeSheet();render();toast('🏗 Salvato');
+  const bill=(data.status==='da_fatturare'&&typeof billToast==='function')?billToast():'';
+  save();closeSheet();render();toast('🏗 Salvato'+bill);
 }
 
 

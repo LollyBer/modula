@@ -175,7 +175,8 @@ function saveMan(id){
     S.maintenances.unshift({id:uid(),title:data.title,clientId:data.clientId,clientRaw:old?old.clientRaw:null,employees:data.employees,date:nextDate,time:data.time,status:'programmata',notes:'',recur:data.recur,type:data.type,via:'ricorrenza',created:Date.now()});
     extra=' · 🔁 prossima creata per '+fmtD(nextDate);
   }
-  save();closeSheet();render();toast('🔧 Salvato'+extra);
+  const bill=(data.status==='fatta'&&typeof billToast==='function')?billToast():'';
+  save();closeSheet();render();toast('🔧 Salvato'+extra+bill);
 }
 
 /* ================= BOLLETTINO INTERVENTO ================= */
@@ -279,7 +280,7 @@ function saveBollettino(){
     extra=' · 🔁 prossima creata per '+fmtD(nextDate);
   }
   save();closeSheet();render();
-  toast('📋 Bollettino salvato'+extra);
+  toast('📋 Bollettino salvato'+extra+(typeof billToast==='function'?billToast():''));
   setTimeout(()=>viewBollettino(m.id),350);
 }
 function viewBollettino(id){

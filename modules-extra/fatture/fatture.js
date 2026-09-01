@@ -12,6 +12,39 @@ const invTotal=f=>Math.round((invSubtotal(f)+invVatAmount(f))*20)/20;
 const chf=n=>'CHF '+(Math.round((+n||0)*100)/100).toLocaleString('de-CH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const INV_ST={bozza:['Bozza','#9C9384'],inviata:['Inviata','#C77F12'],pagata:['Pagata','#2E9E5E']};
 
+/* ===== DA FATTURARE — collegamento manutenzioni / cantieri / pellet → fatture =====
+   Un elemento "completato" (manutenzione fatta · cantiere da fatturare · consegna consegnata)
+   resta "da fatturare" finché non è incluso in una fattura. Il legame è una ref {t,id} sulla
+   RIGA di fattura: `lines` è già jsonb → nessuna colonna nuova. Elimini la fattura → riappare. */
+const billRefKey=(t,id)=>t+':'+id;
+function billedRefSet(){const s=new Set();(S.invoices||[]).forEach(f=>(f.lines||[]).forEach(l=>{if(l&&l.ref&&l.ref.id)s.add(billRefKey(l.ref.t,l.ref.id));}));return s;}
+function billableItems(){
+  const done=billedRefSet();const out=[];
+  const add=o=>{if(!done.has(billRefKey(o.type,o.id)))out.push(o);};
+  if(moduleActive('man'))S.maintenances.filter(m=>m.status==='fatta').forEach(m=>add({type:'maintenance',id:m.id,clientId:m.clientId||null,clientRaw:m.clientRaw||null,date:m.date||null,label:m.title||'Manutenzione',amount:((typeof maintIncome==='function'?maintIncome(m):(m.price||0))||null)}));
+  if(moduleActive('sites'))S.sites.filter(s=>s.status==='da_fatturare').forEach(s=>add({type:'site',id:s.id,clientId:s.clientId||null,clientRaw:s.clientRaw||null,date:s.closedDate||s.dueDate||null,label:'Lavori — '+s.name,amount:(+s.amount>0?+s.amount:null)}));
+  if(moduleActive('pellet'))S.pellet.filter(p=>p.status==='consegnato').forEach(p=>add({type:'pellet',id:p.id,clientId:p.clientId||null,clientRaw:p.clientRaw||null,date:p.date||null,label:(p.kind==='sfuso'?'Pellet sfuso':'Consegna pellet')+(p.qty?' '+fmtQty(p.qty)+' '+(p.unit||''):''),amount:(p.price!=null?p.price:(typeof autoPrice==='function'?autoPrice(p):null))}));
+  return out.sort((a,b)=>((a.date||'')<(b.date||'')?1:-1));
+}
+/* raggruppa per cliente: una fattura per cliente con dentro tutte le sue voci in sospeso */
+function billableGroups(){
+  const groups=new Map();
+  billableItems().forEach(it=>{const key=it.clientId?('c:'+it.clientId):(it.clientRaw?('r:'+norm(it.clientRaw)):'x');
+    if(!groups.has(key))groups.set(key,{clientId:it.clientId||null,clientRaw:it.clientRaw||null,name:(it.clientId?cName(it.clientId):it.clientRaw)||'(senza cliente in anagrafica)',items:[],total:0});
+    const g=groups.get(key);g.items.push(it);g.total+=(+it.amount||0);});
+  return [...groups.values()];
+}
+/* messaggio "da fatturare" mostrato alla fine di una manutenzione/cantiere/consegna (se Fatture è attivo) */
+function billToast(){return moduleActive('fatture')?' · 🧾 da fatturare':'';}
+/* crea una BOZZA di fattura con tutte le voci in sospeso di un cliente (righe con ref → escono dalla lista) */
+function invoiceFromBillableGroup(i){
+  const g=billableGroups()[i];if(!g){toast('Niente da fatturare');return;}
+  const b=S.settings.billing||{};
+  const lines=g.items.map(it=>({desc:it.label+(it.date?' · '+fmtD(it.date):''),qty:1,price:(it.amount!=null?it.amount:null),ref:{t:it.type,id:it.id}}));
+  openInvoice(null,{clientId:g.clientId||'',lines,notes:b.footer||''});
+  toast('🧾 Bozza da '+g.items.length+' voce'+(g.items.length>1?'/i':'')+' — controlla e salva');
+}
+
 /* ---- elenco ---- */
 let invTab='tutte';
 function renderFatture(){
@@ -21,6 +54,20 @@ function renderFatture(){
   const shown=invTab==='tutte'?list:list.filter(f=>f.status===invTab);
   const nonPag=list.filter(f=>f.status!=='pagata'&&f.status!=='bozza');
   const daIncassare=nonPag.reduce((t,f)=>t+invTotal(f),0);
+  const bGroups=billableGroups();const bCount=bGroups.reduce((n,g)=>n+g.items.length,0);const bTot=bGroups.reduce((t,g)=>t+g.total,0);
+  const IC={maintenance:'🔧',site:'🏗',pellet:'🪵'};
+  const billCard=bCount?`<div class="card" style="border-color:rgba(199,127,18,.45);margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-weight:700">🧾 Da fatturare <span class="badge" style="border-color:var(--amber);color:var(--amber)">${bCount}</span></div>
+      <div style="font-family:var(--mono);color:var(--amber);font-weight:700">${chf(bTot)}</div></div>
+    <div class="subtle" style="font-size:11px;margin-bottom:8px">Manutenzioni fatte, cantieri da fatturare e consegne — raccolti qui finché non li metti in fattura.</div>
+    ${bGroups.map((g,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)">
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}</div>
+      <div class="subtle" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.items.map(it=>(IC[it.type]||'•')+' '+esc(it.label)).join(' · ')}</div></div>
+      <div style="text-align:right;flex-shrink:0"><div style="font-family:var(--mono);font-size:12px">${chf(g.total)}</div>
+      <button class="btn sm pri" style="margin-top:3px" onclick="invoiceFromBillableGroup(${i})">Crea fattura</button></div>
+    </div>`).join('')}
+  </div>`:'';
   const tabs=[['tutte','Tutte'],['bozza','Bozze'],['inviata','Da incassare'],['pagata','Pagate']];
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>🧾 Fatture</div>
@@ -29,6 +76,7 @@ function renderFatture(){
     <div class="stat"><div class="subtle" style="font-size:11px">Da incassare</div><div style="font-size:18px;font-weight:700;color:var(--amber)">${chf(daIncassare)}</div></div>
     <div class="stat"><div class="subtle" style="font-size:11px">Fatture</div><div style="font-size:18px;font-weight:700">${list.length}</div></div>
   </div>
+  ${billCard}
   <div style="display:flex;gap:7px;margin-bottom:10px">
     <button class="btn pri" style="flex:1" onclick="openInvoice()">+ Nuova fattura</button>
     <button class="btn ghost sm" onclick="openBilling()">⚙️</button>
@@ -131,6 +179,7 @@ function invoiceFromSite(siteId){
   if(+s.amount>0) lines.push({desc:'Lavori — '+s.name, qty:1, price:+s.amount});
   else if(hours>0) lines.push({desc:'Manodopera — '+s.name+' ('+fmtQty(hours)+' h)', qty:hours, price:(b.hourlyRate!=null?b.hourlyRate:null)});
   else lines.push({desc:'Lavori — '+s.name, qty:1, price:null});
+  lines.forEach(l=>l.ref={t:'site',id:s.id}); /* collega la riga al cantiere → esce da "Da fatturare" */
   const mats=reps.map(r=>r.materials).filter(Boolean);
   const notes=(mats.length?('Materiali: '+mats.join('; ')+'\n'):'')+(b.footer||'');
   openInvoice(null,{clientId:s.clientId||'', lines, notes});
