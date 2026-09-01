@@ -583,7 +583,7 @@ const MODULE_CATALOG={
     {id:'sites',ic:'🏗',nome:'Cantieri',desc:'Lavori in corso e ore.'},
     {id:'reports',ic:'📸',nome:'Rapportini',desc:'Rapporti di cantiere giornalieri con foto.'},
     {id:'fatture',ic:'🧾',nome:'Fatture',desc:'Fatture con QR-fattura svizzera, collegate a Conti.'},
-    {id:'documenti',ic:'📁',nome:'Documenti',desc:'Archivio documenti/fatture fornitori con scadenze.'},
+    {id:'documenti',ic:'📁',nome:'Documenti',desc:'Archivio ordinato dei documenti aziendali, con ricerca.'},
     {id:'macchine',ic:'⚙️',nome:'Macchine',desc:'Parco macchine e schede.',custom:'ptek'},
     {id:'pellet',ic:'🪵',nome:'Consegne',desc:'Consegne, bolle e scorte.'},
     {id:'zone',ic:'🗺️',nome:'Zone & Mappa',desc:'Zone e clienti sulla mappa.'},

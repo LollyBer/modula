@@ -65,7 +65,9 @@ Conti **anti-doppioni** · nome utente non modificabile · audit multi-agente + 
 campi per tipo voce, gating Zone, clientRaw appuntamenti, Macchine fuori dal negozio moduli, cantieri
 **Previsto** visibili + inizio sul calendario, filtri per assegnatario) · permessi **Conti/Fatture delegabili** ·
 **Da fatturare**: manutenzioni fatte / cantieri da_fatturare / consegne pellet compaiono in una sezione nel
-modulo **Fatture** (raggruppate per cliente, "Crea fattura"; legame via ref sulle righe, nessun cambio schema).
+modulo **Fatture** (raggruppate per cliente, "Crea fattura"; legame via ref sulle righe, nessun cambio schema) ·
+**Documenti** rifatto: da "fatture fornitori con importi" a **archivio documenti aziendali** (barra di ricerca +
+cartelle per categoria, niente importi/pagamenti; riusa le colonne esistenti, nessun cambio schema).
 Nessun `schema.sql` da rieseguire.
 
 ## Stati → colori pill

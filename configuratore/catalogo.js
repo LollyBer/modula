@@ -33,7 +33,7 @@ const MODULI_EXTRA = [
   { id:'prenota',  ic:'🗓️',  nome:'Prenotazioni',         desc:'Appuntamenti e prenotazioni online.',      stato:'arrivo' },
   { id:'magazzino',ic:'📦',  nome:'Magazzino',            desc:'Scorte, carico/scarico e soglie.',         stato:'arrivo' },
   { id:'catalogo', ic:'🏷️',  nome:'Catalogo / Listino',   desc:'Prodotti, prezzi e disponibilità.',        stato:'arrivo' },
-  { id:'documenti',ic:'📁',  nome:'Documenti',            desc:'Archivio documenti/fatture fornitori, con scadenze e ricerca.', stato:'pronto' },
+  { id:'documenti',ic:'📁',  nome:'Documenti',            desc:'Archivio ordinato dei documenti aziendali: categorie, ricerca, file.', stato:'pronto' },
   { id:'report',   ic:'📊',  nome:'Report & Statistiche', desc:'Andamento attività in numeri e grafici.',  stato:'arrivo' },
   { id:'fidelity', ic:'🎁',  nome:'Fidelity & Promo',     desc:'Punti, tessere e promozioni clienti.',     stato:'arrivo' },
   { id:'turni',    ic:'⏱️',  nome:'Turni & Presenze',     desc:'Turni del personale e timbrature.',        stato:'arrivo' },
