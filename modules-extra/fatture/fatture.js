@@ -12,21 +12,23 @@ const invTotal=f=>Math.round((invSubtotal(f)+invVatAmount(f))*20)/20;
 const chf=n=>'CHF '+(Math.round((+n||0)*100)/100).toLocaleString('de-CH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const INV_ST={bozza:['Bozza','#9C9384'],inviata:['Inviata','#C77F12'],pagata:['Pagata','#2E9E5E']};
 
-/* ===== DA FATTURARE — collegamento manutenzioni / cantieri / pellet → fatture =====
-   Un elemento "completato" (manutenzione fatta · cantiere da fatturare · consegna consegnata)
-   resta "da fatturare" finché non è incluso in una fattura. Il legame è una ref {t,id} sulla
-   RIGA di fattura: `lines` è già jsonb → nessuna colonna nuova. Elimini la fattura → riappare. */
+/* ===== REGISTRO LAVORI DA FATTURARE — organizzazione (le fatture le fai anche fuori, es. Profix) =====
+   I "lavori" = manutenzioni fatte · cantieri da fatturare · consegne consegnate. Ognuno ha un flag
+   `invoiced` (fatturato sì/no): lo segni a mano quando l'hai fatturato (anche su un altro gestionale),
+   oppure si segna da solo se crei la fattura qui. Tocchi un lavoro → si apre la sua scheda (bollettino,
+   rapportini, note…). Il legame fattura↔lavoro è una ref {t,id} sulle righe di fattura. */
 const billRefKey=(t,id)=>t+':'+id;
 function billedRefSet(){const s=new Set();(S.invoices||[]).forEach(f=>(f.lines||[]).forEach(l=>{if(l&&l.ref&&l.ref.id)s.add(billRefKey(l.ref.t,l.ref.id));}));return s;}
-function billableItems(){
-  const done=billedRefSet();const out=[];
-  const add=o=>{if(!done.has(billRefKey(o.type,o.id)))out.push(o);};
-  if(moduleActive('man'))S.maintenances.filter(m=>m.status==='fatta').forEach(m=>add({type:'maintenance',id:m.id,clientId:m.clientId||null,clientRaw:m.clientRaw||null,date:m.date||null,label:m.title||'Manutenzione',amount:((typeof maintIncome==='function'?maintIncome(m):(m.price||0))||null)}));
-  if(moduleActive('sites'))S.sites.filter(s=>s.status==='da_fatturare').forEach(s=>add({type:'site',id:s.id,clientId:s.clientId||null,clientRaw:s.clientRaw||null,date:s.closedDate||s.dueDate||null,label:'Lavori — '+s.name,amount:(+s.amount>0?+s.amount:null)}));
-  if(moduleActive('pellet'))S.pellet.filter(p=>p.status==='consegnato').forEach(p=>add({type:'pellet',id:p.id,clientId:p.clientId||null,clientRaw:p.clientRaw||null,date:p.date||null,label:(p.kind==='sfuso'?'Pellet sfuso':'Consegna pellet')+(p.qty?' '+fmtQty(p.qty)+' '+(p.unit||''):''),amount:(p.price!=null?p.price:(typeof autoPrice==='function'?autoPrice(p):null))}));
-  return out.sort((a,b)=>((a.date||'')<(b.date||'')?1:-1));
+function billableSources(){
+  const out=[];
+  if(moduleActive('man'))S.maintenances.filter(m=>m.status==='fatta').forEach(m=>out.push({type:'maintenance',id:m.id,invoiced:!!m.invoiced,clientId:m.clientId||null,clientRaw:m.clientRaw||null,date:m.date||null,label:m.title||'Manutenzione',amount:((typeof maintIncome==='function'?maintIncome(m):(m.price||0))||null)}));
+  if(moduleActive('sites'))S.sites.filter(s=>s.status==='da_fatturare').forEach(s=>out.push({type:'site',id:s.id,invoiced:!!s.invoiced,clientId:s.clientId||null,clientRaw:s.clientRaw||null,date:s.closedDate||s.dueDate||s.startDate||null,label:'Lavori — '+s.name,amount:(+s.amount>0?+s.amount:null)}));
+  if(moduleActive('pellet'))S.pellet.filter(p=>p.status==='consegnato').forEach(p=>out.push({type:'pellet',id:p.id,invoiced:!!p.invoiced,clientId:p.clientId||null,clientRaw:p.clientRaw||null,date:p.date||null,label:(p.kind==='sfuso'?'Pellet sfuso':'Consegna pellet')+(p.qty?' '+fmtQty(p.qty)+' '+(p.unit||''):''),amount:(p.price!=null?p.price:(typeof autoPrice==='function'?autoPrice(p):null))}));
+  return out;
 }
-/* raggruppa per cliente: una fattura per cliente con dentro tutte le sue voci in sospeso */
+const byDateDesc=(a,b)=>((a.date||'')<(b.date||'')?1:-1);
+function billableItems(){const bs=billedRefSet();return billableSources().filter(w=>!w.invoiced&&!bs.has(billRefKey(w.type,w.id))).sort(byDateDesc);}
+function invoicedItems(){const bs=billedRefSet();return billableSources().filter(w=>w.invoiced||bs.has(billRefKey(w.type,w.id))).sort(byDateDesc);}
 function billableGroups(){
   const groups=new Map();
   billableItems().forEach(it=>{const key=it.clientId?('c:'+it.clientId):(it.clientRaw?('r:'+norm(it.clientRaw)):'x');
@@ -34,9 +36,30 @@ function billableGroups(){
     const g=groups.get(key);g.items.push(it);g.total+=(+it.amount||0);});
   return [...groups.values()];
 }
-/* messaggio "da fatturare" mostrato alla fine di una manutenzione/cantiere/consegna (se Fatture è attivo) */
 function billToast(){return moduleActive('fatture')?' · 🧾 da fatturare':'';}
-/* crea una BOZZA di fattura con tutte le voci in sospeso di un cliente (righe con ref → escono dalla lista) */
+const REG_IC={maintenance:'🔧',site:'🏗',pellet:'🪵'};
+/* segna un lavoro come fatturato / da fatturare (lo fai quando l'hai fatturato, anche fuori) */
+function regSetInvoiced(type,id,val,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  const coll=type==='maintenance'?S.maintenances:type==='site'?S.sites:type==='pellet'?S.pellet:null;
+  const it=coll&&byId(coll,id);if(!it)return;
+  it.invoiced=!!val;save();render();toast(val?'✅ Segnato come fatturato':'↩ Rimesso tra i da fatturare');
+}
+/* apri la scheda del lavoro (per vedere bollettino, rapportini, cose fatte in più…) */
+function regOpenSource(type,id){
+  if(type==='maintenance'&&typeof openMan==='function')openMan(id);
+  else if(type==='pellet'&&typeof openPel==='function')openPel(id);
+  else if(type==='site'&&typeof openSite==='function')openSite(id);
+}
+function regRow(it,invoiced){
+  return `<div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:7px" onclick="regOpenSource('${it.type}','${it.id}')">
+    <span style="font-size:20px;flex-shrink:0">${REG_IC[it.type]||'•'}</span>
+    <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.label)}</div>
+    <div class="subtle" style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((it.clientId?cName(it.clientId):it.clientRaw)||'—')}${it.date?' · '+fmtD(it.date):''}${it.amount!=null?' · '+chf(it.amount):''}</div></div>
+    <button class="btn sm ${invoiced?'ghost':'pri'}" style="flex-shrink:0" onclick="regSetInvoiced('${it.type}','${it.id}',${invoiced?'false':'true'},event)">${invoiced?'↩ Da fatturare':'✓ Fatturato'}</button>
+  </div>`;
+}
+/* crea una BOZZA di fattura in-app con tutte le voci di un cliente (opzionale; segna anche i lavori fatturati al salvataggio) */
 function invoiceFromBillableGroup(i){
   const g=billableGroups()[i];if(!g){toast('Niente da fatturare');return;}
   const b=S.settings.billing||{};
@@ -45,44 +68,47 @@ function invoiceFromBillableGroup(i){
   toast('🧾 Bozza da '+g.items.length+' voce'+(g.items.length>1?'/i':'')+' — controlla e salva');
 }
 
-/* ---- elenco ---- */
-let invTab='tutte';
+/* ---- registro + elenco ---- */
+let invTab='tutte';   /* sub-filtro delle fatture emesse in-app */
+let regTab='daf';     /* daf = da fatturare · fatt = fatturati · emesse = fatture create qui */
 function renderFatture(){
   if(!can('fatture')){view='hub';renderHub();return;}
   const b=S.settings.billing||{};
-  const list=[...S.invoices].sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:(b.created||0)-(a.created||0)));
-  const shown=invTab==='tutte'?list:list.filter(f=>f.status===invTab);
-  const nonPag=list.filter(f=>f.status!=='pagata'&&f.status!=='bozza');
-  const daIncassare=nonPag.reduce((t,f)=>t+invTotal(f),0);
-  const bGroups=billableGroups();const bCount=bGroups.reduce((n,g)=>n+g.items.length,0);const bTot=bGroups.reduce((t,g)=>t+g.total,0);
-  const IC={maintenance:'🔧',site:'🏗',pellet:'🪵'};
-  const billCard=bCount?`<div class="card" style="border-color:rgba(199,127,18,.45);margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div style="font-weight:700">🧾 Da fatturare <span class="badge" style="border-color:var(--amber);color:var(--amber)">${bCount}</span></div>
-      <div style="font-family:var(--mono);color:var(--amber);font-weight:700">${chf(bTot)}</div></div>
-    <div class="subtle" style="font-size:11px;margin-bottom:8px">Manutenzioni fatte, cantieri da fatturare e consegne — raccolti qui finché non li metti in fattura.</div>
-    ${bGroups.map((g,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)">
-      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}</div>
-      <div class="subtle" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.items.map(it=>(IC[it.type]||'•')+' '+esc(it.label)).join(' · ')}</div></div>
-      <div style="text-align:right;flex-shrink:0"><div style="font-family:var(--mono);font-size:12px">${chf(g.total)}</div>
-      <button class="btn sm pri" style="margin-top:3px" onclick="invoiceFromBillableGroup(${i})">Crea fattura</button></div>
-    </div>`).join('')}
-  </div>`:'';
-  const tabs=[['tutte','Tutte'],['bozza','Bozze'],['inviata','Da incassare'],['pagata','Pagate']];
+  const bItems=billableItems(), fItems=invoicedItems();
+  const bTot=bItems.reduce((t,x)=>t+(+x.amount||0),0);
+  const invList=[...S.invoices].sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:(b.created||0)-(a.created||0)));
+  const tabs=[['daf','📋 Da fatturare',bItems.length],['fatt','✅ Fatturati',fItems.length],['emesse','🧾 Fatture',invList.filter(f=>!f.archived).length]];
+  let body='';
+  if(regTab==='daf'){
+    const groups=billableGroups();
+    body=bItems.length
+      ?`<div class="subtle" style="margin:2px 0 8px">Totale da fatturare: <b style="color:var(--amber)">${chf(bTot)}</b> · tocca un lavoro per vederne la scheda, «✓ Fatturato» quando l'hai fatturato (anche su un altro gestionale).</div>`
+        +groups.map((g,gi)=>`<div class="set-h" style="margin:12px 0 6px;font-size:12px;display:flex;align-items:center;gap:8px"><span style="flex:1">${esc(g.name)} <span class="subtle" style="font-weight:400">· ${chf(g.total)}</span></span>${g.clientId?`<button class="btn ghost sm" onclick="invoiceFromBillableGroup(${gi})">🧾 Crea fattura</button>`:''}</div>${g.items.map(it=>regRow(it,false)).join('')}`).join('')
+      :'<div class="card"><div class="empty"><div class="big">✅</div>Niente da fatturare.<br><span class="subtle">I lavori finiti compaiono qui.</span></div></div>';
+  }else if(regTab==='fatt'){
+    body=fItems.length
+      ?`<div class="subtle" style="margin:2px 0 8px">Tutti i lavori già fatturati. Tocca per rivederli; «↩ Da fatturare» se ti sei sbagliato.</div>`+fItems.map(it=>regRow(it,true)).join('')
+      :'<div class="card"><div class="empty"><div class="big">🗂</div>Ancora nessun lavoro segnato fatturato.</div></div>';
+  }else{
+    const active=invList.filter(f=>!f.archived), archived=invList.filter(f=>f.archived);
+    const shown=invTab==='archivio'?archived:(invTab==='tutte'?active:active.filter(f=>f.status===invTab));
+    const nonPag=active.filter(f=>f.status!=='pagata'&&f.status!=='bozza');
+    const daIncassare=nonPag.reduce((t,f)=>t+invTotal(f),0);
+    const sub=[['tutte','Tutte'],['bozza','Bozze'],['inviata','Da incassare'],['pagata','Pagate']];
+    if(archived.length)sub.push(['archivio','🗄 Archivio ('+archived.length+')']);
+    body=`${(!b.iban||!b.name)?`<div class="card" style="border-color:rgba(199,127,18,.4)"><div style="font-size:13px">⚙️ Per emettere una fattura qui (con QR svizzero) imposta <b>ragione sociale</b> e <b>IBAN</b>. Se fatturi fuori (es. Profix) non serve.</div><button class="btn sm pri" style="margin-top:8px" onclick="openBilling()">Imposta dati fatturazione</button></div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:4px 0 12px">
+      <div class="stat"><div class="subtle" style="font-size:11px">Da incassare</div><div style="font-size:18px;font-weight:700;color:var(--amber)">${chf(daIncassare)}</div></div>
+      <div class="stat"><div class="subtle" style="font-size:11px">Fatture emesse</div><div style="font-size:18px;font-weight:700">${active.length}</div></div>
+    </div>
+    <div style="display:flex;gap:7px;margin-bottom:10px"><button class="btn pri" style="flex:1" onclick="openInvoice()">+ Nuova fattura</button><button class="btn ghost sm" onclick="openBilling()">⚙️</button></div>
+    <div class="tabs">${sub.map(([id,l])=>`<div class="tb ${invTab===id?'on':''}" onclick="invTab='${id}';render()">${l}</div>`).join('')}</div>
+    ${shown.length?shown.map(invRow).join(''):'<div class="card"><div class="empty"><div class="big">🧾</div>Nessuna fattura creata qui.</div></div>'}`;
+  }
   $('#main').innerHTML=`
-  <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>🧾 Fatture</div>
-  ${(!b.iban||!b.name)?`<div class="card" style="border-color:rgba(199,127,18,.4)"><div style="font-size:13px">⚙️ Prima di emettere fatture, imposta <b>ragione sociale</b> e <b>IBAN</b> per la QR-fattura.</div><button class="btn sm pri" style="margin-top:8px" onclick="openBilling()">Imposta dati fatturazione</button></div>`:''}
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:4px 0 12px">
-    <div class="stat"><div class="subtle" style="font-size:11px">Da incassare</div><div style="font-size:18px;font-weight:700;color:var(--amber)">${chf(daIncassare)}</div></div>
-    <div class="stat"><div class="subtle" style="font-size:11px">Fatture</div><div style="font-size:18px;font-weight:700">${list.length}</div></div>
-  </div>
-  ${billCard}
-  <div style="display:flex;gap:7px;margin-bottom:10px">
-    <button class="btn pri" style="flex:1" onclick="openInvoice()">+ Nuova fattura</button>
-    <button class="btn ghost sm" onclick="openBilling()">⚙️</button>
-  </div>
-  <div class="tabs">${tabs.map(([id,l])=>`<div class="tb ${invTab===id?'on':''}" onclick="invTab='${id}';render()">${l}</div>`).join('')}</div>
-  ${shown.length?shown.map(invRow).join(''):'<div class="card"><div class="empty"><div class="big">🧾</div>Nessuna fattura.</div></div>'}`;
+  <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>🧾 Fatturazione</div>
+  <div class="tabs">${tabs.map(([id,l,n])=>`<div class="tb ${regTab===id?'on':''}" onclick="regTab='${id}';render()">${l}${n?' ('+n+')':''}</div>`).join('')}</div>
+  ${body}`;
 }
 function invRow(f){
   const st=INV_ST[f.status]||INV_ST.bozza;
@@ -97,7 +123,14 @@ function invRow(f){
 
 /* ---- editor ---- */
 let invDraft=null;
-function nextInvNumber(){const b=S.settings.billing||{};const n=(+b.nextNumber||1);return (b.prefix||'')+String(n).padStart(4,'0');}
+function nextInvNumber(){
+  const b=S.settings.billing||{};
+  const yr=String(new Date().getFullYear());
+  const n=(b.counterYear===yr?(+b.nextNumber||1):1);      /* nuovo anno → riparte da 1 */
+  let prefix=(b.prefix&&b.prefix.trim())?b.prefix:(yr+'-');
+  if(/^20\d{2}-$/.test(prefix)&&prefix!==yr+'-')prefix=yr+'-'; /* prefisso-anno si aggiorna da solo */
+  return prefix+String(n).padStart(4,'0');
+}
 function openInvoice(id,preset){
   const b=S.settings.billing||{};
   const src=id?byId(S.invoices,id):null;
@@ -127,6 +160,7 @@ function openInvoice(id,preset){
    <div class="fld"><label>Note / piè di pagina</label><textarea id="iv-notes" rows="2" placeholder="Grazie · condizioni di pagamento…">${esc(invDraft.notes||'')}</textarea></div>
    <div class="actions">
      ${id?`<button class="btn danger" onclick="delInvoice('${id}')">Elimina</button>`:''}
+     ${id?`<button class="btn" onclick="toggleInvoiceArchive('${id}')">${(src&&src.archived)?'↩ Ripristina':'🗄 Archivia'}</button>`:''}
      <button class="btn ghost" onclick="closeSheet()">Annulla</button>
      ${id?`<button class="btn" onclick="printInvoice('${id}')">🖨 Stampa / PDF</button>`:''}
      <button class="btn pri" onclick="saveInvoice('${id||''}')">Salva</button>
@@ -160,13 +194,33 @@ function saveInvoice(id){
   if(newStatus==='pagata'&&invDraft.status!=='pagata'&&!invDraft.paidDate)invDraft.paidDate=todayIso();
   if(newStatus!=='pagata')invDraft.paidDate=null;
   invDraft.status=newStatus;
+  if(invTotal(invDraft)<=0&&!confirm('La fattura ha totale 0. Salvare comunque?'))return;
   const isNew=!id;
+  /* numero univoco: nuova → al primo libero; modifica → blocca se collide con un'altra */
+  const bumpNum=s=>s.replace(/(\d+)(\D*)$/,(_,d,tail)=>String(+d+1).padStart(d.length,'0')+tail);
+  if(isNew){let num=invDraft.number||'',g=0;while(num&&S.invoices.some(f=>f.number===num)&&g++<9999)num=bumpNum(num);invDraft.number=num;}
+  else if(S.invoices.some(f=>f.id!==id&&f.number===invDraft.number)){toast("⚠ Numero già usato da un'altra fattura");return;}
+  const savedId=invDraft.id;
   if(id){const f=byId(S.invoices,id);if(f)Object.assign(f,invDraft);}
   else S.invoices.unshift({...invDraft,created:Date.now()});
-  if(isNew){const b=S.settings.billing||{};b.nextNumber=(+b.nextNumber||1)+1;S.settings.billing=b;}
+  if(isNew){const b=S.settings.billing||{};const yr=String(new Date().getFullYear());const m=(invDraft.number||'').match(/(\d+)\D*$/);const usedN=m?+m[1]:(+b.nextNumber||1);b.counterYear=yr;b.nextNumber=usedN+1;if(/^20\d{2}-$/.test(b.prefix||'')&&b.prefix!==yr+'-')b.prefix=yr+'-';S.settings.billing=b;}
+  /* i lavori collegati alle righe (ref) diventano "fatturati" */
+  (invDraft.lines||[]).forEach(l=>{if(l&&l.ref&&l.ref.id){const coll=l.ref.t==='maintenance'?S.maintenances:l.ref.t==='site'?S.sites:l.ref.t==='pellet'?S.pellet:null;if(coll){const it=byId(coll,l.ref.id);if(it)it.invoiced=true;}}});
+  const b2=S.settings.billing||{};
   invDraft=null;save();closeSheet();render();toast('✓ Fattura salvata');
+  if(isNew&&b2.iban&&b2.name&&confirm('🖨 Stampare la fattura ora?'))printInvoice(savedId);
 }
-function delInvoice(id){if(!confirm('Eliminare la fattura?'))return;S.invoices=S.invoices.filter(x=>x.id!==id);invDraft=null;save();closeSheet();render();toast('Fattura eliminata');}
+function delInvoice(id){
+  if(!confirm('Eliminare la fattura?'))return;
+  const f=byId(S.invoices,id);const refs=((f&&f.lines)||[]).filter(l=>l&&l.ref&&l.ref.id).map(l=>l.ref);
+  S.invoices=S.invoices.filter(x=>x.id!==id);
+  /* i lavori collegati tornano "da fatturare" se nessun'altra fattura li referenzia */
+  const still=billedRefSet();
+  refs.forEach(r=>{if(!still.has(billRefKey(r.t,r.id))){const coll=r.t==='maintenance'?S.maintenances:r.t==='site'?S.sites:r.t==='pellet'?S.pellet:null;if(coll){const it=byId(coll,r.id);if(it)it.invoiced=false;}}});
+  invDraft=null;save();closeSheet();render();toast('Fattura eliminata');
+}
+/* archivia / ripristina una fattura creata qui (tolta dalla lista attiva, resta nell'Archivio) */
+function toggleInvoiceArchive(id){const f=byId(S.invoices,id);if(!f)return;f.archived=!f.archived;invDraft=null;save();closeSheet();render();toast(f.archived?'🗄 Fattura archiviata':'↩ Fattura ripristinata');}
 
 /* pre-compila una BOZZA di fattura da un cantiere: cliente + importo concordato,
    o ore totali dai rapportini, + materiali usati in nota. Poi il titolare rivede e salva. */

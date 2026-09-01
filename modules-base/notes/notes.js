@@ -5,7 +5,7 @@
 let notesTab='app';let noteGroupSel='all';
 function renderNotes(){
   const t=todayIso();
-  const apps=visApp().slice().sort((a,b)=>((a.done?'z':'a')+a.date+(a.time||''))<((b.done?'z':'a')+b.date+(b.time||''))?-1:1);
+  const apps=visApp().slice().sort((a,b)=>((a.done?'z':'a')+(a.date||'9999-99-99')+(a.time||''))<((b.done?'z':'a')+(b.date||'9999-99-99')+(b.time||''))?-1:1);
   let notes=S.notes.slice();
   if(noteGroupSel==='arch')notes=notes.filter(n=>n.archived);
   else{notes=notes.filter(n=>!n.archived);if(noteGroupSel!=='all')notes=notes.filter(n=>n.groupId===noteGroupSel);}

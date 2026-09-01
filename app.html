@@ -27,7 +27,11 @@
 <link rel="stylesheet" href="./vendor/leaflet.css">
 <link rel="stylesheet" href="./zone.css">
 
-<script>try{if(localStorage.getItem('caywork_theme')==='dark'){document.documentElement.dataset.theme='dark';var _m=document.querySelector('meta[name=theme-color]');if(_m)_m.content='#14160F';}}catch(e){}</script>
+<script>try{var _r=document.documentElement;
+  if(localStorage.getItem('caywork_theme')==='dark'){_r.dataset.theme='dark';var _m=document.querySelector('meta[name=theme-color]');if(_m)_m.content='#14160F';}
+  var _bg=localStorage.getItem('modula_bg');if(_bg&&_bg!=='foglie')_r.dataset.bg=_bg;
+  var _ac=localStorage.getItem('modula_accent');if(_ac){var _c2={'#5BA02C':'#6FB23A','#3B6D91':'#4E86AE','#2E9E5E':'#3FBF77','#C77F12':'#E0982A','#D64528':'#E8613F','#7C5CBF':'#9576D6'};_r.style.setProperty('--cy',_ac);_r.style.setProperty('--cy2',_c2[_ac]||_ac);}
+}catch(e){}</script>
 </head>
 <body>
 <div id="app">

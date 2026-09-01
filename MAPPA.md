@@ -68,7 +68,12 @@ campi per tipo voce, gating Zone, clientRaw appuntamenti, Macchine fuori dal neg
 modulo **Fatture** (raggruppate per cliente, "Crea fattura"; legame via ref sulle righe, nessun cambio schema) ·
 **Documenti** rifatto: da "fatture fornitori con importi" a **archivio documenti aziendali** (barra di ricerca +
 cartelle per categoria, niente importi/pagamenti; riusa le colonne esistenti, nessun cambio schema).
-Nessun `schema.sql` da rieseguire.
+2026-09-01: **audit completo** (AUDIT.md/PIANO.md) + **"sistema tutto"** ~16 fix (Conti = incassi netti sempre,
+numerazione fatture con reset anno + univocità, delete fattura libera i lavori, storico cliente cliccabile,
+"✓ Fatta oggi", pellet bancali/consegnato, Lavagna salva anche i non-titolari, ecc.) · **backup reso completo
+(lossless)** · **archiviazione fatture** · registro Fatture "da fatturare/fatturato" · **personalizzazione**
+(7 sfondi + 6 colori) · hardening **sicurezza+GitHub** (secret scanning, push protection, Dependabot, SECURITY.md).
+⚠️ richiede `schema.sql` (colonne `invoiced` su manut/cantieri/pellet + `archived` su fatture).
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.

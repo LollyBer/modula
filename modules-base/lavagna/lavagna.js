@@ -25,17 +25,23 @@ const postitFg=bg=>{const f=POSTIT_COLORS.find(c=>c[0]===bg);return f?f[1]:'#3a3
    La vecchia lavagna condivisa (settings.board) resta come sorgente di migrazione: alla
    prima apertura ognuno parte da quel contenuto e poi la sua diverge. ---- */
 function myBoardKey(){return (S.session&&S.session.empId)||'x';}
-function board(){const bs=(S.settings&&S.settings.boards)||{};const b=bs[myBoardKey()];return Array.isArray(b)?b:[];}
-function setBoard(arr){if(!S.settings.boards)S.settings.boards={};S.settings.boards[myBoardKey()]=arr;}
+/* Il titolare salva in settings.boards (sincronizzato). I NON-titolari non possono scrivere i settings
+   (sync solo per il titolare) → la loro lavagna sta in localStorage, per-dispositivo, così non si perde. */
+const lavLocalKey=()=>'modula_board_'+myBoardKey();
+function boardRaw(){
+  if(!isOwner()){try{const v=localStorage.getItem(lavLocalKey());return v==null?undefined:JSON.parse(v);}catch(e){return undefined;}}
+  const bs=(S.settings&&S.settings.boards)||{};return bs[myBoardKey()];
+}
+function board(){const b=boardRaw();return Array.isArray(b)?b:[];}
+function setBoard(arr){
+  if(!isOwner()){try{localStorage.setItem(lavLocalKey(),JSON.stringify(arr));}catch(e){}return;}
+  if(!S.settings.boards)S.settings.boards={};S.settings.boards[myBoardKey()]=arr;
+}
 function boardEnsure(){
-  if(!S.settings.boards)S.settings.boards={};
-  let b=S.settings.boards[myBoardKey()];
-  if(!Array.isArray(b)){
-    const legacy=Array.isArray(S.settings.board)?S.settings.board:null;
-    if(legacy&&legacy.length)b=JSON.parse(JSON.stringify(legacy)); // migra dalla condivisa
-    else{b=defaultBoard();lavFresh=true;}
-    S.settings.boards[myBoardKey()]=b;
-  }
+  if(Array.isArray(boardRaw()))return;
+  const legacy=Array.isArray(S.settings.board)?S.settings.board:null;
+  if(legacy&&legacy.length)setBoard(JSON.parse(JSON.stringify(legacy))); // migra dalla vecchia condivisa
+  else{setBoard(defaultBoard());lavFresh=true;}
 }
 function defaultBoard(){
   const t=[];let y=10;

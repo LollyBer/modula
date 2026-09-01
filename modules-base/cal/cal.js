@@ -17,6 +17,8 @@ function renderCal(){
   if(calMode==='giorno'){renderDay();return;}
   if(calMode==='settimana'){renderWeek();return;}
   const calTabs=calTabsBar();
+  /* la vista Mese segue sempre il giorno selezionato (calSel) → niente disallineamento con Giorno/Settimana */
+  const _cs=(calSel||todayIso()).split('-').map(Number);calCur=new Date(_cs[0],_cs[1]-1,1);
   const y=calCur.getFullYear(),m=calCur.getMonth();
   const first=new Date(y,m,1);let startDow=(first.getDay()+6)%7; // lun=0
   const daysIn=new Date(y,m+1,0).getDate();

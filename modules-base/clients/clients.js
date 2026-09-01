@@ -66,6 +66,7 @@ function openClient(id){
   const sit=S.sites.filter(s=>s.clientId===id);
   const app=S.appointments.filter(a=>a.clientId===id);
   const not=S.notes.filter(n=>n.clientId===id&&!n.archived);
+  const doc=(moduleActive('documenti')&&can('documenti'))?S.documents.filter(d=>d.clientId===id).sort((a,b)=>((a.date||'')>(b.date||'')?-1:1)):[];
   const mini=(arr,fmt,n=6)=>arr.slice(0,n).map(fmt).join('');
   const info=[
     c.plant?['Impianto',c.plant]:null,
@@ -84,19 +85,22 @@ function openClient(id){
   </div>
   ${info.length?`<div class="fld"><label>Profilo</label><div style="display:flex;flex-wrap:wrap;gap:6px">${info.map(([k,v])=>`<span class="badge" style="border-color:var(--line2);color:var(--t1);padding:5px 10px;font-size:11px">${k}: <b>${esc(v)}</b></span>`).join('')}</div></div>`:''}
   <div class="fld"><label>📜 Storico</label>
-  ${man.length?`<div class="subtle" style="margin:4px 0 2px;color:var(--amber)">🔧 Manutenzioni (${man.length})</div>${mini(man,m=>`<div class="subtle" style="padding:2px 0 2px 8px">• ${m.date?fmtD(m.date):m.status} — ${esc(m.title)}${m.report?' 📄':''}</div>`)}`:''}
-  ${pel.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--fire)">🪵 Pellet (${pel.length})</div>${mini(pel,p=>`<div class="subtle" style="padding:2px 0 2px 8px">• ${p.date?fmtD(p.date):p.status} — ${fmtQty(p.qty||0)} ${esc(p.unit||'sacchi')} ${p.kind==='sfuso'?'🪵':'📦'}</div>`)}`:''}
-  ${sit.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--blue)">🏗 Cantieri (${sit.length})</div>${mini(sit,s=>`<div class="subtle" style="padding:2px 0 2px 8px">• ${esc(s.name)} (${s.status})</div>`)}`:''}
-  ${app.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--cy)">📅 Appuntamenti (${app.length})</div>${mini(app,a=>`<div class="subtle" style="padding:2px 0 2px 8px">• ${fmtD(a.date)} — ${esc(a.title)}</div>`)}`:''}
-  ${not.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--teal)">📝 Note (${not.length})</div>${mini(not,n=>`<div class="subtle" style="padding:2px 0 2px 8px">• ${esc(n.text)}</div>`)}`:''}
+  ${man.length?`<div class="subtle" style="margin:4px 0 2px;color:var(--amber)">🔧 Manutenzioni (${man.length})</div>${mini(man,m=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openMan('${m.id}')">• ${m.date?fmtD(m.date):m.status} — ${esc(m.title)}${m.report?' 📄':''} <span style="color:var(--t3)">›</span></div>`)}`:''}
+  ${pel.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--fire)">🪵 Pellet (${pel.length})</div>${mini(pel,p=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openPel('${p.id}')">• ${p.date?fmtD(p.date):p.status} — ${fmtQty(p.qty||0)} ${esc(p.unit||'sacchi')} ${p.kind==='sfuso'?'🪵':'📦'} <span style="color:var(--t3)">›</span></div>`)}`:''}
+  ${sit.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--blue)">🏗 Cantieri (${sit.length})</div>${mini(sit,s=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openSite('${s.id}')">• ${esc(s.name)} (${s.status}) <span style="color:var(--t3)">›</span></div>`)}`:''}
+  ${app.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--cy)">📅 Appuntamenti (${app.length})</div>${mini(app,a=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openApp('${a.id}')">• ${fmtD(a.date)} — ${esc(a.title)} <span style="color:var(--t3)">›</span></div>`)}`:''}
+  ${not.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--teal)">📝 Note (${not.length})</div>${mini(not,n=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openNote('${n.id}')">• ${esc(n.text)} <span style="color:var(--t3)">›</span></div>`)}`:''}
   ${!man.length&&!pel.length&&!sit.length&&!app.length&&!not.length?'<div class="subtle">Ancora vuoto — si riempirà da solo man mano che registri.</div>':''}
   </div>
   ${moduleActive('macchine')?`<div class="fld"><label>⚙️ Macchine installate</label><div id="cli-machines"><div class="subtle">…</div></div></div>`:''}
+  ${(moduleActive('documenti')&&can('documenti'))?`<div class="fld"><label>📁 Documenti (${doc.length})</label>
+    ${doc.length?doc.slice(0,8).map(d=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="openDocument('${d.id}')">📄 ${esc(typeof docTitle==='function'?docTitle(d):(d.description||'documento'))}${d.category?' <span style="color:var(--t3)">'+esc(d.category)+'</span>':''}${d.date?' · '+fmtD(d.date):''}</div>`).join(''):'<div class="subtle" style="padding:2px 0">Nessun documento collegato.</div>'}
+    <button class="btn sm ghost" style="margin-top:6px" onclick="docAddForClient('${id}')">+ Documento</button></div>`:''}
   <div class="fld"><label>📷 Foto e file del cliente</label><div id="cli-att"><div class="subtle">…</div></div></div>
   <div class="actions" style="flex-wrap:wrap">
     <button class="btn danger" onclick="delClient('${id}')">Elimina</button>
     ${moduleActive('zone')?`<button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="zoneFocusClient('${id}')">📍 Mappa</button>`:''}
-    <button class="btn" style="border-color:var(--teal);color:var(--teal)" onclick="openClientGeo('${id}')">🎯 Posizione${(c.lat!=null&&c.lng!=null)?' ✓':''}</button>
+    ${moduleActive('zone')?`<button class="btn" style="border-color:var(--teal);color:var(--teal)" onclick="openClientGeo('${id}')">🎯 Posizione${(c.lat!=null&&c.lng!=null)?' ✓':''}</button>`:''}
     <button class="btn" style="border-color:var(--coral);color:var(--coral)" onclick="toggleBlock('${id}')">${c.blocked?'🔓 Sblocca':'🚫 Blocca'}</button>
     <button class="btn pri" onclick="editClient('${id}')">Modifica</button></div>`);
   if(moduleActive('macchine')&&typeof macRenderClientMachines==='function') macRenderClientMachines(id,'cli-machines');

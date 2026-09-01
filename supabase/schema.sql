@@ -307,6 +307,14 @@ alter table notes        add column if not exists end_date date;
 -- rapportino svolto da PIÙ operai (in due sullo stesso cantiere): lista emp_id oltre all'autore:
 alter table reports      add column if not exists employees jsonb not null default '[]'::jsonb;
 
+-- REGISTRO "da fatturare": ogni lavoro (manutenzione/cantiere/consegna) può essere segnato fatturato
+-- (anche quando la fattura la fai fuori, es. Profix). Flag per-record, indipendente dallo stato.
+alter table maintenances add column if not exists invoiced boolean not null default false;
+alter table sites        add column if not exists invoiced boolean not null default false;
+alter table pellet       add column if not exists invoiced boolean not null default false;
+-- fatture create in-app: si possono archiviare (tolte dalla lista attiva, restano nell'Archivio)
+alter table invoices     add column if not exists archived boolean not null default false;
+
 -- ─────────────────────────── 4. FUNZIONI CHIAVE ───────────────────────────
 -- tenant dell'utente loggato (letto dal suo record in employees). SECURITY DEFINER
 -- per poter leggere employees ignorando la RLS (evita ricorsione infinita).

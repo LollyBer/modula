@@ -121,6 +121,18 @@ function renderSettings(){
     <div class="fld" style="margin-bottom:0"><label>Notifiche</label>${pushRow}</div>
   </div>
 
+  <div class="card">
+    <div class="set-h">🎨 Aspetto</div>
+    <div class="subtle" style="margin-bottom:12px">Sfondo e colore dell'app. Vale solo per te, su questo dispositivo.</div>
+    <div class="fld"><label>Sfondo</label>
+      <div class="seg" style="flex-wrap:wrap;gap:8px">${(typeof BACKGROUNDS!=='undefined'?BACKGROUNDS:[]).map(b=>`<div class="sg ${getBg()===b.id?'on':''}" onclick="setBg('${b.id}');renderSettings()">${b.ic} ${esc(b.nome)}</div>`).join('')}</div></div>
+    <div class="fld" style="margin-bottom:0"><label>Colore</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        ${(typeof ACCENTS!=='undefined'?ACCENTS:[]).map(a=>`<div onclick="setAccent('${a.cy}');renderSettings()" title="${esc(a.nome)}" style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,${a.cy2},${a.cy});cursor:pointer;border:2px solid ${(getAccent()||'').toLowerCase()===a.cy.toLowerCase()?'var(--t1)':'transparent'};box-shadow:0 0 0 1px var(--line)"></div>`).join('')}
+        <div class="sg ${!getAccent()?'on':''}" style="padding:7px 11px" onclick="setAccent('');renderSettings()">Predefinito</div>
+      </div></div>
+  </div>
+
   ${remindersCard}
   ${billingCard}
   ${calCard}

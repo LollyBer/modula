@@ -57,23 +57,23 @@ const MAPS={
   toDb:t=>({id:t.id,emp_id:t.empId||null,date:t.date||null,type:t.type||'lavoro',hours:num(t.hours),start_t:t.start||null,end_t:t.end||null,break_min:num(t.brk),note:t.note||''}),
   fromDb:r=>({id:r.id,empId:r.emp_id,date:r.date,type:r.type||'lavoro',hours:r.hours,start:r.start_t||'',end:r.end_t||'',brk:r.break_min,note:r.note||'',created:Date.parse(r.created_at)||Date.now()})},
  maintenances:{tbl:'maintenances',
-  toDb:m=>({id:m.id,title:m.title,client_id:m.clientId||null,client_raw:m.clientRaw||null,employee_id:(m.employees&&m.employees[0])||m.employeeId||null,employees:m.employees||(m.employeeId?[m.employeeId]:[]),date:m.date||null,time:m.time||null,end_time:m.endTime||null,end_date:m.endDate||null,place:m.place||null,status:m.status||'da_fare',notes:m.notes||'',recur:m.recur||0,price:num(m.price),type:m.type||null,report:m.report||null,via:m.via||'manuale'}),
-  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',status:r.status,notes:r.notes||'',recur:r.recur||0,price:r.price,type:r.type||'',report:r.report,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
+  toDb:m=>({id:m.id,title:m.title,client_id:m.clientId||null,client_raw:m.clientRaw||null,employee_id:(m.employees&&m.employees[0])||m.employeeId||null,employees:m.employees||(m.employeeId?[m.employeeId]:[]),date:m.date||null,time:m.time||null,end_time:m.endTime||null,end_date:m.endDate||null,place:m.place||null,status:m.status||'da_fare',notes:m.notes||'',recur:m.recur||0,price:num(m.price),type:m.type||null,report:m.report||null,via:m.via||'manuale',invoiced:!!m.invoiced}),
+  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',status:r.status,notes:r.notes||'',recur:r.recur||0,price:r.price,type:r.type||'',report:r.report,via:r.via,invoiced:!!r.invoiced,created:Date.parse(r.created_at)||Date.now()})},
  appointments:{tbl:'appointments',
   toDb:a=>({id:a.id,title:a.title,client_id:a.clientId||null,client_raw:a.clientRaw||null,employee_id:(a.employees&&a.employees[0])||a.employeeId||null,employees:a.employees||(a.employeeId?[a.employeeId]:[]),date:a.date||null,time:a.time||null,end_time:a.endTime||null,end_date:a.endDate||null,place:a.place||null,done:!!a.done,via:a.via||'manuale'}),
   fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',done:!!r.done,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
  pellet:{tbl:'pellet',
-  toDb:p=>({id:p.id,client_id:p.clientId||null,client_raw:p.clientRaw||null,employee_id:(p.employees&&p.employees[0])||p.employeeId||null,employees:p.employees||(p.employeeId?[p.employeeId]:[]),qty:num(p.qty),unit:p.unit||'sacchi',kind:p.kind||'sacchi',date:p.date||null,time:p.time||null,status:p.status||'da_consegnare',price:num(p.price),signature:p.signature||null,signed_name:p.signedName||'',notes:p.notes||'',via:p.via||'manuale'}),
-  fromDb:r=>({id:r.id,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),qty:r.qty,unit:r.unit,kind:r.kind,date:r.date,time:r.time,status:r.status,price:r.price,signature:r.signature,signedName:r.signed_name||'',notes:r.notes||'',via:r.via,created:Date.parse(r.created_at)||Date.now()})},
+  toDb:p=>({id:p.id,client_id:p.clientId||null,client_raw:p.clientRaw||null,employee_id:(p.employees&&p.employees[0])||p.employeeId||null,employees:p.employees||(p.employeeId?[p.employeeId]:[]),qty:num(p.qty),unit:p.unit||'sacchi',kind:p.kind||'sacchi',date:p.date||null,time:p.time||null,status:p.status||'da_consegnare',price:num(p.price),signature:p.signature||null,signed_name:p.signedName||'',notes:p.notes||'',via:p.via||'manuale',invoiced:!!p.invoiced}),
+  fromDb:r=>({id:r.id,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),qty:r.qty,unit:r.unit,kind:r.kind,date:r.date,time:r.time,status:r.status,price:r.price,signature:r.signature,signedName:r.signed_name||'',notes:r.notes||'',via:r.via,invoiced:!!r.invoiced,created:Date.parse(r.created_at)||Date.now()})},
  sites:{tbl:'sites',
-  toDb:s=>({id:s.id,name:s.name,client_id:s.clientId||null,client_raw:s.clientRaw||null,status:s.status||'aperto',employees:s.employees||[],est_hours:num(s.estHours),amount:num(s.amount),start_date:s.startDate||null,due_date:s.dueDate||null,closed_date:s.closedDate||null,notes:s.notes||'',via:s.via||'manuale'}),
-  fromDb:r=>({id:r.id,name:r.name,clientId:r.client_id,clientRaw:r.client_raw,status:r.status,employees:r.employees||[],estHours:r.est_hours,amount:r.amount,startDate:r.start_date,dueDate:r.due_date,closedDate:r.closed_date,notes:r.notes||'',via:r.via,log:[],attachments:[],created:Date.parse(r.created_at)||Date.now()})},
+  toDb:s=>({id:s.id,name:s.name,client_id:s.clientId||null,client_raw:s.clientRaw||null,status:s.status||'aperto',employees:s.employees||[],est_hours:num(s.estHours),amount:num(s.amount),start_date:s.startDate||null,due_date:s.dueDate||null,closed_date:s.closedDate||null,notes:s.notes||'',via:s.via||'manuale',invoiced:!!s.invoiced}),
+  fromDb:r=>({id:r.id,name:r.name,clientId:r.client_id,clientRaw:r.client_raw,status:r.status,employees:r.employees||[],estHours:r.est_hours,amount:r.amount,startDate:r.start_date,dueDate:r.due_date,closedDate:r.closed_date,notes:r.notes||'',via:r.via,invoiced:!!r.invoiced,log:[],attachments:[],created:Date.parse(r.created_at)||Date.now()})},
  reports:{tbl:'reports',
   toDb:r=>({id:r.id,site_id:r.siteId||null,emp_id:r.empId||null,employees:r.employees||(r.empId?[r.empId]:[]),date:r.date||null,hours:num(r.hours),start_t:r.start||null,end_t:r.end||null,work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato'}),
   fromDb:r=>({id:r.id,siteId:r.site_id,empId:r.emp_id,employees:(r.employees&&r.employees.length)?r.employees:(r.emp_id?[r.emp_id]:[]),date:r.date,hours:r.hours,start:r.start_t||'',end:r.end_t||'',work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato',created:Date.parse(r.created_at)||Date.now()})},
  invoices:{tbl:'invoices',
-  toDb:f=>({id:f.id,number:f.number||'',date:f.date||null,due_date:f.dueDate||null,client_id:f.clientId||null,client_name:f.clientName||'',client_addr:f.clientAddr||'',lines:f.lines||[],vat_rate:num(f.vatRate),notes:f.notes||'',status:f.status||'bozza',paid_date:f.paidDate||null}),
-  fromDb:r=>({id:r.id,number:r.number||'',date:r.date,dueDate:r.due_date,clientId:r.client_id,clientName:r.client_name||'',clientAddr:r.client_addr||'',lines:r.lines||[],vatRate:r.vat_rate,notes:r.notes||'',status:r.status||'bozza',paidDate:r.paid_date,created:Date.parse(r.created_at)||Date.now()})},
+  toDb:f=>({id:f.id,number:f.number||'',date:f.date||null,due_date:f.dueDate||null,client_id:f.clientId||null,client_name:f.clientName||'',client_addr:f.clientAddr||'',lines:f.lines||[],vat_rate:num(f.vatRate),notes:f.notes||'',status:f.status||'bozza',paid_date:f.paidDate||null,archived:!!f.archived}),
+  fromDb:r=>({id:r.id,number:r.number||'',date:r.date,dueDate:r.due_date,clientId:r.client_id,clientName:r.client_name||'',clientAddr:r.client_addr||'',lines:r.lines||[],vatRate:r.vat_rate,notes:r.notes||'',status:r.status||'bozza',paidDate:r.paid_date,archived:!!r.archived,created:Date.parse(r.created_at)||Date.now()})},
  documents:{tbl:'documents',
   toDb:d=>({id:d.id,tipo:d.tipo||'fattura',fornitore:d.fornitore||'',vat_no:d.vatNo||'',number:d.number||'',doc_date:d.date||null,due_date:d.dueDate||null,amount:num(d.amount),currency:d.currency||'CHF',category:d.category||'',description:d.description||'',pay_status:d.payStatus||'da_pagare',paid_date:d.paidDate||null,pinned:!!d.pinned,client_id:d.clientId||null,site_id:d.siteId||null,file_name:d.fileName||'',storage_path:d.storagePath||'',mime:d.mime||''}),
   fromDb:r=>({id:r.id,tipo:r.tipo||'fattura',fornitore:r.fornitore||'',vatNo:r.vat_no||'',number:r.number||'',date:r.doc_date,dueDate:r.due_date,amount:r.amount,currency:r.currency||'CHF',category:r.category||'',description:r.description||'',payStatus:r.pay_status||'da_pagare',paidDate:r.paid_date,pinned:!!r.pinned,clientId:r.client_id,siteId:r.site_id,fileName:r.file_name||'',storagePath:r.storage_path||'',mime:r.mime||'',created:Date.parse(r.created_at)||Date.now()})},
@@ -382,7 +382,7 @@ function findClient(text,employee){
 }
 function parseInput(text){
   const t=norm(text);
-  const r={type:null,title:text.trim(),date:null,time:null,person:null,employee:null,qty:null,unit:null,raw:text.trim()};
+  const r={type:null,title:text.trim(),date:null,time:null,person:null,employee:null,qty:null,unit:null,raw:text.trim(),done:/\b(gia\s+)?(fatt[oa]|finit[oa]|complet\w+|eseguit[oa]|conclus[oa]|svolt[oa]|consegnat[oa])\b/.test(norm(text))};
   // type detection
   if(/\blista\b/.test(t))r.type='list';
   else if(/^\s*(ricordami|ricorda|nota|promemoria)\b/.test(t)&&!/\b(manutenzion\w*|pellet|appuntament\w*|cantier\w*)\b/.test(t))r.type='note';
@@ -470,6 +470,7 @@ const TYPE_META={
   site:{label:'Cantiere',color:'var(--blue)',hex:'#A9742F',ic:'🏗',view:'sites'},
   list:{label:'Lista',color:'#2E9E5E',hex:'#2E9E5E',ic:'☑️',view:'hub'},
   todo:{label:'Da fare',color:'#7C5CBF',hex:'#7C5CBF',ic:'✅',view:'todo'},
+  document:{label:'Documento',color:'var(--t2)',hex:'#8A8170',ic:'📄',view:'documenti'},
 };
 /* ===== VOCI del calendario (configurabili per azienda) =====
    Ogni voce: {id,label,ic,hex,kind}. `kind` = tipo con cui l'evento viene salvato:
@@ -506,7 +507,7 @@ function commitParsed(p,via){
   if(TYPE_MOD[p.type]&&!moduleActive(TYPE_MOD[p.type]))p.type='note';
   let msg='';
   if(p.type==='maintenance'){
-    S.maintenances.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,employees,date:p.date,time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,status:p.date?'programmata':'da_fare',notes:'',via,created:Date.now()});
+    S.maintenances.unshift({id:uid(),title:p.title,clientId,clientRaw:personRaw,employeeId,employees,date:p.date||(p.done?todayIso():null),time:p.time,endTime:p.endTime||null,endDate:p.endDate||null,place:p.place||null,status:p.done?'fatta':(p.date?'programmata':'da_fare'),notes:'',via,created:Date.now()});
     msg='🔧 Manutenzione registrata'+(p.person?' — '+p.person.name:'')+(p.employee?' · 👷 '+p.employee.name:'')+(p.date?' · '+fmtD(p.date):'')+(p.time?' '+p.time:'');
   }else if(p.type==='pellet'){
     const kind=(p.unit==='t'||/\bsfuso\b/i.test(p.raw||''))?'sfuso':'sacchi';
@@ -614,12 +615,22 @@ const genInvite=n=>(norm(n).replace(/[^a-z]/g,'').slice(0,5).toUpperCase()||'USE
 async function logout(){if(DEMO){toast('Demo: in un\'app reale qui esci dall\'account');return;}try{await sb.auth.signOut();}catch(e){}S=blank();authMode='login';closeSheet();renderLock();}
 function nav(v){view=v;render();window.scrollTo(0,0);}
 /* barra in basso (mobile) personalizzabile — salvata sul dispositivo, una per utente */
-const NAV_DEFAULT=['hub','cal','man','pellet','sites'];
+const NAV_DEFAULT=['hub','cal','clients','man','conti'];
 let bottomNavMem={};
 function getTheme(){try{return localStorage.getItem('caywork_theme')==='dark'?'dark':'light';}catch(e){return 'light';}}
 function applyTheme(t){const dark=t==='dark';if(dark)document.documentElement.dataset.theme='dark';else document.documentElement.removeAttribute('data-theme');const m=document.querySelector('meta[name=theme-color]');if(m)m.content=dark?'#14160F':'#F5F2EA';}
 function setTheme(t){try{localStorage.setItem('caywork_theme',t);}catch(e){}applyTheme(t);if(typeof renderNav==='function')renderNav();}
 function toggleTheme(){setTheme(getTheme()==='dark'?'light':'dark');}
+/* ---------- PERSONALIZZAZIONE: sfondo + colore accento (per-dispositivo, come il tema) ---------- */
+const ACCENTS=[{id:'verde',cy:'#5BA02C',cy2:'#6FB23A',nome:'Verde'},{id:'blu',cy:'#3B6D91',cy2:'#4E86AE',nome:'Blu'},{id:'teal',cy:'#2E9E5E',cy2:'#3FBF77',nome:'Verde acqua'},{id:'ambra',cy:'#C77F12',cy2:'#E0982A',nome:'Ambra'},{id:'corallo',cy:'#D64528',cy2:'#E8613F',nome:'Corallo'},{id:'viola',cy:'#7C5CBF',cy2:'#9576D6',nome:'Viola'}];
+const BACKGROUNDS=[{id:'foglie',nome:'Foglie',ic:'🌿'},{id:'liscio',nome:'Liscio',ic:'⬜'},{id:'carta',nome:'Carta',ic:'📄'},{id:'cielo',nome:'Cielo',ic:'🌤'},{id:'menta',nome:'Menta',ic:'🌱'},{id:'sabbia',nome:'Sabbia',ic:'🏜'},{id:'ardesia',nome:'Ardesia',ic:'🌫'}];
+function getBg(){try{return localStorage.getItem('modula_bg')||'foglie';}catch(e){return 'foglie';}}
+function setBg(id){try{if(id&&id!=='foglie')localStorage.setItem('modula_bg',id);else localStorage.removeItem('modula_bg');}catch(e){}applyBg();}
+function applyBg(){const id=getBg();if(id&&id!=='foglie')document.documentElement.dataset.bg=id;else document.documentElement.removeAttribute('data-bg');}
+function getAccent(){try{return localStorage.getItem('modula_accent')||'';}catch(e){return '';}}
+function setAccent(hex){try{if(hex)localStorage.setItem('modula_accent',hex);else localStorage.removeItem('modula_accent');}catch(e){}applyAccent();if(typeof renderNav==='function')renderNav();}
+function applyAccent(){const a=getAccent();if(!a)return;const p=ACCENTS.find(x=>x.cy.toLowerCase()===a.toLowerCase());document.documentElement.style.setProperty('--cy',a);document.documentElement.style.setProperty('--cy2',p?p.cy2:a);}
+function applyPersonalization(){applyBg();applyAccent();}
 function navKey(){return 'caywork_nav_'+(S.session?S.session.empId:'x');}
 function getBottomNav(){const k=navKey();if(bottomNavMem[k])return bottomNavMem[k];try{const v=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(v)&&v.length){bottomNavMem[k]=v;return v;}}catch(e){}return NAV_DEFAULT;}
 function setBottomNav(ids){const k=navKey();bottomNavMem[k]=ids.slice();try{localStorage.setItem(k,JSON.stringify(ids));}catch(e){}}
@@ -805,14 +816,17 @@ function openBackup(){
   </div>`);
 }
 function exportBackup(){
-  const data=JSON.stringify(S,null,2);
-  const blob=new Blob([data],{type:'application/json'});
+  /* Backup COMPLETO: tutto lo stato dati (ogni collezione + tutte le impostazioni).
+     NB: i FILE (foto/allegati/documenti) NON sono nel .json — vivono nello Storage Supabase
+     (che è il backup reale dei file); qui restano i riferimenti (storagePath). */
+  const{session,speaker,...data}=S; /* escludi lo stato transitorio di sessione */
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='ptek-backup-'+todayIso()+'.json';
+  a.download='modula-backup-'+(BRAND.name?norm(BRAND.name).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-':'')+todayIso()+'.json';
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-  toast('⬇ Backup esportato');
+  toast('⬇ Backup completo esportato');
 }
 function importBackup(ev){
   const f=ev.target.files[0];if(!f)return;
@@ -824,24 +838,49 @@ function importBackup(ev){
       if(!d||!Array.isArray(d.clients))throw new Error('struttura');
       if(!confirm('Importare il backup nel cloud? I dati verranno AGGIUNTI a quelli attuali.'))return;
       toast('⏳ Importo…');
+      /* remap id: ogni id del backup → id nuovo (copia additiva, niente collisioni). 'me' → titolare attuale. */
       const map={};const mid=o=>{if(!o)return null;if(o==='me')return S.session.empId;if(!map[o])map[o]=uid();return map[o];};
-      (d.employees||[]).forEach(e=>{if(e.id==='me')return;S.employees.push({id:mid(e.id),name:e.name,role:e.role||'',phone:e.phone||'',perms:e.perms||['cal','man','chat'],isOwner:false,active:e.active!==false,inviteCode:genInvite(e.name),userId:null});});
-      (d.clients||[]).forEach(c=>S.clients.push({id:mid(c.id),name:c.name,phone:c.phone||'',zone:c.zone||'',group:c.group||'',address:c.address||'',plant:c.plant||'',pellet:c.pellet||'',maintenance:c.maintenance||'',notes:c.notes||'',blocked:!!c.blocked,firstName:c.firstName||'',lastName:c.lastName||'',street:c.street||'',streetNo:c.streetNo||'',cap:c.cap||'',town:c.town||'',email:c.email||'',lat:(typeof c.lat==='number'?c.lat:null),lng:(typeof c.lng==='number'?c.lng:null),geoSrc:c.geoSrc||null,created:c.created||Date.now()}));
-      (d.noteGroups||[]).forEach(g=>S.noteGroups.push({id:mid(g.id),name:g.name,members:(g.members||[]).map(mid)}));
-      (d.maintenances||[]).forEach(m=>S.maintenances.push({id:mid(m.id),title:m.title,clientId:mid(m.clientId),clientRaw:m.clientRaw||null,employeeId:mid(m.employeeId),date:m.date||null,time:m.time||null,status:m.status||'da_fare',notes:m.notes||'',recur:m.recur||0,price:m.price||null,report:m.report||null,via:m.via||'import',created:m.created||Date.now()}));
-      (d.appointments||[]).forEach(a=>S.appointments.push({id:mid(a.id),title:a.title,clientId:mid(a.clientId),clientRaw:a.clientRaw||null,employeeId:mid(a.employeeId),date:a.date||null,time:a.time||null,done:!!a.done,via:a.via||'import',created:a.created||Date.now()}));
-      (d.pellet||[]).forEach(p=>{const kind=(p.kind==='sfuso'||p.unit==='t')?'sfuso':'sacchi';const unit=kind==='sfuso'?'t':(['sacchi','kg'].includes(p.unit)?p.unit:'sacchi');S.pellet.push({id:mid(p.id),clientId:mid(p.clientId),clientRaw:p.clientRaw||null,qty:p.qty||null,unit,kind,date:p.date||null,time:p.time||null,status:p.status||'da_consegnare',price:p.price||null,signature:p.signature||null,signedName:p.signedName||'',notes:p.notes||'',via:p.via||'import',created:p.created||Date.now()});});
+      const marr=a=>(a||[]).map(mid).filter(Boolean);
+      /* il titolare del backup diventa il titolare ATTUALE (niente doppione); i suoi id nei record si rimappano su di lui */
+      const bOwner=(d.employees||[]).find(e=>e.isOwner);if(bOwner)map[bOwner.id]=S.session.empId;
+      /* impiegati (esclusi titolari): reimportati come NON titolari, accesso azzerato (nuovo codice invito) */
+      (d.employees||[]).forEach(e=>{if(e.id==='me'||e.isOwner)return;S.employees.push({...e,id:mid(e.id),perms:e.perms||['cal','man','chat'],isOwner:false,active:e.active!==false,inviteCode:genInvite(e.name||'user'),userId:null,created:e.created||Date.now()});});
+      /* clienti (nessuna FK) */
+      (d.clients||[]).forEach(c=>S.clients.push({...c,id:mid(c.id),created:c.created||Date.now()}));
+      /* collezioni con chiavi esterne: spread completo (tutti i campi) + remap FK */
+      const GEN={
+        noteGroups:{arr:['members']},
+        timeEntries:{single:['empId']},
+        maintenances:{single:['clientId','employeeId'],arr:['employees']},
+        appointments:{single:['clientId','employeeId'],arr:['employees']},
+        pellet:{single:['clientId','employeeId'],arr:['employees']},
+        notes:{single:['clientId','groupId'],arr:['employees']},
+        callLog:{single:['clientId','maintId']},
+        expenses:{single:['siteId']},
+        maintPrices:{},
+        reports:{single:['siteId','empId'],arr:['employees']},
+        documents:{single:['clientId','siteId']},
+        todos:{single:['clientId'],arr:['employees']},
+      };
+      Object.keys(GEN).forEach(coll=>{const spec=GEN[coll];(d[coll]||[]).forEach(rec=>{
+        const o={...rec,id:mid(rec.id),created:rec.created||Date.now()};
+        (spec.single||[]).forEach(k=>{if(k in o)o[k]=o[k]?mid(o[k]):null;});
+        (spec.arr||[]).forEach(k=>{if(k in o)o[k]=marr(o[k]);});
+        (S[coll]=S[coll]||[]).push(o);});});
+      /* liste (items con id nuovi) */
+      (d.lists||[]).forEach(l=>S.lists.push({...l,id:mid(l.id),created:l.created||Date.now(),items:(l.items||[]).map(i=>({id:uid(),text:i.text,done:!!i.done}))}));
+      /* fatture: remap cliente + le ref delle righe che collegano i lavori */
+      (d.invoices||[]).forEach(v=>S.invoices.push({...v,id:mid(v.id),clientId:v.clientId?mid(v.clientId):null,lines:(v.lines||[]).map(l=>(l&&l.ref&&l.ref.id)?{...l,ref:{t:l.ref.t,id:mid(l.ref.id)}}:{...l}),created:v.created||Date.now()}));
+      /* cantieri: diario + allegati (i file con dataUrl vengono ricaricati nello Storage sotto) */
       const pendingAtt=[];
       (d.sites||[]).forEach(s=>{
-        const ns={id:mid(s.id),name:s.name,clientId:mid(s.clientId),clientRaw:s.clientRaw||null,status:['aperto','da_fatturare','chiuso'].includes(s.status)?s.status:'aperto',employees:(s.employees||[]).map(mid).filter(Boolean),estHours:s.estHours||null,amount:s.amount||null,startDate:s.startDate||null,dueDate:s.dueDate||null,notes:s.notes||'',via:s.via||'import',created:s.created||Date.now(),
+        const ns={...s,id:mid(s.id),clientId:s.clientId?mid(s.clientId):null,employees:marr(s.employees),created:s.created||Date.now(),
           log:(s.log||[]).map(l=>({id:uid(),date:l.date||null,text:l.text,hours:l.hours||null,empId:mid(l.empId)})),attachments:[]};
         (s.attachments||[]).forEach(a=>{if(a.dataUrl)pendingAtt.push({siteId:ns.id,a});});
         S.sites.push(ns);
       });
-      (d.notes||[]).forEach(n=>S.notes.push({id:mid(n.id),text:n.text,clientId:mid(n.clientId),groupId:mid(n.groupId),date:n.date||null,pinned:!!n.pinned,archived:!!n.archived,via:n.via||'import',created:n.created||Date.now()}));
-      (d.lists||[]).forEach(l=>S.lists.push({id:mid(l.id),name:l.name,via:l.via||'import',created:l.created||Date.now(),items:(l.items||[]).map(i=>({id:uid(),text:i.text,done:!!i.done}))}));
-      (d.callLog||[]).forEach(c=>S.callLog.push({id:uid(),clientId:mid(c.clientId),year:c.year,called:!!c.called,outcome:c.outcome||'',note:c.note||'',maintId:mid(c.maintId)}));
-      if(d.settings){Object.assign(S.settings,{bagsPerPallet:d.settings.bagsPerPallet||S.settings.bagsPerPallet,companyName:d.settings.companyName||S.settings.companyName,pricePerTon:d.settings.pricePerTon||S.settings.pricePerTon,pricePerBag:d.settings.pricePerBag||S.settings.pricePerBag});}
+      /* impostazioni: TUTTE le chiavi (eventTypes, board, boards, places, billing, reminders, prezzi…) */
+      if(d.settings&&typeof d.settings==='object')Object.assign(S.settings,d.settings);
       await syncNow();
       for(const{siteId,a}of pendingAtt){
         try{
@@ -1275,7 +1314,7 @@ async function postAuth(){
     if(!byId(S.employees,emp.id))S.employees.push(my);
     S.session={empId:emp.id};S.speaker=emp.id;
     startRealtime();initPush();
-    view='hub';render();toast('Ciao '+my.name+' 👋');
+    view='hub';render();applyPersonalization();toast('Ciao '+my.name+' 👋');
   }catch(e){console.error(e);authMode='login';renderLock();setTimeout(()=>lockErr('Errore: '+(e.message||e)),100);}
 }
 /* ================= MODAL ================= */
@@ -1310,6 +1349,7 @@ function allEvents(){
   S.notes.forEach(n=>{if(n.date&&!n.archived&&(!n.groupId||typeof groupVisible!=='function'||groupVisible(byId(S.noteGroups,n.groupId))))ev.push({type:'note',date:n.date,time:n.time||null,endTime:n.endTime||'',endDate:n.endDate||'',title:n.text,sub:cName(n.clientId)||'',place:n.place||'',done:false,id:n.id});});
   if(moduleActive('todo'))(S.todos||[]).forEach(t=>{if(t.due&&!t.done&&(isOwner()||assignedToMe(t)||!empIdsOf(t).length))ev.push({type:'todo',date:t.due,time:t.time||null,title:t.text,sub:cName(t.clientId)||'',place:'',done:!!t.done,id:t.id});});
   if(moduleActive('sites'))visSites().forEach(s=>{const sub=cName(s.clientId)||s.clientRaw||'';if(s.startDate&&(s.status==='aperto'||s.status==='previsto'))ev.push({type:'site',date:s.startDate,time:null,title:'🏗 Inizio: '+s.name,sub,done:false,id:s.id});if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub,done:false,id:s.id});});
+  if(moduleActive('documenti')&&can('documenti'))S.documents.forEach(d=>{if(d.dueDate)ev.push({type:'document',date:d.dueDate,time:null,title:'📄 Scade: '+(d.description||d.fornitore||'documento'),sub:[d.category,d.clientId?cName(d.clientId):''].filter(Boolean).join(' · '),place:'',done:false,id:d.id});});
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
 
@@ -1325,6 +1365,7 @@ function openEv(type,id){
   else if(type==='note')openNote(id);
   else if(type==='site'){if(typeof openSite==='function')openSite(id);}
   else if(type==='todo'){if(typeof openTodo==='function')openTodo(id);}
+  else if(type==='document'){if(typeof openDocument==='function')openDocument(id);}
   else nav(TYPE_META[type].view);
 }
 function evTimeLabel(e){
@@ -1571,7 +1612,7 @@ function demoBoot(){
     {id:uid(),date:t,category:'Ricambi',amount:240,note:'Caldaie',siteId:null,recur:0,created:now}
   ];
   rebuildSnapshot();
-  view='hub';render();
+  view='hub';render();applyPersonalization();
   setTimeout(()=>{try{toast('🎬 Modalità demo — dati di esempio. Prova a cliccare tutto.');}catch(e){}},700);
 }
 

@@ -9,6 +9,8 @@ function getCall(clientId){
   if(!c){c={id:uid(),clientId,year:yr,called:false,outcome:'',note:'',maintId:null};S.callLog.push(c);}
   return c;
 }
+/* 1-tap: segna la manutenzione fatta oggi (data = oggi se mancante) */
+function manQuickDone(id){const m=byId(S.maintenances,id);if(!m)return;m.status='fatta';if(!m.date)m.date=todayIso();save();render();toast('🔧 Segnata fatta'+(typeof billToast==='function'?billToast():''));}
 function manRow(m){
   const t=todayIso();
   const late=m.date&&m.date<t&&m.status!=='fatta';
@@ -19,7 +21,7 @@ function manRow(m){
     <div class="avat" style="width:34px;height:34px;background:${col}22;border:1px solid ${col}55;font-size:15px;font-weight:400">${ic}</div>
     <div class="bd"><div class="ti">${who?`<b>${esc(who)}</b> — `:''}${esc(m.title)}</div>
     <div class="su">${m.date?'📅 '+fmtD(m.date)+(m.time?' · '+m.time:''):'senza data'}${empNames(m)?' · 👷 '+esc(empNames(m)):''}${late?' · <span style="color:#D64528">in ritardo</span>':''}</div></div>
-    ${m.status!=='fatta'?`<button class="qbtn" onclick="event.stopPropagation();startBollettino('${m.id}')">▶ Avvia</button>`:(m.report?`<button class="qbtn ghost" onclick="event.stopPropagation();viewBollettino('${m.id}')">📄</button>`:'')}
+    ${m.status!=='fatta'?`<button class="qbtn ghost" onclick="event.stopPropagation();manQuickDone('${m.id}')" title="Segna fatta oggi">✓</button> <button class="qbtn" onclick="event.stopPropagation();startBollettino('${m.id}')">▶ Avvia</button>`:(m.report?`<button class="qbtn ghost" onclick="event.stopPropagation();viewBollettino('${m.id}')">📄</button>`:'')}
   </div>`;
 }
 function renderMan(){
@@ -276,7 +278,7 @@ function saveBollettino(){
   let extra='';
   if(!wasFatta&&m.recur>0){
     const nextDate=addMonthsIso(m.date||todayIso(),m.recur);
-    S.maintenances.unshift({id:uid(),title:m.title,clientId:m.clientId,clientRaw:m.clientRaw,employees:empIdsOf(m),date:nextDate,time:m.time,status:'programmata',notes:'',recur:m.recur,via:'ricorrenza',created:Date.now()});
+    S.maintenances.unshift({id:uid(),title:m.title,clientId:m.clientId,clientRaw:m.clientRaw,employees:empIdsOf(m),date:nextDate,time:m.time,status:'programmata',notes:'',recur:m.recur,type:m.type,via:'ricorrenza',created:Date.now()});
     extra=' · 🔁 prossima creata per '+fmtD(nextDate);
   }
   save();closeSheet();render();

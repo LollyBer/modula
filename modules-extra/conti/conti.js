@@ -38,10 +38,11 @@ function entrate(mk){
   const man=S.maintenances.filter(m=>m.status==='fatta'&&m.date&&m.date.slice(0,7)===mk).reduce((t,m)=>t+maintIncome(m),0);
   const cant=S.sites.filter(s=>s.status==='chiuso'&&siteIncomeMonth(s)===mk).reduce((t,s)=>t+(s.amount||0),0);
   const fatture=(moduleActive('fatture')?S.invoices:[]).filter(f=>f.status==='pagata'&&(f.paidDate||f.date)&&(f.paidDate||f.date).slice(0,7)===mk).reduce((t,f)=>t+(typeof invTotal==='function'?invTotal(f):0),0);
-  /* NIENTE DOPPIONI: se usi le Fatture, l'entrata reale è la fattura pagata; consegne pellet,
-     manutenzioni e cantieri sono operativi e NON si ri-sommano (altrimenti si conterebbero due volte). */
-  const useInvoices=moduleActive('fatture');
-  return{pellet,man,cant,fatture,useInvoices,tot:useInvoices?fatture:(pellet+man+cant)};
+  /* L'incasso reale = i LAVORI fatti (consegne + manutenzioni + cantieri), al NETTO — sempre,
+     anche se le fatture le fai fuori (es. Profix). Le fatture sono lo strumento, non l'entrata:
+     ricontarle = doppioni + IVA gonfiata. Quindi tot NON dipende dal modulo Fatture. */
+  const useInvoices=false;
+  return{pellet,man,cant,fatture,useInvoices,tot:pellet+man+cant};
 }
 const entrRow=(label,val)=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px"><span class="subtle">${label}</span><span style="font-family:var(--mono);color:var(--teal)">CHF ${fmtQty(val)}</span></div>`;
 function expRow(e){const sn=e.siteId?(byId(S.sites,e.siteId)||{}).name:'';const rl=recurLabel(e.recur);return`<div class="item" onclick="openExpense('${e.id}')"><div class="bd"><div class="ti">${esc(e.category||'Spesa')} · <span style="color:var(--coral)">CHF ${fmtQty(e.amount||0)}</span>${rl?` <span class="badge" style="border-color:var(--cy);color:var(--cy)">${rl}</span>`:''}</div><div class="su">${fmtD(e.date)}${e.note?' · '+esc(e.note):''}${sn?' · 🏗 '+esc(sn):''}</div></div></div>`;}

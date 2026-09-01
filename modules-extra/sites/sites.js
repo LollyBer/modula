@@ -104,6 +104,9 @@ function openSite(id){
     <div class="fld"><button class="btn sm" style="width:100%" onclick="addLog('${id}')">+ Registra oggi</button></div></div>
   </div>
   <div class="fld"><label>⚙️ Macchine sul cantiere</label><div id="site-machines"><div class="subtle">…</div></div></div>
+  ${(moduleActive('documenti')&&can('documenti'))?`<div class="fld"><label>📁 Documenti (${S.documents.filter(d=>d.siteId===id).length})</label>
+    ${(()=>{const ds=S.documents.filter(d=>d.siteId===id).sort((a,b)=>((a.date||'')>(b.date||'')?-1:1));return ds.length?ds.slice(0,8).map(d=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openDocument('${d.id}')">📄 ${esc(typeof docTitle==='function'?docTitle(d):(d.description||'documento'))}${d.date?' · '+fmtD(d.date):''}</div>`).join(''):'<div class="subtle" style="padding:2px 0">Nessun documento collegato.</div>';})()}
+    <button class="btn sm ghost" style="margin-top:6px" onclick="closeSheet();docAddForSite('${id}')">+ Documento</button></div>`:''}
   <div class="actions" style="flex-wrap:wrap">
     <button class="btn danger" onclick="delSite('${id}')">Elimina</button>
     ${s.clientId&&moduleActive('zone')?`<button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="zoneFocusClient('${s.clientId}')">📍 Mappa</button>`:''}

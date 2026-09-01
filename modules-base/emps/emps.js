@@ -577,7 +577,8 @@ function saveEmp(id){
   let perms=[...document.querySelectorAll('#em-perms .sg.on')].map(x=>x.dataset.v);
   const ot=$('#em-owner');
   const makeOwner=(ot&&isOwner())?ot.classList.contains('on'):null; // null = toggle non mostrato → non cambiare
-  if(makeOwner===true)perms=['hub','cal','notes','chat','man','pellet','sites','clients','emps']; // titolare = tutte le sezioni
+  /* titolare = accesso completo via isOwner (can() lo short-circuita): NON sovrascrivo i permessi
+     con una lista fissa, così se un domani viene tolto il ruolo titolare mantiene i suoi permessi reali. */
   const data={name,role:$('#em-r').value.trim(),phone:$('#em-p').value.trim(),perms};
   const dh=$('#em-dh'),hd=$('#em-hd');
   if(dh)data.dayHours=dh.value.trim()?+dh.value.replace(',','.'):null;

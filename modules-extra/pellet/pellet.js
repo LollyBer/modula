@@ -214,7 +214,7 @@ function openPel(id,preset){
   ${p.clientId&&moduleActive('zone')?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--blue);color:var(--blue)" onclick="zoneFromSheet('pl-c')">📍 Vedi il cliente sulla mappa</button>`:''}
   <div class="actions">
     ${id?`<button class="btn danger" onclick="delItem('pellet','${id}')">Elimina</button>
-    <button class="btn" onclick="togglePel('${id}')">${p.status==='consegnato'?'Riapri':'✓ Consegnato'}</button>`:''}
+    <button class="btn" onclick="togglePel('${id}')">${p.status==='consegnato'?'Riapri':'✓ Consegnato'}</button>`:`<button class="btn" style="border-color:var(--teal);color:var(--teal)" onclick="savePel('','consegnato')">✓ Salva consegnato</button>`}
     <button class="btn pri" onclick="savePel('${id||''}')">Salva</button></div>`);
 }
 function pelKindPick(el){
@@ -228,24 +228,29 @@ function schedulePel(id){const p=byId(S.pellet,id);if(p&&p.status==='prenotato')
 const autoPrice=p=>{
   if(!p.qty)return null;
   if(p.kind==='sfuso'&&S.settings.pricePerTon)return Math.round(p.qty*S.settings.pricePerTon*100)/100;
-  if(p.kind!=='sfuso'&&p.unit==='sacchi'&&S.settings.pricePerBag)return Math.round(p.qty*S.settings.pricePerBag*100)/100;
+  if(p.kind!=='sfuso'&&S.settings.pricePerBag){
+    if(p.unit==='sacchi')return Math.round(p.qty*S.settings.pricePerBag*100)/100;
+    if(p.unit==='bancali')return Math.round(p.qty*(S.settings.bagsPerPallet||70)*S.settings.pricePerBag*100)/100; /* bancali = qtà × sacchi/bancale × prezzo/sacco */
+  }
   return null;
 };
-function savePel(id){
+function savePel(id,forceStatus){
   const kind=$('#pl-k .sg.on')?.dataset.k||'sacchi';
   const cid=$('#pl-c').value||null;const rawName=(!cid&&$('#pl-c').dataset&&$('#pl-c').dataset.raw)||null;
   const data={qty:parseFloat($('#pl-q').value)||null,unit:$('#pl-u').value,kind,clientId:cid,clientRaw:rawName,employees:empSegRead('pl-e'),date:$('#pl-d').value||null,time:$('#pl-h').value||null,notes:$('#pl-n').value.trim()};
+  /* se salvo direttamente come consegnato: data = oggi se mancante, prezzo auto se mancante */
+  if(forceStatus==='consegnato'&&!data.date)data.date=todayIso();
   data.price=parseFloat($('#pl-pr').value)||autoPrice({...data})||null;
-  const stSel=document.querySelector('#pl-s .sg.on')?.dataset.s;
+  const stSel=forceStatus||document.querySelector('#pl-s .sg.on')?.dataset.s;
   const oldP=id?byId(S.pellet,id):null;const prevEmps=oldP?empIdsOf(oldP):[];
-  if(id){Object.assign(oldP,data);if(oldP.status!=='consegnato'&&stSel)oldP.status=stSel;}
+  if(id){Object.assign(oldP,data);if(forceStatus)oldP.status=forceStatus;else if(oldP.status!=='consegnato'&&stSel)oldP.status=stSel;}
   else{S.pellet.unshift({id:uid(),status:stSel||'da_consegnare',via:'manuale',created:Date.now(),...data});}
   const effStatus=id?oldP.status:(stSel||'da_consegnare');
   const added=data.employees.filter(e=>!prevEmps.includes(e)&&!(S.session&&e===S.session.empId));
   if(added.length&&effStatus==='da_consegnare')pushNotify(added,'🪵 Consegna pellet assegnata',`${data.qty?fmtQty(data.qty)+' '+(data.unit||'sacchi'):'Consegna'} a ${cName(data.clientId)||(oldP&&oldP.clientRaw)||''}${data.date?' · '+fmtD(data.date):''}`);
-  save();closeSheet();render();toast('🪵 Salvato');
+  save();closeSheet();render();toast('🪵 '+(effStatus==='consegnato'?'Consegnato'+(typeof billToast==='function'?billToast():''):'Salvato'));
 }
-function togglePel(id){const p=byId(S.pellet,id);p.status=p.status==='consegnato'?'da_consegnare':'consegnato';save();closeSheet();render();toast(p.status==='consegnato'?('🪵 Consegnato'+(typeof billToast==='function'?billToast():'')):'↩ Riaperto');}
+function togglePel(id){const p=byId(S.pellet,id);const toDone=p.status!=='consegnato';p.status=toDone?'consegnato':'da_consegnare';if(toDone){if(!p.date)p.date=todayIso();if(p.price==null)p.price=autoPrice(p)||null;}save();closeSheet();render();toast(toDone?('🪵 Consegnato'+(typeof billToast==='function'?billToast():'')):'↩ Riaperto');}
 
 /* ================= BOLLA CONSEGNA PELLET ================= */
 let bolla=null;
