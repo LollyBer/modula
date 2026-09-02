@@ -623,7 +623,7 @@ function setTheme(t){try{localStorage.setItem('caywork_theme',t);}catch(e){}appl
 function toggleTheme(){setTheme(getTheme()==='dark'?'light':'dark');}
 /* ---------- PERSONALIZZAZIONE: sfondo + colore accento (per-dispositivo, come il tema) ---------- */
 const ACCENTS=[{id:'verde',cy:'#5BA02C',cy2:'#6FB23A',nome:'Verde'},{id:'blu',cy:'#3B6D91',cy2:'#4E86AE',nome:'Blu'},{id:'teal',cy:'#2E9E5E',cy2:'#3FBF77',nome:'Verde acqua'},{id:'ambra',cy:'#C77F12',cy2:'#E0982A',nome:'Ambra'},{id:'corallo',cy:'#D64528',cy2:'#E8613F',nome:'Corallo'},{id:'viola',cy:'#7C5CBF',cy2:'#9576D6',nome:'Viola'}];
-const BACKGROUNDS=[{id:'foglie',nome:'Foglie',ic:'🌿'},{id:'liscio',nome:'Liscio',ic:'⬜'},{id:'carta',nome:'Carta',ic:'📄'},{id:'cielo',nome:'Cielo',ic:'🌤'},{id:'menta',nome:'Menta',ic:'🌱'},{id:'sabbia',nome:'Sabbia',ic:'🏜'},{id:'ardesia',nome:'Ardesia',ic:'🌫'}];
+const BACKGROUNDS=[{id:'foglie',nome:'Foglie',ic:'🌿'},{id:'liscio',nome:'Liscio',ic:'⬜'},{id:'carta',nome:'Carta',ic:'📄'},{id:'griglia',nome:'Griglia',ic:'▦'},{id:'cielo',nome:'Cielo',ic:'🌤'},{id:'menta',nome:'Menta',ic:'🌱'},{id:'sabbia',nome:'Sabbia',ic:'🏜'},{id:'ardesia',nome:'Ardesia',ic:'🌫'},{id:'onde',nome:'Onde',ic:'🌊'}];
 function getBg(){try{return localStorage.getItem('modula_bg')||'foglie';}catch(e){return 'foglie';}}
 function setBg(id){try{if(id&&id!=='foglie')localStorage.setItem('modula_bg',id);else localStorage.removeItem('modula_bg');}catch(e){}applyBg();}
 function applyBg(){const id=getBg();if(id&&id!=='foglie')document.documentElement.dataset.bg=id;else document.documentElement.removeAttribute('data-bg');}
