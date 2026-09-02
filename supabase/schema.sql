@@ -216,6 +216,27 @@ create table if not exists reports (
   created_at timestamptz not null default now()
 );
 
+-- sopralluoghi: visite di valutazione prima del lavoro/preventivo, con foto e pipeline
+-- commerciale. Cliente dell'anagrafica OPPURE potenziale (client_raw/client_phone liberi).
+-- site_id = cantiere generato quando il sopralluogo è "vinto" e trasformato in cantiere.
+create table if not exists surveys (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  title text default '',
+  client_id uuid references clients(id) on delete set null,
+  client_raw text, client_phone text default '',
+  place text default '', date date,
+  employees jsonb not null default '[]'::jsonb,
+  status text default 'da_valutare',
+  value numeric,
+  measures text default '', notes text default '',
+  next_note text default '', next_date date,
+  photos jsonb not null default '[]'::jsonb,
+  site_id uuid references sites(id) on delete set null,
+  via text default 'manuale',
+  created_at timestamptz not null default now()
+);
+
 -- fatture (collegate a Conti: le pagate = entrate). QR-fattura svizzera generata lato app.
 create table if not exists invoices (
   id uuid primary key default gen_random_uuid(),
@@ -314,6 +335,8 @@ alter table sites        add column if not exists invoiced boolean not null defa
 alter table pellet       add column if not exists invoiced boolean not null default false;
 -- fatture create in-app: si possono archiviare (tolte dalla lista attiva, restano nell'Archivio)
 alter table invoices     add column if not exists archived boolean not null default false;
+-- foto direttamente sulla manutenzione (stesso schema dei rapportini: [{id,name,storagePath}], file nello Storage)
+alter table maintenances add column if not exists photos jsonb not null default '[]'::jsonb;
 
 -- ─────────────────────────── 4. FUNZIONI CHIAVE ───────────────────────────
 -- tenant dell'utente loggato (letto dal suo record in employees). SECURITY DEFINER
@@ -344,7 +367,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','push_subs','todos'
   ] loop
@@ -360,7 +383,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
+    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs','todos'
   ] loop
@@ -386,7 +409,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs','todos'
   ] loop
@@ -464,7 +487,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'clients','maintenances','appointments','pellet','sites','site_logs','reports','invoices','documents','attachments','client_attachments',
+    'clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents','attachments','client_attachments',
     'notes','note_groups','lists','list_items','chat','call_log','expenses','maint_prices',
     'employees','time_entries','settings','todos'
   ] loop

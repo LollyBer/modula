@@ -154,6 +154,7 @@ function openMan(id){
   <div class="fld"><label>Ricorrenza</label><select id="mn-r">${[[0,'Nessuna'],[6,'Ogni 6 mesi'],[12,'Ogni anno'],[24,'Ogni 2 anni']].map(([v,l])=>`<option value="${v}" ${(m.recur||0)===v?'selected':''}>${l}</option>`).join('')}</select></div></div>
   <div class="fld"><label>Stato</label><div class="seg" id="mn-s">${['da_fare','programmata','fatta'].map(s=>`<div class="sg ${m.status===s?'on':''}" data-s="${s}" onclick="this.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${s.replace('_',' ')}</div>`).join('')}</div></div>
   <div class="fld"><label>Note</label><textarea id="mn-n">${esc(m.notes||'')}</textarea></div>
+  ${id?manPhotosSection(m):'<div class="subtle" style="margin:-2px 0 10px">📷 Salva la manutenzione per allegare le foto.</div>'}
   ${id&&m.status!=='fatta'?`<button class="btn pri" style="width:100%;margin-bottom:10px" onclick="startBollettino('${id}')">▶ Avvia intervento (bollettino)</button>`:''}
   ${id&&typeof macCanCatalog==='function'&&macCanCatalog()?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--cy);color:var(--cy)" onclick="macFromMaint('${id}')">⚙️ Scheda macchina · compila tagliando</button>`:''}
   ${id&&m.report?`<button class="btn" style="width:100%;margin-bottom:10px;border-color:var(--teal);color:var(--teal)" onclick="viewBollettino('${id}')">📄 Vedi bollettino firmato</button>`:''}
@@ -161,6 +162,7 @@ function openMan(id){
   <div class="actions">
     ${id?`<button class="btn danger" onclick="delItem('maintenances','${id}')">Elimina</button>`:''}
     <button class="btn pri" onclick="saveMan('${id||''}')">Salva</button></div>`);
+  if(id)manLoadUrls(id);
 }
 function saveMan(id){
   const mcid=$('#mn-c').value||null;const mraw=(!mcid&&$('#mn-c').dataset&&$('#mn-c').dataset.raw)||null;
@@ -181,6 +183,63 @@ function saveMan(id){
   save();closeSheet();render();toast('🔧 Salvato'+extra+bill);
 }
 
+/* ================= FOTO MANUTENZIONE (stesso schema dei rapportini) ================= */
+const manUrls={};
+function manPhotosSection(m){
+  const ps=m.photos||[];
+  return `<div class="fld"><label>📷 Foto (${ps.length})</label>
+    <div id="mn-photos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;margin-bottom:8px">${ps.map(manTile).join('')}</div>
+    <input type="file" id="mn-cam" accept="image/*" capture="environment" style="display:none" onchange="manAddPhoto('${m.id}',event)">
+    <input type="file" id="mn-gal" accept="image/*" style="display:none" onchange="manAddPhoto('${m.id}',event)">
+    <div class="row" style="gap:8px">
+      <button class="btn sm ghost" onclick="document.getElementById('mn-cam').click()">📷 Scatta</button>
+      <button class="btn sm ghost" onclick="document.getElementById('mn-gal').click()">🖼 Galleria</button>
+    </div></div>`;
+}
+function manTile(p){
+  const u=manUrls[p.storagePath];
+  return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img src="${u}" style="width:100%;height:100%;object-fit:cover">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="manDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
+}
+function manRefreshPhotos(id){const el=$('#mn-photos');const m=byId(S.maintenances,id);if(el&&m)el.innerHTML=(m.photos||[]).map(manTile).join('');}
+async function manLoadUrls(id){
+  const m=byId(S.maintenances,id);if(!m)return;
+  const miss=(m.photos||[]).filter(p=>p.storagePath&&!manUrls[p.storagePath]);
+  if(!miss.length)return;
+  await Promise.all(miss.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data})=>{if(data)manUrls[p.storagePath]=data.signedUrl;}).catch(()=>{})));
+  manRefreshPhotos(id);
+}
+async function manAddPhoto(id,ev){
+  const f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f)return;
+  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
+  const m=byId(S.maintenances,id);if(!m)return;
+  if(!m.photos)m.photos=[];
+  toast('📤 Carico foto…');
+  const img=new Image();const r=new FileReader();
+  r.onload=()=>{img.onload=()=>{
+    const max=1280;let w=img.width,h=img.height;
+    if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+    cv.getContext('2d').drawImage(img,0,0,w,h);
+    cv.toBlob(async blob=>{
+      try{
+        const path=TENANT_ID+'/maint/'+id+'/'+uid()+'.jpg';
+        const{error}=await sb.storage.from('allegati').upload(path,blob,{contentType:'image/jpeg'});
+        if(error)throw error;
+        m.photos.push({id:uid(),name:'foto-'+todayIso()+'.jpg',storagePath:path});
+        const{data}=await sb.storage.from('allegati').createSignedUrl(path,3600);if(data)manUrls[path]=data.signedUrl;
+        save();manRefreshPhotos(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
+      }catch(e){toast('⚠ Foto: '+(e.message||e));}
+    },'image/jpeg',.72);
+  };img.src=r.result;};
+  r.readAsDataURL(f);
+}
+function manDelPhoto(pid){
+  const m=S.maintenances.find(x=>(x.photos||[]).some(p=>p.id===pid));if(!m)return;
+  const p=m.photos.find(x=>x.id===pid);
+  if(p&&p.storagePath&&window.sb)sb.storage.from('allegati').remove([p.storagePath]).catch(()=>{});
+  m.photos=m.photos.filter(x=>x.id!==pid);
+  save();manRefreshPhotos(m.id);toast('Foto rimossa');
+}
 /* ================= BOLLETTINO INTERVENTO ================= */
 const DEFAULT_TASKS=['Pulizia braciere','Pulizia scambiatore di calore','Pulizia cassetto cenere','Pulizia giro fumi','Pulizia valvole di ispezione','Controllo componenti di usura (motoriduttori e estrattore fumi, ingranaggio pulizia automatica)','Pulizia serbatoio pellet','Prova di combustione'];
 const LOGO_URL=(typeof BRAND!=='undefined'&&BRAND.logo)?BRAND.logo:''; /* logo nei report — per-azienda, da BRAND.logo */

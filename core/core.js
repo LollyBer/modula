@@ -40,7 +40,7 @@ function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.i
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{}},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],surveys:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{}},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -57,8 +57,8 @@ const MAPS={
   toDb:t=>({id:t.id,emp_id:t.empId||null,date:t.date||null,type:t.type||'lavoro',hours:num(t.hours),start_t:t.start||null,end_t:t.end||null,break_min:num(t.brk),note:t.note||''}),
   fromDb:r=>({id:r.id,empId:r.emp_id,date:r.date,type:r.type||'lavoro',hours:r.hours,start:r.start_t||'',end:r.end_t||'',brk:r.break_min,note:r.note||'',created:Date.parse(r.created_at)||Date.now()})},
  maintenances:{tbl:'maintenances',
-  toDb:m=>({id:m.id,title:m.title,client_id:m.clientId||null,client_raw:m.clientRaw||null,employee_id:(m.employees&&m.employees[0])||m.employeeId||null,employees:m.employees||(m.employeeId?[m.employeeId]:[]),date:m.date||null,time:m.time||null,end_time:m.endTime||null,end_date:m.endDate||null,place:m.place||null,status:m.status||'da_fare',notes:m.notes||'',recur:m.recur||0,price:num(m.price),type:m.type||null,report:m.report||null,via:m.via||'manuale',invoiced:!!m.invoiced}),
-  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',status:r.status,notes:r.notes||'',recur:r.recur||0,price:r.price,type:r.type||'',report:r.report,via:r.via,invoiced:!!r.invoiced,created:Date.parse(r.created_at)||Date.now()})},
+  toDb:m=>({id:m.id,title:m.title,client_id:m.clientId||null,client_raw:m.clientRaw||null,employee_id:(m.employees&&m.employees[0])||m.employeeId||null,employees:m.employees||(m.employeeId?[m.employeeId]:[]),date:m.date||null,time:m.time||null,end_time:m.endTime||null,end_date:m.endDate||null,place:m.place||null,status:m.status||'da_fare',notes:m.notes||'',recur:m.recur||0,price:num(m.price),type:m.type||null,report:m.report||null,via:m.via||'manuale',invoiced:!!m.invoiced,photos:m.photos||[]}),
+  fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',status:r.status,notes:r.notes||'',recur:r.recur||0,price:r.price,type:r.type||'',report:r.report,via:r.via,invoiced:!!r.invoiced,photos:r.photos||[],created:Date.parse(r.created_at)||Date.now()})},
  appointments:{tbl:'appointments',
   toDb:a=>({id:a.id,title:a.title,client_id:a.clientId||null,client_raw:a.clientRaw||null,employee_id:(a.employees&&a.employees[0])||a.employeeId||null,employees:a.employees||(a.employeeId?[a.employeeId]:[]),date:a.date||null,time:a.time||null,end_time:a.endTime||null,end_date:a.endDate||null,place:a.place||null,done:!!a.done,via:a.via||'manuale'}),
   fromDb:r=>({id:r.id,title:r.title,clientId:r.client_id,clientRaw:r.client_raw,employeeId:r.employee_id,employees:(r.employees&&r.employees.length)?r.employees:(r.employee_id?[r.employee_id]:[]),date:r.date,time:r.time,endTime:r.end_time||'',endDate:r.end_date||'',place:r.place||'',done:!!r.done,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
@@ -68,6 +68,9 @@ const MAPS={
  sites:{tbl:'sites',
   toDb:s=>({id:s.id,name:s.name,client_id:s.clientId||null,client_raw:s.clientRaw||null,status:s.status||'aperto',employees:s.employees||[],est_hours:num(s.estHours),amount:num(s.amount),start_date:s.startDate||null,due_date:s.dueDate||null,closed_date:s.closedDate||null,notes:s.notes||'',via:s.via||'manuale',invoiced:!!s.invoiced}),
   fromDb:r=>({id:r.id,name:r.name,clientId:r.client_id,clientRaw:r.client_raw,status:r.status,employees:r.employees||[],estHours:r.est_hours,amount:r.amount,startDate:r.start_date,dueDate:r.due_date,closedDate:r.closed_date,notes:r.notes||'',via:r.via,invoiced:!!r.invoiced,log:[],attachments:[],created:Date.parse(r.created_at)||Date.now()})},
+ surveys:{tbl:'surveys',
+  toDb:s=>({id:s.id,title:s.title||'',client_id:s.clientId||null,client_raw:s.clientRaw||null,client_phone:s.clientPhone||'',place:s.place||'',date:s.date||null,employees:s.employees||[],status:s.status||'da_valutare',value:num(s.value),measures:s.measures||'',notes:s.notes||'',next_note:s.nextNote||'',next_date:s.nextDate||null,photos:s.photos||[],site_id:s.siteId||null,via:s.via||'manuale'}),
+  fromDb:r=>({id:r.id,title:r.title||'',clientId:r.client_id,clientRaw:r.client_raw,clientPhone:r.client_phone||'',place:r.place||'',date:r.date,employees:r.employees||[],status:r.status||'da_valutare',value:r.value,measures:r.measures||'',notes:r.notes||'',nextNote:r.next_note||'',nextDate:r.next_date||'',photos:r.photos||[],siteId:r.site_id||null,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
  reports:{tbl:'reports',
   toDb:r=>({id:r.id,site_id:r.siteId||null,emp_id:r.empId||null,employees:r.employees||(r.empId?[r.empId]:[]),date:r.date||null,hours:num(r.hours),start_t:r.start||null,end_t:r.end||null,work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato'}),
   fromDb:r=>({id:r.id,siteId:r.site_id,empId:r.emp_id,employees:(r.employees&&r.employees.length)?r.employees:(r.emp_id?[r.emp_id]:[]),date:r.date,hours:r.hours,start:r.start_t||'',end:r.end_t||'',work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato',created:Date.parse(r.created_at)||Date.now()})},
@@ -159,6 +162,7 @@ function dbRows(){
     appointments:S.appointments.map(MAPS.appointments.toDb),
     pellet:S.pellet.map(MAPS.pellet.toDb),
     sites:S.sites.map(MAPS.sites.toDb),
+    surveys:(S.surveys||[]).map(MAPS.surveys.toDb),
     reports:S.reports.map(MAPS.reports.toDb),
     invoices:S.invoices.map(MAPS.invoices.toDb),
     documents:S.documents.map(MAPS.documents.toDb),
@@ -171,9 +175,9 @@ function dbRows(){
     todos:(S.todos||[]).map(MAPS.todos.toDb),
   };
 }
-const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',reports:'reports',invoices:'invoices',documents:'documents',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices',todos:'todos'};
-const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','reports','invoices','documents','expenses','notes','listItems','siteLogs','callLog','maintPrices','todos'];
-const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','todos','expenses','documents','invoices','reports','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
+const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',surveys:'surveys',reports:'reports',invoices:'invoices',documents:'documents',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices',todos:'todos'};
+const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','surveys','reports','invoices','documents','expenses','notes','listItems','siteLogs','callLog','maintPrices','todos'];
+const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','todos','expenses','documents','invoices','reports','surveys','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
 function rebuildSnapshot(){const r=dbRows();for(const k of UP_ORDER)snapRows(k,r[k]);snapshot._settings=JSON.stringify(S.settings);}
 
 /* ---------- sync: diff e push ---------- */
@@ -468,6 +472,7 @@ const TYPE_META={
   appointment:{label:'Appuntamento',color:'var(--cy)',hex:'#5BA02C',ic:'📅',view:'notes'},
   note:{label:'Nota',color:'var(--teal)',hex:'#2E9E5E',ic:'📝',view:'notes'},
   site:{label:'Cantiere',color:'var(--blue)',hex:'#A9742F',ic:'🏗',view:'sites'},
+  survey:{label:'Sopralluogo',color:'#0E8BA8',hex:'#0E8BA8',ic:'🔍',view:'surveys'},
   list:{label:'Lista',color:'#2E9E5E',hex:'#2E9E5E',ic:'☑️',view:'hub'},
   todo:{label:'Da fare',color:'#7C5CBF',hex:'#7C5CBF',ic:'✅',view:'todo'},
   document:{label:'Documento',color:'var(--t2)',hex:'#8A8170',ic:'📄',view:'documenti'},
@@ -554,6 +559,7 @@ const VIEWS=[
   {id:'notif',ic:'🔔',label:'Notifiche'},
   {id:'man',ic:'🔧',label:'Manut.'},
   {id:'pellet',ic:'🪵',label:'Pellet'},
+  {id:'surveys',ic:'🔍',label:'Sopralluoghi'},
   {id:'sites',ic:'🏗',label:'Cantieri'},
   {id:'reports',ic:'📸',label:'Rapportini'},
   {id:'fatture',ic:'🧾',label:'Fatture'},
@@ -581,6 +587,7 @@ const MODULE_CATALOG={
     {id:'conti',ic:'💰',nome:'Conti',desc:'Entrate, spese e utile.'},
     {id:'todo',ic:'✅',nome:'Da fare',desc:'Liste di cose da fare, con scadenze.'},
     {id:'man',ic:'🔧',nome:'Manutenzioni',desc:'Interventi e storico.'},
+    {id:'surveys',ic:'🔍',nome:'Sopralluoghi',desc:'Visite di valutazione con foto e pipeline (da preventivare → vinto → cantiere).'},
     {id:'sites',ic:'🏗',nome:'Cantieri',desc:'Lavori in corso e ore.'},
     {id:'reports',ic:'📸',nome:'Rapportini',desc:'Rapporti di cantiere giornalieri con foto.'},
     {id:'fatture',ic:'🧾',nome:'Fatture',desc:'Fatture con QR-fattura svizzera, collegate a Conti.'},
@@ -602,7 +609,7 @@ const MODULE_CATALOG={
 const catName=id=>{for(const k of['base','pronti','arrivo']){const m=MODULE_CATALOG[k].find(x=>x.id===id);if(m)return m.nome;}return id;};
 /* Prezzo per modulo/mese (allineato alla landing e alla Regia). base=0. Se cambi qui,
    aggiorna anche landing/landing.js (MODS px) e admin/index.html (MODULE_PX). */
-const MODULE_PRICE={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,todo:9,conti:12,lavagna:12,documenti:15,man:19,pellet:19,reports:19,fatture:19,sites:29,zone:29};
+const MODULE_PRICE={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,todo:9,conti:12,lavagna:12,documenti:15,man:19,pellet:19,reports:19,fatture:19,surveys:19,sites:29,zone:29};
 const modPrice=id=>MODULE_PRICE[id];
 /* moduli attivi oggi sul tenant (base sempre + extra accesi dal super-admin) */
 const activeModuleIds=()=>{const base=MODULE_CATALOG.base.map(m=>m.id);const extra=(ACTIVE_MODULES||[]).filter(id=>!base.includes(id)&&id!=='notif');return[...base,...extra];};
@@ -1168,7 +1175,7 @@ function render(){
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
-  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,todo:window.renderTodo,settings:window.renderSettings};
+  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,surveys:window.renderSurveys,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,todo:window.renderTodo,settings:window.renderSettings};
   $('#main').innerHTML='';(R[view]||window.renderHub)();
   if(view==='notif'&&notifTab==='chat'){const sc=$('#chatscroll');if(sc)sc.scrollTop=sc.scrollHeight;}
   if(typeof remindStart==='function')remindStart();
@@ -1340,6 +1347,7 @@ const empSegRead=idd=>[...document.querySelectorAll('#'+idd+' .sg.on')].map(x=>x
 const visMan=()=>isOwner()?S.maintenances:S.maintenances.filter(assignedToMe);
 const visApp=()=>isOwner()?S.appointments:S.appointments.filter(a=>assignedToMe(a)||!empIdsOf(a).length);
 const visSites=()=>isOwner()?S.sites:S.sites.filter(s=>s.employees.includes(S.session.empId));
+const visSurveys=()=>isOwner()?(S.surveys||[]):(S.surveys||[]).filter(s=>(s.employees||[]).includes(S.session.empId));
 const visPellet=()=>isOwner()?S.pellet:S.pellet.filter(assignedToMe);
 function allEvents(){
   const ev=[];
@@ -1350,6 +1358,7 @@ function allEvents(){
   if(moduleActive('todo'))(S.todos||[]).forEach(t=>{if(t.due&&!t.done&&(isOwner()||assignedToMe(t)||!empIdsOf(t).length))ev.push({type:'todo',date:t.due,time:t.time||null,title:t.text,sub:cName(t.clientId)||'',place:'',done:!!t.done,id:t.id});});
   if(moduleActive('sites'))visSites().forEach(s=>{const sub=cName(s.clientId)||s.clientRaw||'';if(s.startDate&&(s.status==='aperto'||s.status==='previsto'))ev.push({type:'site',date:s.startDate,time:null,title:'🏗 Inizio: '+s.name,sub,done:false,id:s.id});if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub,done:false,id:s.id});});
   if(moduleActive('documenti')&&can('documenti'))S.documents.forEach(d=>{if(d.dueDate)ev.push({type:'document',date:d.dueDate,time:null,title:'📄 Scade: '+(d.description||d.fornitore||'documento'),sub:[d.category,d.clientId?cName(d.clientId):''].filter(Boolean).join(' · '),place:'',done:false,id:d.id});});
+  if(moduleActive('surveys'))visSurveys().forEach(s=>{const sub=cName(s.clientId)||s.clientRaw||'';const open=['da_valutare','da_preventivare','preventivo_inviato'].includes(s.status);if(s.date&&open)ev.push({type:'survey',date:s.date,time:null,title:'🔍 Sopralluogo: '+(s.title||sub||''),sub,place:s.place||'',done:false,id:s.id});if(s.nextDate&&open)ev.push({type:'survey',date:s.nextDate,time:null,title:'⏰ '+(s.nextNote||'Ricontatta')+(sub?' · '+sub:''),sub,place:s.place||'',done:false,id:s.id});});
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
 
@@ -1364,6 +1373,7 @@ function openEv(type,id){
   else if(type==='pellet'){if(typeof openPel==='function')openPel(id);}
   else if(type==='note')openNote(id);
   else if(type==='site'){if(typeof openSite==='function')openSite(id);}
+  else if(type==='survey'){if(typeof openSurvey==='function')openSurvey(id);}
   else if(type==='todo'){if(typeof openTodo==='function')openTodo(id);}
   else if(type==='document'){if(typeof openDocument==='function')openDocument(id);}
   else nav(TYPE_META[type].view);
@@ -1404,9 +1414,11 @@ function renderClientAtt(clientId){
   const grid=arr.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;margin-bottom:8px">${arr.map(a=>a.type==='img'
     ?`<div>${clientAttUrl[a.id]?`<img src="${clientAttUrl[a.id]}" onclick="viewClientAtt('${clientId}','${a.id}')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;border:1px solid var(--line);cursor:pointer">`:`<div onclick="viewClientAtt('${clientId}','${a.id}')" style="width:100%;aspect-ratio:1;border-radius:9px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px;cursor:pointer">…</div>`}</div>`
     :`<div onclick="viewClientAtt('${clientId}','${a.id}')" style="aspect-ratio:1;border:1px solid var(--line);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--bg2)"><span style="font-size:20px">${(a.name||'').match(/\.pdf$/i)?'📄':'📊'}</span><span style="font-size:8px;color:var(--t3);padding:0 4px;text-align:center;overflow:hidden;max-height:22px">${esc((a.name||'').slice(0,18))}</span></div>`).join('')}</div>`:'';
-  host.innerHTML=grid+`<div style="display:flex;gap:8px">
-    <button class="btn sm" onclick="$('#cli-att-photo').click()">📷 Foto</button>
+  host.innerHTML=grid+`<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn sm" onclick="$('#cli-att-cam').click()">📷 Scatta</button>
+    <button class="btn sm" onclick="$('#cli-att-photo').click()">🖼 Galleria</button>
     <button class="btn sm" onclick="$('#cli-att-file').click()">📎 PDF / Excel</button>
+    <input type="file" id="cli-att-cam" accept="image/*" capture="environment" style="display:none" onchange="addClientPhoto('${clientId}',event)">
     <input type="file" id="cli-att-photo" accept="image/*" style="display:none" onchange="addClientPhoto('${clientId}',event)">
     <input type="file" id="cli-att-file" accept=".pdf,.xls,.xlsx,.csv,.doc,.docx" style="display:none" onchange="addClientFile('${clientId}',event)">
   </div>`;

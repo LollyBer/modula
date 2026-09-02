@@ -74,6 +74,12 @@ numerazione fatture con reset anno + univocità, delete fattura libera i lavori,
 (lossless)** · **archiviazione fatture** · registro Fatture "da fatturare/fatturato" · **personalizzazione**
 (7 sfondi + 6 colori) · hardening **sicurezza+GitHub** (secret scanning, push protection, Dependabot, SECURITY.md).
 ⚠️ richiede `schema.sql` (colonne `invoiced` su manut/cantieri/pellet + `archived` su fatture).
+2026-09-02: **NUOVO modulo Sopralluoghi** (`surveys`, **19 moduli**) — pipeline commerciale (da valutare →
+da preventivare → preventivo inviato → vinto/perso), clienti dell'anagrafica **o potenziali** (nome/telefono
+liberi), foto sul posto, promemoria + calendario, storico cliente; da "vinto" → **trasforma in cantiere**
+(se potenziale, chiede prima di aggiungere il cliente). · **Foto "📷 Scatta / 🖼 Galleria" ovunque**
+(Cantieri, Cliente, Rapportini, Documenti) e **aggiunte alle Manutenzioni** (nuovo). ⚠️ richiede `schema.sql`
+(tabella `surveys` + colonna `maintenances.photos`).
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.

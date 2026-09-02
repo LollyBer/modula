@@ -205,8 +205,12 @@ function openDocument(id,preset){
    ${id?'':'<div class="subtle" style="margin-bottom:8px">Carica il file: provo a capire da solo gruppo, ente e data (dal nome e, per i PDF, dal contenuto). Controlla e salva.</div>'}
    <div class="fld"><label>📎 File</label>
      <div id="doc-file">${docFileHTML()}</div>
+     <input type="file" id="doc-caminput" accept="image/*" capture="environment" style="display:none" onchange="docAddFile(event)">
      <input type="file" id="doc-fileinput" accept="image/*,application/pdf,.pdf,.xls,.xlsx,.doc,.docx,.csv" style="display:none" onchange="docAddFile(event)">
-     <button class="btn sm ghost" onclick="document.getElementById('doc-fileinput').click()">📎 ${docDraft.storagePath?'Sostituisci file':'Carica file'}</button>
+     <div class="row" style="gap:8px;flex-wrap:wrap">
+       <button class="btn sm ghost" onclick="document.getElementById('doc-caminput').click()">📷 Scatta</button>
+       <button class="btn sm ghost" onclick="document.getElementById('doc-fileinput').click()">📎 ${docDraft.storagePath?'Sostituisci file':'Carica file'}</button>
+     </div>
      <div id="doc-versions" class="fld" style="margin-top:8px"></div>
    </div>
    <div class="fld"><label>Titolo del documento</label><input id="doc-title" value="${esc(docDraft.description||'')}" placeholder="es. Assicurazione RC 2026" autocomplete="off"></div>

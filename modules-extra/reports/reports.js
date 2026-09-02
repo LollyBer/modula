@@ -72,8 +72,12 @@ function openReport(id,presetSite){
    <div class="fld"><label>Materiali usati</label><textarea id="rp-mat" rows="2" placeholder="es. 20 m² gres, 3 sacchi colla, fuga grigia">${esc(repDraft.materials||'')}</textarea></div>
    <div class="fld"><label>📷 Foto</label>
      <div id="rp-photos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;margin-bottom:8px">${repDraft.photos.map(repTile).join('')}</div>
-     <input type="file" id="rp-file" accept="image/*" capture="environment" style="display:none" onchange="repAddPhoto(event)">
-     <button class="btn sm ghost" onclick="document.getElementById('rp-file').click()">📷 Aggiungi foto</button>
+     <input type="file" id="rp-cam" accept="image/*" capture="environment" style="display:none" onchange="repAddPhoto(event)">
+     <input type="file" id="rp-file" accept="image/*" style="display:none" onchange="repAddPhoto(event)">
+     <div class="row" style="gap:8px">
+       <button class="btn sm ghost" onclick="document.getElementById('rp-cam').click()">📷 Scatta</button>
+       <button class="btn sm ghost" onclick="document.getElementById('rp-file').click()">🖼 Galleria</button>
+     </div>
    </div>
    <div class="actions">${id?`<button class="btn danger" onclick="delReport('${id}')">Elimina</button>`:''}<button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="saveReport('${id||''}')">Salva</button></div>`);
   repLoadUrls(repDraft.photos);

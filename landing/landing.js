@@ -35,6 +35,8 @@ const MODS = [
    f:['Scheda tecnica per ogni macchina','Scadenze di assistenza e revisione','Storico interventi per impianto','Collega la macchina al cliente']},
   {id:'pellet', ic:'🪵', nm:'Consegne', px:19, pitch:'Consegne, bolle e firma, dal telefono.',
    f:['Consegne programmate con quantità e prezzo','Firma del cliente direttamente sullo schermo','Stato: da consegnare · consegnato','Organizza i giri della giornata']},
+  {id:'surveys', ic:'🔍', nm:'Sopralluoghi', px:19, pitch:'Ogni sopralluogo tracciato, con foto sul posto e stato del lavoro.',
+   f:['Scatta le foto direttamente dal telefono','Anche per potenziali clienti, non solo in anagrafica','Pipeline: da preventivare · vinto · perso','Da “vinto” lo trasformi in cantiere con un tocco']},
   {id:'sites', ic:'🏗', nm:'Cantieri / Commesse', px:29, pitch:'Lavori in corso con ore, costi e avanzamento.',
    f:['Avanzamento del cantiere sempre aggiornato','Ore registrate per dipendente','Costi, materiali e foto sul posto','Scadenze e chiusura commessa con resoconto']},
   {id:'reports', ic:'📸', nm:'Rapportini', px:19, pitch:'Il rapporto giornaliero di cantiere, con foto, dal telefono.',
