@@ -53,12 +53,85 @@ function renderClients(){
   <div class="pagetitle"><span class="accent" style="background:var(--teal)"></span>Clienti <span class="subtle">(${S.clients.length})</span>${shown}</div>
   <input class="searchbar" id="cli-q" placeholder="🔍 Cerca nome, paese, gruppo, telefono, via…" value="${esc(cliQ)}" oninput="cliSearchInput(this.value)">
   ${filterBar}
+  <div style="margin:2px 0 10px"><button class="btn sm" style="border-color:var(--cy);color:var(--cy)" onclick="openBulkClients()">⚡ Modifica in blocco</button></div>
   ${body}
   <button class="fab" onclick="editClient(null)">+</button>`;
 }
 /* ricerca clienti senza perdere il fuoco: ri-renderizza e rimette subito il cursore
    sul campo NUOVO (per id), non su quello vecchio ormai distrutto. */
 function cliSearchInput(v){cliQ=v;render();const e=document.getElementById('cli-q');if(e){e.focus();try{e.setSelectionRange(v.length,v.length);}catch(_){}}}
+
+/* ================= MODIFICA CLIENTI IN BLOCCO =================
+   Seleziona più clienti e imposta UNA volta sola i campi comuni (tipo impianto,
+   fa manutenzione, prende pellet, gruppo). Si applicano solo i campi che scegli.
+   Pensato per essere esteso ad altri campi in futuro. */
+let bcSel=new Set();
+function openBulkClients(){
+  bcSel=new Set();
+  const groups=(typeof clientGroups==='function')?clientGroups():[];
+  openSheet(`<h3>⚡ Modifica clienti in blocco <span class="x" onclick="closeSheet()">✕</span></h3>
+  <div class="subtle" style="margin-bottom:10px">Tocca i clienti che vuoi, poi imposta sotto solo i campi da cambiare e premi «Applica». I campi lasciati su «non cambiare» restano com'erano.</div>
+  <div class="fld"><label>Clienti</label>
+    <input class="searchbar" id="bc-q" placeholder="🔍 Cerca nome, paese, gruppo…" oninput="bcRenderList()" autocomplete="off">
+    <div class="row" style="gap:8px;margin:6px 0 4px;flex-wrap:wrap">
+      <button class="btn sm ghost" onclick="bcSelectAllShown()">+ Seleziona tutti i risultati</button>
+      <button class="btn sm ghost" onclick="bcClear()">Deseleziona tutti</button>
+    </div>
+    <div id="bc-list" style="max-height:34vh;overflow:auto;border:1px solid var(--line);border-radius:10px"></div>
+  </div>
+  <div style="border-top:1px solid var(--line);margin:12px 0 8px;padding-top:10px;font-family:var(--disp);font-weight:700;font-size:12.5px;color:var(--t2)">COSA IMPOSTARE (solo i campi scelti)</div>
+  <div class="fld"><label><input type="checkbox" id="bc-setplant" style="vertical-align:-1px"> Imposta tipo impianto</label>
+    <div class="seg" id="bc-plant" style="flex-wrap:wrap;gap:7px">${[['Stufa','🔥 Stufa'],['Caldaia','♨️ Caldaia'],['Camino','🪵 Camino']].map(([v,l])=>`<div class="sg" data-v="${v}" onclick="this.classList.toggle('on')">${l}</div>`).join('')}</div></div>
+  <div class="frow"><div class="fld"><label>Fa manutenzione?</label><select id="bc-maint">${[['__','— non cambiare —'],['si','✓ Sì'],['no','✗ No'],['','—']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
+  <div class="fld"><label>Prende pellet?</label><select id="bc-pellet">${[['__','— non cambiare —'],['sfuso','🪵 Sfuso'],['sacchi','📦 Sacchi'],['no','No'],['','—']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div></div>
+  <div class="fld"><label><input type="checkbox" id="bc-setgroup" style="vertical-align:-1px"> Imposta gruppo</label>
+    <input id="bc-group" list="bc-glist" placeholder="es. Grono e dintorni, Gruppo A" autocomplete="off"><datalist id="bc-glist">${groups.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div>
+  <div class="actions">
+    <button class="btn ghost" onclick="closeSheet()">Annulla</button>
+    <button class="btn pri" id="bc-go" onclick="saveBulkClients()">Applica</button></div>`);
+  bcRenderList();
+}
+function bcClientsShown(){
+  const q=norm(($('#bc-q')?.value||'').trim());
+  let arr=S.clients.slice();
+  if(q)arr=arr.filter(c=>norm([c.name,cTown(c),c.group,c.zone,c.phone].filter(Boolean).join(' ')).includes(q));
+  return arr.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+function bcRenderList(){
+  const el=$('#bc-list');if(!el)return;
+  const arr=bcClientsShown();
+  el.innerHTML=arr.length?arr.map(c=>{
+    const on=bcSel.has(c.id);
+    const sub=[cTown(c),c.group,c.plant].filter(Boolean).join(' · ');
+    return `<div onclick="bcToggle('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;background:${on?'var(--bg2)':'transparent'}">
+      <span style="width:20px;height:20px;flex-shrink:0;border-radius:6px;border:2px solid ${on?'var(--cy)':'var(--line2)'};background:${on?'var(--cy)':'transparent'};color:#fff;font-size:13px;line-height:16px;text-align:center">${on?'✓':''}</span>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--t1)">${esc(c.name||'—')}</div>${sub?`<div style="font-size:10.5px;color:var(--t3)">${esc(sub)}</div>`:''}</div></div>`;
+  }).join(''):'<div class="subtle" style="padding:10px">Nessun cliente trovato.</div>';
+  const go=$('#bc-go');if(go)go.textContent=bcSel.size?`Applica a ${bcSel.size} client${bcSel.size===1?'e':'i'}`:'Applica';
+}
+function bcToggle(id){if(bcSel.has(id))bcSel.delete(id);else bcSel.add(id);bcRenderList();}
+function bcSelectAllShown(){bcClientsShown().forEach(c=>bcSel.add(c.id));bcRenderList();}
+function bcClear(){bcSel=new Set();bcRenderList();}
+function saveBulkClients(){
+  const ids=[...bcSel];
+  if(!ids.length){toast('Seleziona almeno un cliente');return;}
+  const setPlant=$('#bc-setplant').checked;
+  const plant=[...document.querySelectorAll('#bc-plant .sg.on')].map(x=>x.dataset.v).join(', ');
+  const maint=$('#bc-maint').value;
+  const pellet=$('#bc-pellet').value;
+  const setGroup=$('#bc-setgroup').checked;
+  const group=$('#bc-group').value.trim();
+  if(!setPlant && maint==='__' && pellet==='__' && !setGroup){toast('Scegli almeno un campo da impostare');return;}
+  let n=0;
+  ids.forEach(id=>{const c=byId(S.clients,id);if(!c)return;
+    if(setPlant)c.plant=plant;
+    if(maint!=='__')c.maintenance=maint;
+    if(pellet!=='__')c.pellet=pellet;
+    if(setGroup)c.group=group;
+    n++;
+  });
+  save();closeSheet();render();toast('✓ Aggiornati '+n+' client'+(n===1?'e':'i'));
+}
 function openClient(id){
   const c=byId(S.clients,id);if(!c)return;
   const man=S.maintenances.filter(m=>m.clientId===id).sort((a,b)=>((a.date||'')>(b.date||'')?-1:1));
