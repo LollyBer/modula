@@ -61,6 +61,7 @@ function renderMan(){
     <div class="kpi"><div class="n" style="color:var(--amber)">${nOpen}</div><div class="l">Da fare</div></div>
     <div class="kpi"><div class="n" style="color:var(--teal)">${nDoneM}</div><div class="l">Fatte (mese)</div></div>
   </div>
+  <div style="margin:0 0 12px"><button class="btn sm" style="border-color:var(--cy);color:var(--cy)" onclick="openBulkMan()">⚡ Crea in blocco (più clienti insieme)</button></div>
   ${body}
   <button class="fab" onclick="openMan(null)">+</button>`;
 }
@@ -181,6 +182,71 @@ function saveMan(id){
   }
   const bill=(data.status==='fatta'&&typeof billToast==='function')?billToast():'';
   save();closeSheet();render();toast('🔧 Salvato'+extra+bill);
+}
+
+/* ================= CREA MANUTENZIONI IN BLOCCO =================
+   Cerca e seleziona più clienti, scegli il tipo (stufa/caldaia/…) e i campi comuni,
+   e crea una manutenzione per ognuno in un colpo solo. */
+let bulkSel=new Set();
+function bulkTypeLabel(){const k=$('#bk-tp')?.value||'';const f=MAINT_KINDS.find(x=>x[0]===k);return f?f[1]:'';}
+function openBulkMan(){
+  bulkSel=new Set();
+  openSheet(`<h3>⚡ Crea manutenzioni in blocco <span class="x" onclick="closeSheet()">✕</span></h3>
+  <div class="subtle" style="margin-bottom:10px">Cerca e tocca i clienti che ti servono, scegli il tipo e premi «Crea». Nasce una manutenzione per ogni cliente selezionato.</div>
+  <div class="frow"><div class="fld"><label>Tipo impianto</label><select id="bk-tp" onchange="bulkSyncTitle()"><option value="">— tipo —</option>${MAINT_KINDS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+  <div class="fld"><label>Descrizione</label><input id="bk-title" placeholder="es. Manutenzione stagionale"></div></div>
+  <div class="frow"><div class="fld"><label>Data (facolt.)</label><input id="bk-d" type="date"></div>
+  <div class="fld"><label>Ricorrenza</label><select id="bk-r">${[[0,'Nessuna'],[6,'Ogni 6 mesi'],[12,'Ogni anno'],[24,'Ogni 2 anni']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div></div>
+  <div class="fld"><label>Assegna a (facolt.)</label>${empSeg('bk-e',S.session?[S.session.empId]:[])}</div>
+  <div class="fld"><label>Clienti</label>
+    <input class="searchbar" id="bk-q" placeholder="🔍 Cerca cliente per nome, paese, gruppo…" oninput="bulkRenderList()" autocomplete="off">
+    <div class="row" style="gap:8px;margin:6px 0 4px;flex-wrap:wrap">
+      <button class="btn sm ghost" onclick="bulkSelectAllShown()">+ Seleziona tutti i risultati</button>
+      <button class="btn sm ghost" onclick="bulkClear()">Deseleziona tutti</button>
+    </div>
+    <div id="bk-list" style="max-height:38vh;overflow:auto;border:1px solid var(--line);border-radius:10px"></div>
+  </div>
+  <div class="actions">
+    <button class="btn ghost" onclick="closeSheet()">Annulla</button>
+    <button class="btn pri" id="bk-go" onclick="saveBulkMan()">Crea manutenzioni</button></div>`);
+  bulkRenderList();
+}
+function bulkSyncTitle(){const t=$('#bk-title');if(t&&!t.value.trim()){const l=bulkTypeLabel();if(l)t.value='Manutenzione '+l.toLowerCase();}}
+function bulkClientsShown(){
+  const q=norm(($('#bk-q')?.value||'').trim());
+  let arr=S.clients.filter(c=>!c.blocked);
+  if(q)arr=arr.filter(c=>norm([c.name,cTown(c),c.group,c.zone,c.phone].filter(Boolean).join(' ')).includes(q));
+  return arr.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+function bulkRenderList(){
+  const el=$('#bk-list');if(!el)return;
+  const arr=bulkClientsShown();
+  el.innerHTML=arr.length?arr.map(c=>{
+    const on=bulkSel.has(c.id);
+    const sub=[cTown(c),c.group].filter(Boolean).join(' · ');
+    return `<div onclick="bulkToggle('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;background:${on?'var(--bg2)':'transparent'}">
+      <span style="width:20px;height:20px;flex-shrink:0;border-radius:6px;border:2px solid ${on?'var(--cy)':'var(--line2)'};background:${on?'var(--cy)':'transparent'};color:#fff;font-size:13px;line-height:16px;text-align:center">${on?'✓':''}</span>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--t1)">${esc(c.name||'—')}</div>${sub?`<div style="font-size:10.5px;color:var(--t3)">${esc(sub)}</div>`:''}</div></div>`;
+  }).join(''):'<div class="subtle" style="padding:10px">Nessun cliente trovato.</div>';
+  const go=$('#bk-go');if(go)go.textContent=bulkSel.size?`Crea ${bulkSel.size} manutenzion${bulkSel.size===1?'e':'i'}`:'Crea manutenzioni';
+}
+function bulkToggle(id){if(bulkSel.has(id))bulkSel.delete(id);else bulkSel.add(id);bulkRenderList();}
+function bulkSelectAllShown(){bulkClientsShown().forEach(c=>bulkSel.add(c.id));bulkRenderList();}
+function bulkClear(){bulkSel=new Set();bulkRenderList();}
+function saveBulkMan(){
+  if(!bulkSel.size){toast('Seleziona almeno un cliente');return;}
+  const type=$('#bk-tp').value||null;
+  const title=$('#bk-title').value.trim()||('Manutenzione'+(bulkTypeLabel()?' '+bulkTypeLabel().toLowerCase():''));
+  const date=$('#bk-d').value||null;
+  const recur=+($('#bk-r')?.value||0);
+  const emps=empSegRead('bk-e');
+  const ids=[...bulkSel];
+  ids.forEach(cid=>{
+    S.maintenances.unshift({id:uid(),title,clientId:cid,clientRaw:null,employees:emps.slice(),date,time:null,status:date?'programmata':'da_fare',notes:'',recur,type,via:'blocco',created:Date.now(),photos:[]});
+  });
+  const added=emps.filter(e=>!(S.session&&e===S.session.empId));
+  if(added.length)pushNotify(added,'🔧 Manutenzioni assegnate',`${ids.length} manutenzioni · ${title}${date?' · '+fmtD(date):''}`);
+  save();closeSheet();render();toast('🔧 Create '+ids.length+' manutenzioni');
 }
 
 /* ================= FOTO MANUTENZIONE (stesso schema dei rapportini) ================= */
