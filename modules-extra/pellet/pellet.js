@@ -341,3 +341,10 @@ function printBolla(id){
 }
 
 
+
+/* auto-registrazione come destinazione "Trasforma in" del calendario (vedi core.js) */
+if(typeof registerEventTarget==='function')registerEventTarget({
+  id:'pellet', module:'pellet', perm:'pellet', order:40, label:'🪵 Consegna', name:'consegna',
+  make:base=>{const id=uid();S.pellet.unshift({id,clientId:base.clientId||null,clientRaw:base.clientId?null:(base.clientRaw||null),employees:base.employees||[],qty:null,unit:'sacchi',kind:'sacchi',date:base.date||null,time:base.time||null,status:'da_consegnare',price:null,signature:null,signedName:'',notes:base.title||'',via:'calendario',created:Date.now()});return id;},
+  open:id=>{if(typeof openPel==='function')openPel(id);}
+});

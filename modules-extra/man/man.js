@@ -424,3 +424,10 @@ function printBollettino(id){
 
 
 
+
+/* auto-registrazione come destinazione "Trasforma in" del calendario (vedi core.js) */
+if(typeof registerEventTarget==='function')registerEventTarget({
+  id:'man', module:'man', order:10, label:'🔧 Manutenzione', name:'manutenzione',
+  make:base=>{const id=uid();S.maintenances.unshift({id,title:base.title||'Manutenzione',clientId:base.clientId||null,clientRaw:base.clientId?null:(base.clientRaw||null),employees:base.employees||[],date:base.date||null,time:base.time||null,status:'programmata',notes:base.place?('Luogo: '+base.place):'',recur:0,type:null,via:'calendario',created:Date.now(),photos:[]});return id;},
+  open:id=>{if(typeof openMan==='function')openMan(id);}
+});

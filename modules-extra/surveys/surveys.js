@@ -195,3 +195,10 @@ function svDelPhoto(pid){
   s.photos=s.photos.filter(x=>x.id!==pid);
   save();svRefreshPhotos(s.id);toast('Foto rimossa');
 }
+
+/* auto-registrazione come destinazione "Trasforma in" del calendario (vedi core.js) */
+if(typeof registerEventTarget==='function')registerEventTarget({
+  id:'survey', module:'surveys', order:20, label:'🔍 Sopralluogo', name:'sopralluogo',
+  make:base=>{const id=uid();S.surveys.unshift({id,title:base.title||'Sopralluogo',clientId:base.clientId||null,clientRaw:base.clientId?null:(base.clientRaw||null),clientPhone:'',place:base.place||'',date:base.date||null,employees:base.employees||[],status:'da_valutare',value:null,measures:'',notes:'',nextNote:'',nextDate:'',photos:[],siteId:null,via:'calendario',created:Date.now()});return id;},
+  open:id=>{if(typeof openSurvey==='function')openSurvey(id);}
+});

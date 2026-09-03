@@ -88,6 +88,7 @@ function openNote(id){
   <div class="fld"><label>Luogo (opz.)</label><input id="en-pl" value="${esc(n.place||'')}" placeholder="es. Via Motta 3, Lugano"></div>
   <div class="fld"><label>Cliente</label>${cliInput('en-c',n.clientId)}</div>
   <div class="fld"><label>Assegna a (uno o più, facoltativo)</label>${empSeg('en-e',empIdsOf(n))}</div>
+  ${transformRow('note',id)}
   <div class="actions">
     <button class="btn danger" onclick="delItem('notes','${id}')">Elimina</button>
     <button class="btn" onclick="const n=byId(S.notes,'${id}');n.archived=!n.archived;save();closeSheet();render();toast(n.archived?'🗄 Archiviata':'Ripristinata')">${n.archived?'↩ Ripristina':'🗄 Archivia'}</button>

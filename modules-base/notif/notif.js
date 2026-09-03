@@ -95,6 +95,7 @@ function openApp(id){
   <div class="fld"><label>Luogo (opz.)</label><input id="ap-pl" value="${esc(a.place||'')}" placeholder="es. Via Motta 3, Lugano"></div>
   ${dateChips('ap-d')}
   <div class="fld"><label>Stato</label><div class="seg" id="ap-s"><div class="sg ${!a.done?'on':''}" data-d="0" onclick="this.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));this.classList.add('on')">Da fare</div><div class="sg ${a.done?'on':''}" data-d="1" onclick="this.parentNode.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));this.classList.add('on')">Fatto</div></div></div>
+  ${id?transformRow('app',id):''}
   <div class="actions">
     ${id?`<button class="btn danger" onclick="delApp('${id}')">Elimina</button>`:''}
     <button class="btn pri" onclick="saveApp('${id||''}')">Salva</button></div>`);

@@ -79,7 +79,9 @@ da preventivare → preventivo inviato → vinto/perso), clienti dell'anagrafica
 liberi), foto sul posto, promemoria + calendario, storico cliente; da "vinto" → **trasforma in cantiere**
 (se potenziale, chiede prima di aggiungere il cliente). · **Foto "📷 Scatta / 🖼 Galleria" ovunque**
 (Cantieri, Cliente, Rapportini, Documenti) e **aggiunte alle Manutenzioni** (nuovo). ⚠️ richiede `schema.sql`
-(tabella `surveys` + colonna `maintenances.photos`).
+(tabella `surveys` + colonna `maintenances.photos`). · **"Trasforma in…" dal calendario**: da un appuntamento/nota,
+un tocco crea il lavoro collegato (manutenzione/sopralluogo/cantiere/consegna) ereditando cliente/luogo/data;
+meccanismo a **registro auto-estensibile** (`registerEventTarget`) → i moduli nuovi si aggiungono da soli.
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.

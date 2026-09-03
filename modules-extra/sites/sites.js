@@ -194,3 +194,10 @@ async function delAtt(sid,aid){
   }catch(e){toast('⚠ '+(e.message||e));}
 }
 
+
+/* auto-registrazione come destinazione "Trasforma in" del calendario (vedi core.js) */
+if(typeof registerEventTarget==='function')registerEventTarget({
+  id:'site', module:'sites', order:30, label:'🏗 Cantiere', name:'cantiere',
+  make:base=>{const id=uid();S.sites.unshift({id,name:base.title||'Cantiere',clientId:base.clientId||null,clientRaw:base.clientId?null:(base.clientRaw||null),status:'previsto',employees:base.employees||[],estHours:null,amount:null,startDate:base.date||null,dueDate:null,closedDate:null,notes:base.place?('Luogo: '+base.place):'',via:'calendario',log:[],attachments:[],created:Date.now()});return id;},
+  open:id=>{if(typeof openSite==='function')openSite(id);}
+});

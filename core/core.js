@@ -1378,6 +1378,50 @@ function openEv(type,id){
   else if(type==='document'){if(typeof openDocument==='function')openDocument(id);}
   else nav(TYPE_META[type].view);
 }
+
+/* ---- Trasforma una voce di calendario (appuntamento/nota) in un lavoro di un modulo ----
+   REGISTRO auto-estensibile: ogni modulo-destinazione si iscrive da solo con
+   registerEventTarget({id,module,label,name,make,open,perm?,order?}). Così, aggiungendo
+   un modulo nuovo, la funzione "Trasforma in" lo mostra da sé senza toccare il core.
+   Copia titolo/cliente/luogo/data/assegnatari (base) nel record creato da make(base) e apre
+   la scheda; la sorgente è rimossa (appuntamento) o archiviata (nota) per non duplicarsi.
+   `base` = {title, clientId, clientRaw, date, time, place, employees}. */
+const EVENT_TARGETS_REG=[];
+function registerEventTarget(def){
+  if(!def||!def.id||typeof def.make!=='function')return;
+  const i=EVENT_TARGETS_REG.findIndex(x=>x.id===def.id);
+  if(i>=0)EVENT_TARGETS_REG[i]=def; else EVENT_TARGETS_REG.push(def);
+}
+function evTargets(){
+  return EVENT_TARGETS_REG
+    .filter(t=>moduleActive(t.module)&&(!t.perm||can(t.perm)))
+    .sort((a,b)=>((a.order||50)-(b.order||50)));
+}
+function transformRow(kind,id){
+  const ts=evTargets();if(!ts.length)return'';
+  const btns=ts.map(t=>`<button class="btn sm" onclick="transformEvent('${kind}','${id}','${t.id}')">${t.label}</button>`).join('');
+  return `<div class="fld"><label>Trasforma in <span class="subtle">(crea il lavoro collegato)</span></label><div class="row" style="gap:7px;flex-wrap:wrap">${btns}</div></div>`;
+}
+function transformEvent(kind,id,targetId){
+  const def=EVENT_TARGETS_REG.find(x=>x.id===targetId);
+  if(!def){toast('Modulo non disponibile');return;}
+  const q=i=>document.getElementById(i);
+  let base;
+  if(kind==='app'){const a=byId(S.appointments,id);if(!a)return;
+    base=q('ap-t')?{title:q('ap-t').value.trim()||a.title,clientId:q('ap-c').value||null,clientRaw:(!q('ap-c').value&&q('ap-c').dataset.raw)||null,date:q('ap-d').value||null,time:q('ap-h').value||null,place:q('ap-pl').value.trim()||null,employees:empSegRead('ap-e')}
+      :{title:a.title,clientId:a.clientId,clientRaw:a.clientRaw,date:a.date,time:a.time,place:a.place,employees:empIdsOf(a)};}
+  else if(kind==='note'){const n=byId(S.notes,id);if(!n)return;
+    base=q('en-t')?{title:(q('en-t').value.trim()||n.text||'').slice(0,80),clientId:q('en-c').value||null,clientRaw:null,date:q('en-d').value||null,time:q('en-h').value||null,place:q('en-pl').value.trim()||null,employees:empSegRead('en-e')}
+      :{title:(n.text||'').slice(0,80),clientId:n.clientId,clientRaw:null,date:n.date,time:n.time,place:n.place,employees:empIdsOf(n)};}
+  else return;
+  let nid;try{nid=def.make(base);}catch(e){nid=null;}
+  if(!nid){toast('Non riuscito');return;}
+  if(kind==='app')S.appointments=S.appointments.filter(x=>x.id!==id);
+  else if(kind==='note'){const n=byId(S.notes,id);if(n)n.archived=true;}
+  save();closeSheet();render();
+  if(typeof def.open==='function'){try{def.open(nid);}catch(e){}}
+  toast('✓ Trasformato in '+(def.name||'lavoro'));
+}
 function evTimeLabel(e){
   if(e.seg==='end')return 'fine '+(e.endTime||'');
   if(e.seg==='mid')return '⋯';
