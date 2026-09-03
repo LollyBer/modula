@@ -1365,6 +1365,20 @@ function openSheet(html){
   document.body.appendChild(o);
 }
 function closeSheet(){const o=$('#overlay');if(o)o.remove();}
+/* Visualizzatore foto a schermo intero (lightbox). Sta SOPRA la scheda aperta senza
+   chiuderla, così non si perdono le modifiche non salvate. Chiudi con ✕ o toccando fuori. */
+function photoView(url){
+  if(!url)return;
+  photoClose();
+  const lb=document.createElement('div');lb.id='lightbox';
+  lb.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:16px';
+  lb.innerHTML=`<img src="${url}" style="max-width:100%;max-height:86vh;border-radius:10px;box-shadow:0 10px 50px rgba(0,0,0,.6)">
+    <button onclick="photoClose()" style="position:absolute;top:14px;right:16px;background:#fff;border:0;border-radius:50%;width:40px;height:40px;font-size:19px;cursor:pointer">✕</button>
+    <a href="${url}" target="_blank" rel="noopener" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#fff;color:#222;text-decoration:none;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:600">⬇ Apri / Scarica</a>`;
+  lb.onclick=(e)=>{if(e.target===lb)photoClose();};
+  document.body.appendChild(lb);
+}
+function photoClose(){const lb=document.getElementById('lightbox');if(lb)lb.remove();}
 
 /* ================= AGGREGATED EVENTS (per calendario/agenda) ================= */
 /* visibilità per ruolo: il titolare vede tutto, gli altri solo ciò che è loro */
