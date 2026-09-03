@@ -111,12 +111,12 @@ let snapshot={};
 function snapRows(key,rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r));snapshot[key]=o;}
 async function loadAll(){
   const q=t=>sb.from(t).select('*');
-  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp,iv,dc,td]=await Promise.all([
+  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp,iv,dc,td,sv]=await Promise.all([
     q('clients'),q('employees'),q('time_entries'),q('maintenances'),q('appointments'),q('pellet'),
     q('sites'),q('site_logs').order('created_at'),q('attachments'),
     q('notes'),q('note_groups'),q('lists'),q('list_items').order('position'),
     sb.from('chat').select('*').order('created_at',{ascending:true}).limit(300),
-    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports'),q('invoices'),q('documents'),q('todos')
+    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports'),q('invoices'),q('documents'),q('todos'),q('surveys')
   ]);
   /* te (time_entries) è ESCLUSO dal controllo bloccante: se la tabella non è ancora
      stata creata su Supabase, l'app parte comunque (presenze vuote) invece di crashare. */
@@ -127,6 +127,7 @@ async function loadAll(){
   if(iv&&iv.error)console.warn('invoices non disponibile (esegui schema.sql):',iv.error.message);
   if(dc&&dc.error)console.warn('documents non disponibile (esegui schema.sql):',dc.error.message);
   if(td&&td.error)console.warn('todos non disponibile (esegui schema.sql):',td.error.message);
+  if(sv&&sv.error)console.warn('surveys non disponibile (esegui schema.sql):',sv.error.message);
   S.clients=(cl.data||[]).map(MAPS.clients.fromDb);
   S.employees=(em.data||[]).map(MAPS.employees.fromDb);
   S.timeEntries=(te.data||[]).map(MAPS.timeEntries.fromDb);
@@ -148,6 +149,7 @@ async function loadAll(){
   S.invoices=(iv&&iv.data||[]).map(MAPS.invoices.fromDb).sort((a,b)=>b.created-a.created);
   S.documents=(dc&&dc.data||[]).map(MAPS.documents.fromDb).sort((a,b)=>b.created-a.created);
   S.todos=(td&&td.data||[]).map(MAPS.todos.fromDb).sort((a,b)=>b.created-a.created);
+  S.surveys=(sv&&sv.data||[]).map(MAPS.surveys.fromDb).sort((a,b)=>b.created-a.created);
   if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),boards:(st.data.boards&&typeof st.data.boards==='object'&&!Array.isArray(st.data.boards))?st.data.boards:{},places:Array.isArray(st.data.places)?st.data.places:[],billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{}),reminders:(st.data.reminders&&typeof st.data.reminders==='object'&&!Array.isArray(st.data.reminders))?st.data.reminders:(st.data.reminders?JSON.parse(st.data.reminders):{})};
   rebuildSnapshot();
 }
