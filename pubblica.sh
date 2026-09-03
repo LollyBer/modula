@@ -21,6 +21,16 @@ cd "$(dirname "$0")"
 cur=$(git branch --show-current)
 echo "▶ Pubblico il branch «$cur» su «$LIVE_BRANCH» (sito live)"
 
+# 0. cache-busting: aggiorna ?v= sugli asset dell'app in app.html così i browser/PWA
+#    scaricano subito il codice nuovo (GitHub Pages serve i file con max-age=600).
+if [ -f cache-bust.py ]; then
+  python3 cache-bust.py >/dev/null 2>&1 || true
+  if [ -n "$(git status --porcelain app.html)" ]; then
+    git add app.html && git commit -q -m "chore: cache-bust asset app (pubblica)"
+    echo "  ↻ cache-bust applicato ad app.html"
+  fi
+fi
+
 # 1. niente modifiche in sospeso
 if [ -n "$(git status --porcelain)" ]; then
   echo "✋ Ci sono modifiche non committate. Committa prima (o «aggiorna e chiudi»), poi ripubblica:"
