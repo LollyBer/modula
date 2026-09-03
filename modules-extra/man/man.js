@@ -220,6 +220,9 @@ async function manAddPhoto(id,ev){
     const{error}=await sb.storage.from('allegati').upload(path,blob,{contentType:type||'application/octet-stream'});
     if(error)throw error;
     m.photos.push({id:uid(),name:'foto-'+todayIso()+'.'+ext,storagePath:path});
+    // persistenza IMMEDIATA del campo foto sulla riga (evita perdite dalla sync a lotti in multi-utente)
+    const{error:e3}=await sb.from('maintenances').update({photos:m.photos}).eq('id',id);
+    if(e3)throw e3;
     const{data}=await sb.storage.from('allegati').createSignedUrl(path,3600);if(data)manUrls[path]=data.signedUrl;
     save();manRefreshPhotos(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
   }catch(e){toast('⚠ Foto: '+(e.message||e));}
@@ -229,6 +232,7 @@ function manDelPhoto(pid){
   const p=m.photos.find(x=>x.id===pid);
   if(p&&p.storagePath&&window.sb)sb.storage.from('allegati').remove([p.storagePath]).catch(()=>{});
   m.photos=m.photos.filter(x=>x.id!==pid);
+  if(window.sb)sb.from('maintenances').update({photos:m.photos}).eq('id',m.id).then(()=>{}).catch(()=>{});
   save();manRefreshPhotos(m.id);toast('Foto rimossa');
 }
 /* ================= BOLLETTINO INTERVENTO ================= */
