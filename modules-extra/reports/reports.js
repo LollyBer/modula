@@ -95,10 +95,12 @@ async function repLoadUrls(photos){
 }
 async function repAddPhoto(ev){
   const f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f||!repDraft)return;
+  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
   toast('📤 Carico foto…');
   try{
-    const path=TENANT_ID+'/report/'+repDraft.id+'/'+uid()+'.jpg';
-    const{error}=await sb.storage.from('allegati').upload(path,f,{contentType:f.type||'image/jpeg'});
+    const{blob,ext,type}=await preparePhoto(f);
+    const path=TENANT_ID+'/report/'+repDraft.id+'/'+uid()+'.'+ext;
+    const{error}=await sb.storage.from('allegati').upload(path,blob,{contentType:type||'application/octet-stream'});
     if(error)throw error;
     repDraft.photos.push({id:uid(),name:f.name||'foto',storagePath:path});
     const{data}=await sb.storage.from('allegati').createSignedUrl(path,3600); if(data)repUrls[path]=data.signedUrl;

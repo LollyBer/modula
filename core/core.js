@@ -302,6 +302,35 @@ function fmtD(s){if(!s)return'';const[y,m,d]=s.split('-').map(Number);const dt=n
   if(diff>2&&diff<7)return GG[dt.getDay()]+' · '+base; return base;}
 function fmtTime(t){return t||''}
 function relDays(s){if(!s)return null;const[y,m,d]=s.split('-').map(Number);const dt=new Date(y,m-1,d);const t=new Date();t.setHours(0,0,0,0);return Math.round((dt-t)/86400000);}
+/* Prepara una foto per l'upload: prova a ridimensionarla (max 1280px, JPEG). Se il
+   browser NON sa decodificarla — tipico delle foto HEIC dell'iPhone scelte dalla
+   galleria su Android/PC — o se qualcosa va storto, ricade sul file ORIGINALE così
+   l'upload non fallisce mai in silenzio. Risolve con {blob, ext, type}. */
+function preparePhoto(file){
+  const orig=()=>{const t=file.type||'application/octet-stream';const m=(t.split('/')[1]||'').split('+')[0];let ext=(file.name&&file.name.includes('.'))?file.name.split('.').pop().toLowerCase():(m||'jpg');ext=ext.replace(/[^a-z0-9]/g,'')||'jpg';return{blob:file,ext,type:t};};
+  return new Promise(resolve=>{
+    try{
+      const r=new FileReader();
+      r.onerror=()=>resolve(orig());
+      r.onload=()=>{
+        const img=new Image();
+        img.onerror=()=>resolve(orig());
+        img.onload=()=>{
+          try{
+            let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+            if(!w||!h){resolve(orig());return;}
+            const max=1280;if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
+            const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+            cv.getContext('2d').drawImage(img,0,0,w,h);
+            cv.toBlob(b=>resolve(b?{blob:b,ext:'jpg',type:'image/jpeg'}:orig()),'image/jpeg',.72);
+          }catch(_){resolve(orig());}
+        };
+        img.src=r.result;
+      };
+      r.readAsDataURL(file);
+    }catch(_){resolve(orig());}
+  });
+}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
 const byId=(arr,id)=>arr.find(x=>x.id===id);
 function addMonthsIso(s,m){const[y,mo,d]=s.split('-').map(Number);const dt=new Date(y,mo-1+m,1);const last=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();dt.setDate(Math.min(d,last));return iso(dt);}
@@ -1470,21 +1499,18 @@ function renderClientAtt(clientId){
   </div>`;
 }
 async function addClientPhoto(clientId,ev){
-  const f=ev.target.files[0];if(!f)return;
-  const img=new Image();const r=new FileReader();
-  r.onload=()=>{img.onload=()=>{
-    const max=1280;let w=img.width,h=img.height;
-    if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
-    const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
-    cv.toBlob(async blob=>{try{
-      const name='foto-'+todayIso()+'.jpg';const path=TENANT_ID+'/client/'+clientId+'/'+uid()+'-'+name;
-      const{error:e1}=await sb.storage.from('allegati').upload(path,blob,{contentType:'image/jpeg'});if(e1)throw e1;
-      const row={id:uid(),client_id:clientId,name,type:'img',storage_path:path,date:todayIso()};
-      const{error:e2}=await sb.from('client_attachments').insert(row);if(e2)throw e2;
-      (clientAtt[clientId]=clientAtt[clientId]||[]).unshift({id:row.id,name,type:'img',storagePath:path,date:row.date});
-      renderClientAtt(clientId);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
-    }catch(err){toast('⚠ Upload: '+(err.message||err));}},'image/jpeg',.72);
-  };img.src=r.result;};r.readAsDataURL(f);
+  const f=ev.target.files[0];if(!f)return; ev.target.value='';
+  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
+  toast('📤 Carico foto…');
+  try{
+    const{blob,ext,type}=await preparePhoto(f);
+    const name='foto-'+todayIso()+'.'+ext;const path=TENANT_ID+'/client/'+clientId+'/'+uid()+'-'+name;
+    const{error:e1}=await sb.storage.from('allegati').upload(path,blob,{contentType:type||'application/octet-stream'});if(e1)throw e1;
+    const row={id:uid(),client_id:clientId,name,type:'img',storage_path:path,date:todayIso()};
+    const{error:e2}=await sb.from('client_attachments').insert(row);if(e2)throw e2;
+    (clientAtt[clientId]=clientAtt[clientId]||[]).unshift({id:row.id,name,type:'img',storagePath:path,date:row.date});
+    renderClientAtt(clientId);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
+  }catch(err){toast('⚠ Upload: '+(err.message||err));}
 }
 async function addClientFile(clientId,ev){
   const f=ev.target.files[0];if(!f)return;if(f.size>25*1024*1024){toast('⚠ File oltre 25MB');return;}

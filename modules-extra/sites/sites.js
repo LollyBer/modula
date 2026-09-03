@@ -134,29 +134,22 @@ function ensureAttUrls(s){
     .catch(()=>{});
 }
 async function addPhoto(id,ev){
-  const f=ev.target.files[0];if(!f)return;
-  const img=new Image();const r=new FileReader();
-  r.onload=()=>{img.onload=()=>{
-    const max=1280;let w=img.width,h=img.height;
-    if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
-    const cv=document.createElement('canvas');cv.width=w;cv.height=h;
-    cv.getContext('2d').drawImage(img,0,0,w,h);
-    cv.toBlob(async blob=>{
-      try{
-        const name='foto-'+todayIso()+'.jpg';
-        const path=TENANT_ID+'/site/'+id+'/'+uid()+'-'+name;
-        const{error:e1}=await sb.storage.from('allegati').upload(path,blob,{contentType:'image/jpeg'});
-        if(e1)throw e1;
-        const row={id:uid(),site_id:id,name,type:'img',storage_path:path,date:todayIso()};
-        const{error:e2}=await sb.from('attachments').insert(row);
-        if(e2)throw e2;
-        const s=byId(S.sites,id);
-        s.attachments.push({id:row.id,name,type:'img',storagePath:path,date:row.date});
-        openSite(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
-      }catch(err){toast('⚠ Upload: '+(err.message||err));}
-    },'image/jpeg',.72);
-  };img.src=r.result;};
-  r.readAsDataURL(f);
+  const f=ev.target.files[0];if(!f)return; ev.target.value='';
+  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
+  toast('📤 Carico foto…');
+  try{
+    const{blob,ext,type}=await preparePhoto(f);
+    const name='foto-'+todayIso()+'.'+ext;
+    const path=TENANT_ID+'/site/'+id+'/'+uid()+'-'+name;
+    const{error:e1}=await sb.storage.from('allegati').upload(path,blob,{contentType:type||'application/octet-stream'});
+    if(e1)throw e1;
+    const row={id:uid(),site_id:id,name,type:'img',storage_path:path,date:todayIso()};
+    const{error:e2}=await sb.from('attachments').insert(row);
+    if(e2)throw e2;
+    const s=byId(S.sites,id);
+    s.attachments.push({id:row.id,name,type:'img',storagePath:path,date:row.date});
+    openSite(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
+  }catch(err){toast('⚠ Upload: '+(err.message||err));}
 }
 async function addFile(id,ev){
   const f=ev.target.files[0];if(!f)return;

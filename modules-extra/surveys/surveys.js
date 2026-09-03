@@ -169,24 +169,15 @@ async function svAddPhoto(id,ev){
   const s=byId(S.surveys,id);if(!s)return;
   if(!s.photos)s.photos=[];
   toast('📤 Carico foto…');
-  const img=new Image();const r=new FileReader();
-  r.onload=()=>{img.onload=()=>{
-    const max=1280;let w=img.width,h=img.height;
-    if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
-    const cv=document.createElement('canvas');cv.width=w;cv.height=h;
-    cv.getContext('2d').drawImage(img,0,0,w,h);
-    cv.toBlob(async blob=>{
-      try{
-        const path=TENANT_ID+'/survey/'+id+'/'+uid()+'.jpg';
-        const{error}=await sb.storage.from('allegati').upload(path,blob,{contentType:'image/jpeg'});
-        if(error)throw error;
-        s.photos.push({id:uid(),name:'foto-'+todayIso()+'.jpg',storagePath:path});
-        const{data}=await sb.storage.from('allegati').createSignedUrl(path,3600);if(data)svUrls[path]=data.signedUrl;
-        save();svRefreshPhotos(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
-      }catch(e){toast('⚠ Foto: '+(e.message||e));}
-    },'image/jpeg',.72);
-  };img.src=r.result;};
-  r.readAsDataURL(f);
+  try{
+    const{blob,ext,type}=await preparePhoto(f);
+    const path=TENANT_ID+'/survey/'+id+'/'+uid()+'.'+ext;
+    const{error}=await sb.storage.from('allegati').upload(path,blob,{contentType:type||'application/octet-stream'});
+    if(error)throw error;
+    s.photos.push({id:uid(),name:'foto-'+todayIso()+'.'+ext,storagePath:path});
+    const{data}=await sb.storage.from('allegati').createSignedUrl(path,3600);if(data)svUrls[path]=data.signedUrl;
+    save();svRefreshPhotos(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
+  }catch(e){toast('⚠ Foto: '+(e.message||e));}
 }
 function svDelPhoto(pid){
   const s=S.surveys.find(x=>(x.photos||[]).some(p=>p.id===pid));if(!s)return;
