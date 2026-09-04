@@ -39,6 +39,15 @@ function quickAddDate(empId,date,type){
   save();openTimesheet(empId,date.slice(0,7));toast('✓ '+TT[type].l);
 }
 const quickAdd=(empId,type)=>quickAddDate(empId,todayIso(),type);
+/* crea/sovrascrive la giornata SENZA effetti collaterali (per registrazioni in blocco,
+   es. dal calendario: «ferie Loris dal…al…»). Non salva né apre nulla: chi chiama fa save(). */
+function bulkSetDay(empId,date,type){
+  if(!empId||!date)return;
+  const d={empId,date,type,start:'',end:'',brk:'',note:'',hours:0};
+  if(type==='lavoro'){const s=lastSchedule(empId);d.start=s.start;d.end=s.end;d.brk=s.brk;d.hours=teHours(s);}
+  const ex=S.timeEntries.find(t=>t.empId===empId&&t.date===date);
+  if(ex)Object.assign(ex,d); else S.timeEntries.push({id:uid(),...d});
+}
 
 /* ---- mini calendario del mese (Lu→Do), colorato per tipo giornata ---- */
 function tsCalendar(empId,ym){

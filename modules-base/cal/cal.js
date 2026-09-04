@@ -150,19 +150,21 @@ function openDayPreview(d){
     <button class="btn pri" style="width:100%;margin-top:14px" onclick="closeSheet();openQuickAdd('${d}')">+ Aggiungi cosa da fare</button>`);
 }
 function openQuickAdd(date){
+  const dayOpts=['ferie','malattia','permesso','lavoro','assenza','festivo'].map(k=>{const m=(typeof TT!=='undefined'&&TT[k])?TT[k]:{i:'',l:k};return `<option value="${k}">${m.i} ${m.l}</option>`;}).join('');
   openSheet(`<h3>Aggiungi al ${fmtD(date)} <span class="x" onclick="closeSheet()">✕</span></h3>
-  <div class="fld"><label>Cosa</label><input id="qa-t" placeholder="es. Sopralluogo da Bernasconi"></div>
+  <div class="fld" id="qa-fld-what"><label>Cosa</label><input id="qa-t" placeholder="es. Sopralluogo da Bernasconi"></div>
   <div class="frow">
     <div class="fld"><label>Tipo</label><select id="qa-type" onchange="qaSyncFields()">${calTypes().map(v=>`<option value="${v.id}">${v.ic||''} ${esc(v.label)}</option>`).join('')}</select></div>
     <div class="fld" id="qa-fld-time"><label>Ora inizio</label><input id="qa-time" type="time"></div>
   </div>
+  <div class="fld" id="qa-fld-daytype" style="display:none"><label>Tipo giornata</label><select id="qa-daytype">${dayOpts}</select></div>
   <div class="frow" id="qa-frow-end">
-    <div class="fld"><label>Ora fine (facolt.)</label><input id="qa-endtime" type="time"></div>
+    <div class="fld" id="qa-fld-endtime"><label>Ora fine (facolt.)</label><input id="qa-endtime" type="time"></div>
     <div class="fld"><label>Giorno fine (se dura più giorni)</label><input id="qa-enddate" type="date" value="${date}" min="${date}"></div>
   </div>
-  <div class="fld"><label>Cliente (opzionale)</label>${cliInput('qa-cl','','qa-clprev')}<div id="qa-clprev"></div></div>
+  <div class="fld" id="qa-fld-client"><label>Cliente (opzionale)</label>${cliInput('qa-cl','','qa-clprev')}<div id="qa-clprev"></div></div>
   <div class="fld" id="qa-fld-place"><label>Luogo (opzionale)</label><input id="qa-place" placeholder="es. Via Motta 3, Lugano"></div>
-  <div class="fld"><label>Assegna a (opzionale)</label>${empSeg('qa-e',[])}</div>
+  <div class="fld"><label id="qa-e-label">Assegna a (opzionale)</label>${empSeg('qa-e',[])}</div>
   <div class="actions"><button class="btn ghost" onclick="closeSheet()">Annulla</button><button class="btn pri" onclick="quickAddSave('${date}')">Salva</button></div>`);
   qaSyncFields();
 }
@@ -172,15 +174,39 @@ function openQuickAdd(date){
 function qaSyncFields(){
   const v=calTypeById(($('#qa-type')||{}).value)||calTypes()[0];
   const k=v?v.kind:'note';
+  const isPres=(k==='presence');
   const showEnd=(k==='appointment'||k==='maintenance'||k==='note'); // luogo + ora-fine + giorno-fine
-  const showTime=(k!=='site');                                      // il cantiere usa solo la data d'inizio
+  const showTime=(k!=='site'&&!isPres);                             // il cantiere/presenze non usano l'ora d'inizio
   const set=(id,show)=>{const el=document.getElementById(id);if(el)el.style.display=show?'':'none';};
-  set('qa-fld-time',showTime);set('qa-frow-end',showEnd);set('qa-fld-place',showEnd);
+  set('qa-fld-time',showTime);
+  set('qa-frow-end',showEnd||isPres);   // presenze: mostra il giorno-fine per il periodo (ferie dal…al…)
+  set('qa-fld-endtime',!isPres);        // ma non l'ora-fine
+  set('qa-fld-place',showEnd);
+  set('qa-fld-daytype',isPres);         // selettore ferie/malattia/…
+  set('qa-fld-client',!isPres);         // niente cliente per le presenze
+  set('qa-fld-what',!isPres);           // niente "Cosa" per le presenze
+  const lbl=document.getElementById('qa-e-label');if(lbl)lbl.textContent=isPres?'Dipendente/i':'Assegna a (opzionale)';
 }
+function qaEachDay(from,to){const out=[];const p=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};let cur=p(from);const end=p(to);let g=0;while(cur<=end&&g<400){out.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0'));cur.setDate(cur.getDate()+1);g++;}return out;}
 function quickAddSave(date){
-  const t=$('#qa-t').value.trim();if(!t){toast('Scrivi cosa devi fare');return;}
   const voce=calTypeById($('#qa-type').value)||calTypes()[0];
   const type=voce?voce.kind:'note';
+  /* PRESENZE: crea le giornate nel modulo Personale (una per dipendente per ogni giorno del periodo) */
+  if(type==='presence'){
+    const emps=(typeof empSegRead==='function')?empSegRead('qa-e'):[];
+    if(!emps.length){toast('Scegli il dipendente');return;}
+    const dtype=($('#qa-daytype')&&$('#qa-daytype').value)||'ferie';
+    const rawEnd=($('#qa-enddate')&&$('#qa-enddate').value)||date;
+    const to=(rawEnd&&rawEnd>date)?rawEnd:date;
+    const days=qaEachDay(date,to);
+    if(typeof bulkSetDay!=='function'){toast('Modulo Personale non disponibile');return;}
+    let n=0;emps.forEach(eid=>days.forEach(dd=>{bulkSetDay(eid,dd,dtype);n++;}));
+    save();closeSheet();render();
+    const lbl=(typeof TT!=='undefined'&&TT[dtype])?TT[dtype].l:dtype;
+    toast('🕐 '+lbl+': '+n+' giornat'+(n===1?'a':'e')+' in Personale');
+    return;
+  }
+  const t=$('#qa-t').value.trim();if(!t){toast('Scrivi cosa devi fare');return;}
   const clientId=$('#qa-cl').value||null;
   const rawName=(!clientId&&$('#qa-cl').dataset&&$('#qa-cl').dataset.raw)||null;
   const time=$('#qa-time').value||null;

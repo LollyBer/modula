@@ -507,6 +507,7 @@ const TYPE_META={
   list:{label:'Lista',color:'#2E9E5E',hex:'#2E9E5E',ic:'☑️',view:'hub'},
   todo:{label:'Da fare',color:'#7C5CBF',hex:'#7C5CBF',ic:'✅',view:'todo'},
   document:{label:'Documento',color:'var(--t2)',hex:'#8A8170',ic:'📄',view:'documenti'},
+  presence:{label:'Presenza',color:'#2F80ED',hex:'#2F80ED',ic:'🕐',view:'emps'},
 };
 /* ===== VOCI del calendario (configurabili per azienda) =====
    Ogni voce: {id,label,ic,hex,kind}. `kind` = tipo con cui l'evento viene salvato:
@@ -520,16 +521,19 @@ const EVENT_KINDS={
   maintenance:{label:'Manutenzione',module:'man',ic:'🔧',hex:'#C77F12'},
   pellet:{label:'Consegna',module:'pellet',ic:'🪵',hex:'#5E9E2E'},
   site:{label:'Cantiere',module:'sites',ic:'🏗',hex:'#A9742F'},
+  presence:{label:'Orario dipendenti',module:'emps',ic:'🕐',hex:'#2F80ED'},
 };
-const KIND_LINK={appointment:'📅 Appuntamento (calendario)',note:'📝 Nessuno — solo promemoria',maintenance:'🔧 Manutenzioni',pellet:'🪵 Pellet',site:'🏗 Cantieri'};
+const KIND_LINK={appointment:'📅 Appuntamento (calendario)',note:'📝 Nessuno — solo promemoria',maintenance:'🔧 Manutenzioni',pellet:'🪵 Pellet',site:'🏗 Cantieri',presence:'🕐 Orario/presenze dipendenti'};
 function defaultCalTypes(){
   return Object.keys(EVENT_KINDS).filter(k=>moduleActive(EVENT_KINDS[k].module))
     .map(k=>({id:'def-'+k,label:EVENT_KINDS[k].label,ic:EVENT_KINDS[k].ic,hex:EVENT_KINDS[k].hex,kind:k}));
 }
 function calTypes(){
   const custom=(S.settings&&Array.isArray(S.settings.eventTypes))?S.settings.eventTypes:[];
-  const list=custom.length?custom:defaultCalTypes();
-  return list.filter(v=>{const m=EVENT_KINDS[v.kind];return m?moduleActive(m.module):true;});
+  let list=(custom.length?custom:defaultCalTypes()).filter(v=>{const m=EVENT_KINDS[v.kind];return m?moduleActive(m.module):true;});
+  // la voce "Orario dipendenti" (nuova) compare sempre, anche per chi ha già personalizzato le voci
+  if(moduleActive('emps')&&!list.some(v=>v.kind==='presence')){const d=EVENT_KINDS.presence;list=list.concat([{id:'def-presence',label:d.label,ic:d.ic,hex:d.hex,kind:'presence'}]);}
+  return list;
 }
 const calTypeById=id=>calTypes().find(v=>v.id===id);
 /* commit parsed object into state */
@@ -1404,6 +1408,14 @@ function allEvents(){
   if(moduleActive('sites'))visSites().forEach(s=>{const sub=cName(s.clientId)||s.clientRaw||'';if(s.startDate&&(s.status==='aperto'||s.status==='previsto'))ev.push({type:'site',date:s.startDate,time:null,title:'🏗 Inizio: '+s.name,sub,done:false,id:s.id});if(s.dueDate&&s.status==='aperto')ev.push({type:'site',date:s.dueDate,time:null,title:'🏁 Fine prevista: '+s.name,sub,done:false,id:s.id});});
   if(moduleActive('documenti')&&can('documenti'))S.documents.forEach(d=>{if(d.dueDate)ev.push({type:'document',date:d.dueDate,time:null,title:'📄 Scade: '+(d.description||d.fornitore||'documento'),sub:[d.category,d.clientId?cName(d.clientId):''].filter(Boolean).join(' · '),place:'',done:false,id:d.id});});
   if(moduleActive('surveys'))visSurveys().forEach(s=>{const sub=cName(s.clientId)||s.clientRaw||'';const open=['da_valutare','da_preventivare','preventivo_inviato'].includes(s.status);if(s.date&&open)ev.push({type:'survey',date:s.date,time:null,title:'🔍 Sopralluogo: '+(s.title||sub||''),sub,place:s.place||'',done:false,id:s.id});if(s.nextDate&&open)ev.push({type:'survey',date:s.nextDate,time:null,title:'⏰ '+(s.nextNote||'Ricontatta')+(sub?' · '+sub:''),sub,place:s.place||'',done:false,id:s.id});});
+  /* presenze/assenze del personale: ferie/malattia/permesso/assenza/festivo (il lavoro quotidiano
+     non si mostra, affollerebbe). Ognuno vede le proprie; il titolare vede tutte. */
+  if(moduleActive('emps')&&typeof TT!=='undefined')(S.timeEntries||[]).forEach(t=>{
+    if(!t.date||t.type==='lavoro')return;
+    if(!isOwner()&&!(S.session&&t.empId===S.session.empId))return;
+    const meta=TT[t.type]||{i:'🕐',l:t.type};const nm=eName(t.empId)||'';
+    ev.push({type:'presence',date:t.date,time:null,title:meta.i+' '+meta.l+(nm?' — '+nm:''),sub:nm,place:'',done:false,id:t.id});
+  });
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
 
@@ -1419,6 +1431,7 @@ function openEv(type,id){
   else if(type==='note')openNote(id);
   else if(type==='site'){if(typeof openSite==='function')openSite(id);}
   else if(type==='survey'){if(typeof openSurvey==='function')openSurvey(id);}
+  else if(type==='presence'){const te=byId(S.timeEntries,id);if(te&&typeof openTimesheet==='function')openTimesheet(te.empId,(te.date||todayIso()).slice(0,7));else nav('emps');}
   else if(type==='todo'){if(typeof openTodo==='function')openTodo(id);}
   else if(type==='document'){if(typeof openDocument==='function')openDocument(id);}
   else nav(TYPE_META[type].view);
