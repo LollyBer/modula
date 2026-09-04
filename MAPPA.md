@@ -74,6 +74,12 @@ numerazione fatture con reset anno + univocità, delete fattura libera i lavori,
 (lossless)** · **archiviazione fatture** · registro Fatture "da fatturare/fatturato" · **personalizzazione**
 (7 sfondi + 6 colori) · hardening **sicurezza+GitHub** (secret scanning, push protection, Dependabot, SECURITY.md).
 ⚠️ richiede `schema.sql` (colonne `invoiced` su manut/cantieri/pellet + `archived` su fatture).
+2026-09-04: **NUOVO modulo Contratti** (`contratti`, **19 moduli**) — collegato ai clienti; il titolare crea i
+suoi **modelli** (testo con segnaposto {cliente}…, in `settings.contract_templates`), il contratto si **compila
+coi dati del cliente**, **firma col dito** o **stampa senza firma**, **import PDF**, scadenze sul calendario,
+storico cliente. ⚠️ richiede `schema.sql` (tabella `contracts` + colonna `settings.contract_templates`). ·
+Inoltre: voce calendario **"🕐 Orario dipendenti"** (crea presenze/ferie nel cartellino Personale) · fix foto
+galleria (HEIC), visualizzatore foto a schermo intero, **cache-busting** automatico in pubblica.sh.
 2026-09-02: **NUOVO modulo Sopralluoghi** (`surveys`, **19 moduli**) — pipeline commerciale (da valutare →
 da preventivare → preventivo inviato → vinto/perso), clienti dell'anagrafica **o potenziali** (nome/telefono
 liberi), foto sul posto, promemoria + calendario, storico cliente; da "vinto" → **trasforma in cantiere**

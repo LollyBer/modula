@@ -138,6 +138,7 @@ function openClient(id){
   const pel=S.pellet.filter(p=>p.clientId===id).sort((a,b)=>((a.date||'')>(b.date||'')?-1:1));
   const sit=S.sites.filter(s=>s.clientId===id);
   const sur=moduleActive('surveys')?(S.surveys||[]).filter(s=>s.clientId===id).sort((a,b)=>((a.date||'')>(b.date||'')?-1:1)):[];
+  const con=moduleActive('contratti')?(S.contracts||[]).filter(k=>k.clientId===id).sort((a,b)=>((a.created||0)<(b.created||0)?1:-1)):[];
   const app=S.appointments.filter(a=>a.clientId===id);
   const not=S.notes.filter(n=>n.clientId===id&&!n.archived);
   const doc=(moduleActive('documenti')&&can('documenti'))?S.documents.filter(d=>d.clientId===id).sort((a,b)=>((a.date||'')>(b.date||'')?-1:1)):[];
@@ -163,9 +164,10 @@ function openClient(id){
   ${pel.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--fire)">🪵 Pellet (${pel.length})</div>${mini(pel,p=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openPel('${p.id}')">• ${p.date?fmtD(p.date):p.status} — ${fmtQty(p.qty||0)} ${esc(p.unit||'sacchi')} ${p.kind==='sfuso'?'🪵':'📦'} <span style="color:var(--t3)">›</span></div>`)}`:''}
   ${sit.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--blue)">🏗 Cantieri (${sit.length})</div>${mini(sit,s=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openSite('${s.id}')">• ${esc(s.name)} (${s.status}) <span style="color:var(--t3)">›</span></div>`)}`:''}
   ${sur.length?`<div class="subtle" style="margin:8px 0 2px;color:#0E8BA8">🔍 Sopralluoghi (${sur.length})</div>${mini(sur,s=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openSurvey('${s.id}')">• ${s.date?fmtD(s.date):'—'} — ${esc(s.title||'sopralluogo')}${s.photos&&s.photos.length?' 📷':''} <span style="color:var(--t3)">›</span></div>`)}`:''}
+  ${con.length?`<div class="subtle" style="margin:8px 0 2px;color:#7C5CBF">📄 Contratti (${con.length})</div>${mini(con,k=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openContract('${k.id}')">• ${esc(k.title||'contratto')}${k.type?' ('+esc(k.type)+')':''}${k.signature?' ✍':''} <span style="color:var(--t3)">›</span></div>`)}`:''}
   ${app.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--cy)">📅 Appuntamenti (${app.length})</div>${mini(app,a=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openApp('${a.id}')">• ${fmtD(a.date)} — ${esc(a.title)} <span style="color:var(--t3)">›</span></div>`)}`:''}
   ${not.length?`<div class="subtle" style="margin:8px 0 2px;color:var(--teal)">📝 Note (${not.length})</div>${mini(not,n=>`<div class="subtle" style="padding:3px 0 3px 8px;cursor:pointer;color:var(--t1)" onclick="closeSheet();openNote('${n.id}')">• ${esc(n.text)} <span style="color:var(--t3)">›</span></div>`)}`:''}
-  ${!man.length&&!pel.length&&!sit.length&&!sur.length&&!app.length&&!not.length?'<div class="subtle">Ancora vuoto — si riempirà da solo man mano che registri.</div>':''}
+  ${!man.length&&!pel.length&&!sit.length&&!sur.length&&!con.length&&!app.length&&!not.length?'<div class="subtle">Ancora vuoto — si riempirà da solo man mano che registri.</div>':''}
   </div>
   ${moduleActive('macchine')?`<div class="fld"><label>⚙️ Macchine installate</label><div id="cli-machines"><div class="subtle">…</div></div></div>`:''}
   ${(moduleActive('documenti')&&can('documenti'))?`<div class="fld"><label>📁 Documenti (${doc.length})</label>

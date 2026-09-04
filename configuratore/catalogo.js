@@ -35,6 +35,7 @@ const MODULI_EXTRA = [
   { id:'magazzino',ic:'📦',  nome:'Magazzino',            desc:'Scorte, carico/scarico e soglie.',         stato:'arrivo' },
   { id:'catalogo', ic:'🏷️',  nome:'Catalogo / Listino',   desc:'Prodotti, prezzi e disponibilità.',        stato:'arrivo' },
   { id:'documenti',ic:'📁',  nome:'Documenti',            desc:'Archivio ordinato dei documenti aziendali: categorie, ricerca, file.', stato:'pronto' },
+  { id:'contratti',ic:'📄',  nome:'Contratti',            desc:'Contratti per cliente: modelli tuoi precompilati coi dati del cliente, firma, stampa e import PDF.', stato:'pronto' },
   { id:'report',   ic:'📊',  nome:'Report & Statistiche', desc:'Andamento attività in numeri e grafici.',  stato:'arrivo' },
   { id:'fidelity', ic:'🎁',  nome:'Fidelity & Promo',     desc:'Punti, tessere e promozioni clienti.',     stato:'arrivo' },
   { id:'turni',    ic:'⏱️',  nome:'Turni & Presenze',     desc:'Turni del personale e timbrature.',        stato:'arrivo' },

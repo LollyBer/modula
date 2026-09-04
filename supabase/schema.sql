@@ -237,6 +237,25 @@ create table if not exists surveys (
   created_at timestamptz not null default now()
 );
 
+-- contratti per cliente: il titolare crea i propri MODELLI (in settings.contract_templates,
+-- testo con segnaposto {cliente}…); ogni contratto si compila coi dati del cliente, si firma
+-- (firma base64) e/o si importa come PDF (storage_path). body = testo del contratto.
+create table if not exists contracts (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  client_id uuid references clients(id) on delete set null,
+  client_raw text,
+  type text default '', title text default '', number text default '',
+  body text default '',
+  start_date date, end_date date, amount numeric,
+  status text default 'bozza',
+  signature text, signed_name text default '', signed_date date,
+  file_name text default '', storage_path text default '', mime text default '',
+  template_id text default '',
+  via text default 'manuale',
+  created_at timestamptz not null default now()
+);
+
 -- fatture (collegate a Conti: le pagate = entrate). QR-fattura svizzera generata lato app.
 create table if not exists invoices (
   id uuid primary key default gen_random_uuid(),
@@ -293,6 +312,7 @@ alter table settings add column if not exists places jsonb not null default '[]'
 alter table settings add column if not exists billing jsonb not null default '{}'::jsonb;
 -- promemoria appuntamenti: {enabled, minutesBefore, allDayTime}. Letto dalla Edge Function "reminders".
 alter table settings add column if not exists reminders jsonb not null default '{}'::jsonb;
+alter table settings add column if not exists contract_templates jsonb not null default '[]'::jsonb;
 
 create table if not exists push_subs (
   endpoint text primary key,
@@ -367,7 +387,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','contracts','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','push_subs','todos'
   ] loop
@@ -383,7 +403,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents',
+    'tenants','employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','contracts','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs','todos'
   ] loop
@@ -409,7 +429,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents',
+    'employees','time_entries','clients','maintenances','appointments','pellet','sites','surveys','contracts','site_logs','reports','invoices','documents',
     'attachments','client_attachments','notes','note_groups','lists','list_items','chat','call_log',
     'expenses','maint_prices','settings','push_subs','todos'
   ] loop
@@ -487,7 +507,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'clients','maintenances','appointments','pellet','sites','surveys','site_logs','reports','invoices','documents','attachments','client_attachments',
+    'clients','maintenances','appointments','pellet','sites','surveys','contracts','site_logs','reports','invoices','documents','attachments','client_attachments',
     'notes','note_groups','lists','list_items','chat','call_log','expenses','maint_prices',
     'employees','time_entries','settings','todos'
   ] loop

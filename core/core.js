@@ -40,7 +40,7 @@ function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.i
 
 const APP_VERSION='2026.07.06-140421';
 
-const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],surveys:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{}},speaker:null,session:null});
+const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],surveys:[],contracts:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{},contractTemplates:[]},speaker:null,session:null});
 let S=blank();
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 
@@ -71,6 +71,9 @@ const MAPS={
  surveys:{tbl:'surveys',
   toDb:s=>({id:s.id,title:s.title||'',client_id:s.clientId||null,client_raw:s.clientRaw||null,client_phone:s.clientPhone||'',place:s.place||'',date:s.date||null,employees:s.employees||[],status:s.status||'da_valutare',value:num(s.value),measures:s.measures||'',notes:s.notes||'',next_note:s.nextNote||'',next_date:s.nextDate||null,photos:s.photos||[],site_id:s.siteId||null,via:s.via||'manuale'}),
   fromDb:r=>({id:r.id,title:r.title||'',clientId:r.client_id,clientRaw:r.client_raw,clientPhone:r.client_phone||'',place:r.place||'',date:r.date,employees:r.employees||[],status:r.status||'da_valutare',value:r.value,measures:r.measures||'',notes:r.notes||'',nextNote:r.next_note||'',nextDate:r.next_date||'',photos:r.photos||[],siteId:r.site_id||null,via:r.via,created:Date.parse(r.created_at)||Date.now()})},
+ contracts:{tbl:'contracts',
+  toDb:c=>({id:c.id,client_id:c.clientId||null,client_raw:c.clientRaw||null,type:c.type||'',title:c.title||'',number:c.number||'',body:c.body||'',start_date:c.startDate||null,end_date:c.endDate||null,amount:num(c.amount),status:c.status||'bozza',signature:c.signature||null,signed_name:c.signedName||'',signed_date:c.signedDate||null,file_name:c.fileName||'',storage_path:c.storagePath||'',mime:c.mime||'',template_id:c.templateId||'',via:c.via||'manuale'}),
+  fromDb:r=>({id:r.id,clientId:r.client_id,clientRaw:r.client_raw,type:r.type||'',title:r.title||'',number:r.number||'',body:r.body||'',startDate:r.start_date,endDate:r.end_date||'',amount:r.amount,status:r.status||'bozza',signature:r.signature||null,signedName:r.signed_name||'',signedDate:r.signed_date||'',fileName:r.file_name||'',storagePath:r.storage_path||'',mime:r.mime||'',templateId:r.template_id||'',via:r.via,created:Date.parse(r.created_at)||Date.now()})},
  reports:{tbl:'reports',
   toDb:r=>({id:r.id,site_id:r.siteId||null,emp_id:r.empId||null,employees:r.employees||(r.empId?[r.empId]:[]),date:r.date||null,hours:num(r.hours),start_t:r.start||null,end_t:r.end||null,work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato'}),
   fromDb:r=>({id:r.id,siteId:r.site_id,empId:r.emp_id,employees:(r.employees&&r.employees.length)?r.employees:(r.emp_id?[r.emp_id]:[]),date:r.date,hours:r.hours,start:r.start_t||'',end:r.end_t||'',work:r.work||'',materials:r.materials||'',photos:r.photos||[],status:r.status||'inviato',created:Date.parse(r.created_at)||Date.now()})},
@@ -111,12 +114,12 @@ let snapshot={};
 function snapRows(key,rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r));snapshot[key]=o;}
 async function loadAll(){
   const q=t=>sb.from(t).select('*');
-  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp,iv,dc,td,sv]=await Promise.all([
+  const[cl,em,te,ma,ap,pe,si,sl,at,no,ng,li,it,ch,cg,ex,mp,st,rp,iv,dc,td,sv,ct]=await Promise.all([
     q('clients'),q('employees'),q('time_entries'),q('maintenances'),q('appointments'),q('pellet'),
     q('sites'),q('site_logs').order('created_at'),q('attachments'),
     q('notes'),q('note_groups'),q('lists'),q('list_items').order('position'),
     sb.from('chat').select('*').order('created_at',{ascending:true}).limit(300),
-    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports'),q('invoices'),q('documents'),q('todos'),q('surveys')
+    q('call_log'),q('expenses'),q('maint_prices'),sb.from('settings').select('*').eq('tenant_id',TENANT_ID).maybeSingle(),q('reports'),q('invoices'),q('documents'),q('todos'),q('surveys'),q('contracts')
   ]);
   /* te (time_entries) è ESCLUSO dal controllo bloccante: se la tabella non è ancora
      stata creata su Supabase, l'app parte comunque (presenze vuote) invece di crashare. */
@@ -128,6 +131,7 @@ async function loadAll(){
   if(dc&&dc.error)console.warn('documents non disponibile (esegui schema.sql):',dc.error.message);
   if(td&&td.error)console.warn('todos non disponibile (esegui schema.sql):',td.error.message);
   if(sv&&sv.error)console.warn('surveys non disponibile (esegui schema.sql):',sv.error.message);
+  if(ct&&ct.error)console.warn('contracts non disponibile (esegui schema.sql):',ct.error.message);
   S.clients=(cl.data||[]).map(MAPS.clients.fromDb);
   S.employees=(em.data||[]).map(MAPS.employees.fromDb);
   S.timeEntries=(te.data||[]).map(MAPS.timeEntries.fromDb);
@@ -150,7 +154,8 @@ async function loadAll(){
   S.documents=(dc&&dc.data||[]).map(MAPS.documents.fromDb).sort((a,b)=>b.created-a.created);
   S.todos=(td&&td.data||[]).map(MAPS.todos.fromDb).sort((a,b)=>b.created-a.created);
   S.surveys=(sv&&sv.data||[]).map(MAPS.surveys.fromDb).sort((a,b)=>b.created-a.created);
-  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),boards:(st.data.boards&&typeof st.data.boards==='object'&&!Array.isArray(st.data.boards))?st.data.boards:{},places:Array.isArray(st.data.places)?st.data.places:[],billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{}),reminders:(st.data.reminders&&typeof st.data.reminders==='object'&&!Array.isArray(st.data.reminders))?st.data.reminders:(st.data.reminders?JSON.parse(st.data.reminders):{})};
+  S.contracts=(ct&&ct.data||[]).map(MAPS.contracts.fromDb).sort((a,b)=>b.created-a.created);
+  if(st.data)S.settings={bagsPerPallet:st.data.bags_per_pallet||70,companyName:st.data.company_name||'',pricePerTon:st.data.price_per_ton,pricePerBag:st.data.price_per_bag,eventTypes:Array.isArray(st.data.event_types)?st.data.event_types:(st.data.event_types?JSON.parse(st.data.event_types):[]),board:Array.isArray(st.data.board)?st.data.board:(st.data.board?JSON.parse(st.data.board):[]),boards:(st.data.boards&&typeof st.data.boards==='object'&&!Array.isArray(st.data.boards))?st.data.boards:{},places:Array.isArray(st.data.places)?st.data.places:[],billing:(st.data.billing&&typeof st.data.billing==='object'&&!Array.isArray(st.data.billing))?st.data.billing:(st.data.billing?JSON.parse(st.data.billing):{}),reminders:(st.data.reminders&&typeof st.data.reminders==='object'&&!Array.isArray(st.data.reminders))?st.data.reminders:(st.data.reminders?JSON.parse(st.data.reminders):{}),contractTemplates:Array.isArray(st.data.contract_templates)?st.data.contract_templates:(st.data.contract_templates?JSON.parse(st.data.contract_templates):[])};
   rebuildSnapshot();
 }
 function dbRows(){
@@ -165,6 +170,7 @@ function dbRows(){
     pellet:S.pellet.map(MAPS.pellet.toDb),
     sites:S.sites.map(MAPS.sites.toDb),
     surveys:(S.surveys||[]).map(MAPS.surveys.toDb),
+    contracts:(S.contracts||[]).map(MAPS.contracts.toDb),
     reports:S.reports.map(MAPS.reports.toDb),
     invoices:S.invoices.map(MAPS.invoices.toDb),
     documents:S.documents.map(MAPS.documents.toDb),
@@ -177,9 +183,9 @@ function dbRows(){
     todos:(S.todos||[]).map(MAPS.todos.toDb),
   };
 }
-const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',surveys:'surveys',reports:'reports',invoices:'invoices',documents:'documents',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices',todos:'todos'};
-const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','surveys','reports','invoices','documents','expenses','notes','listItems','siteLogs','callLog','maintPrices','todos'];
-const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','todos','expenses','documents','invoices','reports','surveys','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
+const TBL={employees:'employees',timeEntries:'time_entries',clients:'clients',noteGroups:'note_groups',lists:'lists',maintenances:'maintenances',appointments:'appointments',pellet:'pellet',sites:'sites',surveys:'surveys',contracts:'contracts',reports:'reports',invoices:'invoices',documents:'documents',notes:'notes',listItems:'list_items',siteLogs:'site_logs',callLog:'call_log',expenses:'expenses',maintPrices:'maint_prices',todos:'todos'};
+const UP_ORDER=['employees','timeEntries','clients','noteGroups','lists','maintenances','appointments','pellet','sites','surveys','contracts','reports','invoices','documents','expenses','notes','listItems','siteLogs','callLog','maintPrices','todos'];
+const DEL_ORDER=['maintPrices','callLog','siteLogs','listItems','notes','todos','expenses','documents','invoices','reports','contracts','surveys','sites','pellet','appointments','maintenances','lists','noteGroups','clients','timeEntries','employees'];
 function rebuildSnapshot(){const r=dbRows();for(const k of UP_ORDER)snapRows(k,r[k]);snapshot._settings=JSON.stringify(S.settings);}
 
 /* ---------- sync: diff e push ---------- */
@@ -205,7 +211,7 @@ async function syncNow(){
       if(dels.length){const{error}=await sb.from(TBL[k]).delete().in('id',dels);if(error)throw error;}
     }
     if(isOwner()&&snapshot._settings!==JSON.stringify(S.settings)){
-      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[],boards:S.settings.boards||{},places:S.settings.places||[],billing:S.settings.billing||{},reminders:S.settings.reminders||{}}).eq('tenant_id',TENANT_ID);
+      const{error}=await sb.from('settings').update({company_name:S.settings.companyName||'',bags_per_pallet:S.settings.bagsPerPallet||70,price_per_ton:num(S.settings.pricePerTon),price_per_bag:num(S.settings.pricePerBag),event_types:S.settings.eventTypes||[],board:S.settings.board||[],boards:S.settings.boards||{},places:S.settings.places||[],billing:S.settings.billing||{},reminders:S.settings.reminders||{},contract_templates:S.settings.contractTemplates||[]}).eq('tenant_id',TENANT_ID);
       if(error)throw error;
     }
     rebuildSnapshot();
@@ -508,6 +514,7 @@ const TYPE_META={
   todo:{label:'Da fare',color:'#7C5CBF',hex:'#7C5CBF',ic:'✅',view:'todo'},
   document:{label:'Documento',color:'var(--t2)',hex:'#8A8170',ic:'📄',view:'documenti'},
   presence:{label:'Presenza',color:'#2F80ED',hex:'#2F80ED',ic:'🕐',view:'emps'},
+  contract:{label:'Contratto',color:'#7C5CBF',hex:'#7C5CBF',ic:'📄',view:'contratti'},
 };
 /* ===== VOCI del calendario (configurabili per azienda) =====
    Ogni voce: {id,label,ic,hex,kind}. `kind` = tipo con cui l'evento viene salvato:
@@ -599,6 +606,7 @@ const VIEWS=[
   {id:'reports',ic:'📸',label:'Rapportini'},
   {id:'fatture',ic:'🧾',label:'Fatture'},
   {id:'documenti',ic:'📁',label:'Documenti'},
+  {id:'contratti',ic:'📄',label:'Contratti'},
   {id:'macchine',ic:'⚙️',label:'Macchine'},
   {id:'clients',ic:'👥',label:'Clienti'},
   {id:'zone',ic:'🗺️',label:'Zone'},
@@ -627,6 +635,7 @@ const MODULE_CATALOG={
     {id:'reports',ic:'📸',nome:'Rapportini',desc:'Rapporti di cantiere giornalieri con foto.'},
     {id:'fatture',ic:'🧾',nome:'Fatture',desc:'Fatture con QR-fattura svizzera, collegate a Conti.'},
     {id:'documenti',ic:'📁',nome:'Documenti',desc:'Archivio ordinato dei documenti aziendali, con ricerca.'},
+    {id:'contratti',ic:'📄',nome:'Contratti',desc:'Contratti per cliente: modelli tuoi precompilati coi dati del cliente, firma e stampa, import PDF.'},
     {id:'macchine',ic:'⚙️',nome:'Macchine',desc:'Parco macchine e schede.',custom:'ptek'},
     {id:'pellet',ic:'🪵',nome:'Consegne',desc:'Consegne, bolle e scorte.'},
     {id:'zone',ic:'🗺️',nome:'Zone & Mappa',desc:'Zone e clienti sulla mappa.'},
@@ -644,7 +653,7 @@ const MODULE_CATALOG={
 const catName=id=>{for(const k of['base','pronti','arrivo']){const m=MODULE_CATALOG[k].find(x=>x.id===id);if(m)return m.nome;}return id;};
 /* Prezzo per modulo/mese (allineato alla landing e alla Regia). base=0. Se cambi qui,
    aggiorna anche landing/landing.js (MODS px) e admin/index.html (MODULE_PX). */
-const MODULE_PRICE={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,todo:9,conti:12,lavagna:12,documenti:15,man:19,pellet:19,reports:19,fatture:19,surveys:19,sites:29,zone:29};
+const MODULE_PRICE={hub:0,notif:0,cal:0,notes:0,clients:0,emps:0,todo:9,conti:12,lavagna:12,documenti:15,contratti:15,man:19,pellet:19,reports:19,fatture:19,surveys:19,sites:29,zone:29};
 const modPrice=id=>MODULE_PRICE[id];
 /* moduli attivi oggi sul tenant (base sempre + extra accesi dal super-admin) */
 const activeModuleIds=()=>{const base=MODULE_CATALOG.base.map(m=>m.id);const extra=(ACTIVE_MODULES||[]).filter(id=>!base.includes(id)&&id!=='notif');return[...base,...extra];};
@@ -1210,7 +1219,7 @@ function render(){
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
-  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,surveys:window.renderSurveys,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,todo:window.renderTodo,settings:window.renderSettings};
+  const R={hub:window.renderHub,cal:window.renderCal,notes:window.renderNotes,notif:window.renderNotif,man:window.renderMan,pellet:window.renderPellet,sites:window.renderSites,surveys:window.renderSurveys,reports:window.renderReports,fatture:window.renderFatture,documenti:window.renderDocumenti,contratti:window.renderContratti,macchine:window.renderMacchine,clients:window.renderClients,zone:window.renderZone,conti:window.renderConti,emps:window.renderEmps,todo:window.renderTodo,settings:window.renderSettings};
   $('#main').innerHTML='';(R[view]||window.renderHub)();
   if(view==='notif'&&notifTab==='chat'){const sc=$('#chatscroll');if(sc)sc.scrollTop=sc.scrollHeight;}
   if(typeof remindStart==='function')remindStart();
@@ -1416,6 +1425,7 @@ function allEvents(){
     const meta=TT[t.type]||{i:'🕐',l:t.type};const nm=eName(t.empId)||'';
     ev.push({type:'presence',date:t.date,time:null,title:meta.i+' '+meta.l+(nm?' — '+nm:''),sub:nm,place:'',done:false,id:t.id});
   });
+  if(moduleActive('contratti')&&can('contratti'))(S.contracts||[]).forEach(c=>{if(c.endDate&&c.status!=='disdetto')ev.push({type:'contract',date:c.endDate,time:null,title:'📄 Scade: '+(c.title||'Contratto'),sub:cName(c.clientId)||c.clientRaw||'',place:'',done:false,id:c.id});});
   return ev.sort((a,b)=>(a.date+(a.time||'99'))<(b.date+(b.time||'99'))?-1:1);
 }
 
@@ -1432,6 +1442,7 @@ function openEv(type,id){
   else if(type==='site'){if(typeof openSite==='function')openSite(id);}
   else if(type==='survey'){if(typeof openSurvey==='function')openSurvey(id);}
   else if(type==='presence'){const te=byId(S.timeEntries,id);if(te&&typeof openTimesheet==='function')openTimesheet(te.empId,(te.date||todayIso()).slice(0,7));else nav('emps');}
+  else if(type==='contract'){if(typeof openContract==='function')openContract(id);}
   else if(type==='todo'){if(typeof openTodo==='function')openTodo(id);}
   else if(type==='document'){if(typeof openDocument==='function')openDocument(id);}
   else nav(TYPE_META[type].view);

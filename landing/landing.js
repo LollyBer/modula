@@ -29,6 +29,8 @@ const MODS = [
    f:['Righe, IVA e totali calcolati in automatico','QR-fattura svizzera: il cliente paga subito','Le fatture pagate entrano nei Conti','Salvi il PDF e lo mandi al cliente']},
   {id:'documenti', ic:'📁', nm:'Documenti', px:15, pitch:'L’archivio dei documenti aziendali, sempre a portata.',
    f:['Carichi contratti, assicurazioni, certificati, permessi…','Organizzati in categorie (cartelle)','Barra di ricerca: scrivi e trovi il documento','Promemoria per i documenti in scadenza']},
+  {id:'contratti', ic:'📄', nm:'Contratti', px:15, pitch:'I contratti per cliente: crei il modello una volta, lo compili in un attimo.',
+   f:['I tuoi modelli con i dati del cliente già inseriti','Firma col dito dal telefono, o stampa e fai firmare','Importi e archivi i contratti già esistenti (PDF)','Promemoria delle scadenze sul calendario']},
   {id:'man', ic:'🔧', nm:'Manutenzioni', px:19, pitch:'Interventi, assistenza e storico, senza più foglietti.',
    f:['Programmi l’intervento e lo assegni al tecnico','Stato: da fare · in corso · fatta','Bollettino e firma del cliente sul telefono','Storico completo per cliente e per impianto']},
   {id:'macchine', ic:'⚙️', nm:'Macchine / Impianti', px:19, custom:true, pitch:'Il parco macchine con schede e scadenze.',
