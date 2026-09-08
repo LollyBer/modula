@@ -149,8 +149,10 @@ function svPhotosSection(s){
     <div class="row" style="gap:8px">
       <button class="btn sm ghost" onclick="document.getElementById('sv-cam').click()">📷 Scatta</button>
       <button class="btn sm ghost" onclick="document.getElementById('sv-gal').click()">🖼 Galleria</button>
-    </div></div>`;
+    </div>
+    <div id="sv-photostatus" style="font-size:11.5px;margin-top:6px;min-height:14px;color:var(--t3)"></div></div>`;
 }
+function svPhotoStatus(msg,err){const el=$('#sv-photostatus');if(el){el.textContent=msg||'';el.style.color=err?'var(--coral)':'var(--teal)';}}
 function svTile(p){
   const u=svUrls[p.storagePath];
   return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img src="${u}" onclick="photoView('${u}')" title="Tocca per ingrandire" style="width:100%;height:100%;object-fit:cover;cursor:pointer">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="svDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
@@ -168,19 +170,19 @@ async function svAddPhoto(id,ev){
   if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
   const s=byId(S.surveys,id);if(!s)return;
   if(!s.photos)s.photos=[];
-  toast('📤 Carico foto…');
+  toast('📤 Carico foto…');svPhotoStatus('📤 Sto caricando…');
   try{
     const{blob,ext,type}=await preparePhoto(f);
     const path=TENANT_ID+'/survey/'+id+'/'+uid()+'.'+ext;
     const{error}=await sb.storage.from('allegati').upload(path,blob,{contentType:type||'application/octet-stream'});
-    if(error)throw error;
+    if(error)throw new Error('Storage: '+(error.message||error));
     s.photos.push({id:uid(),name:'foto-'+todayIso()+'.'+ext,storagePath:path});
     // persistenza IMMEDIATA del campo foto sulla riga (evita perdite dalla sync a lotti in multi-utente)
     const{error:e3}=await sb.from('surveys').update({photos:s.photos}).eq('id',id);
-    if(e3)throw e3;
+    if(e3)throw new Error('Salvataggio riga: '+(e3.message||e3));
     const{data}=await sb.storage.from('allegati').createSignedUrl(path,3600);if(data)svUrls[path]=data.signedUrl;
-    save();svRefreshPhotos(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');
-  }catch(e){toast('⚠ Foto: '+(e.message||e));}
+    save();svRefreshPhotos(id);toast('📷 Foto caricata ('+Math.round(blob.size/1024)+'KB)');svPhotoStatus('✓ Foto salvata ('+Math.round(blob.size/1024)+'KB) — totale '+s.photos.length);
+  }catch(e){const msg=(e&&e.message)||String(e);toast('⚠ Foto: '+msg);svPhotoStatus('⚠ NON salvata: '+msg,true);}
 }
 function svDelPhoto(pid){
   const s=S.surveys.find(x=>(x.photos||[]).some(p=>p.id===pid));if(!s)return;
