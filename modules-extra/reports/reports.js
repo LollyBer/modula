@@ -95,7 +95,7 @@ async function repLoadUrls(photos){
 }
 async function repAddPhoto(ev){
   const f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f||!repDraft)return;
-  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
+  if(!sb){toast('📷 Le foto si salvano con l\'account online');return;}
   toast('📤 Carico foto…');
   try{
     const{blob,ext,type}=await preparePhoto(f);

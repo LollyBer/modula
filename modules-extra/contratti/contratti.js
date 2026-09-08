@@ -159,7 +159,7 @@ function saveContract(){
   if(ex)Object.assign(ex,ctDraft); else S.contracts.unshift({...ctDraft});
   save();closeSheet();render();toast('📄 Contratto salvato');
 }
-function delContract(id){if(!confirm('Eliminare il contratto?'))return;const c=byId(S.contracts,id);if(c&&c.storagePath&&window.sb)sb.storage.from('allegati').remove([c.storagePath]).catch(()=>{});S.contracts=S.contracts.filter(x=>x.id!==id);save();closeSheet();render();toast('Eliminato');}
+function delContract(id){if(!confirm('Eliminare il contratto?'))return;const c=byId(S.contracts,id);if(c&&c.storagePath&&sb)sb.storage.from('allegati').remove([c.storagePath]).catch(()=>{});S.contracts=S.contracts.filter(x=>x.id!==id);save();closeSheet();render();toast('Eliminato');}
 
 /* ---------------- FIRMA ---------------- */
 function ctSigInit(){
@@ -184,12 +184,12 @@ function ctFileHTML(){
   return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg2)"><span style="font-size:20px">📄</span><div style="flex:1;min-width:0"><div style="font-size:12.5px;color:var(--t1)">${esc(ctDraft.fileName||'contratto.pdf')}</div></div>${u?`<a href="${u}" target="_blank" rel="noopener" class="btn sm ghost" style="text-decoration:none">Apri</a>`:'<span class="subtle">…</span>'}</div>`;
 }
 function ctLoadFileUrl(){
-  if(!ctDraft||!ctDraft.storagePath||ctFileUrl[ctDraft.storagePath]||!window.sb)return;
+  if(!ctDraft||!ctDraft.storagePath||ctFileUrl[ctDraft.storagePath]||!sb)return;
   sb.storage.from('allegati').createSignedUrl(ctDraft.storagePath,3600).then(({data})=>{if(data){ctFileUrl[ctDraft.storagePath]=data.signedUrl;const el=$('#ct-file');if(el)el.innerHTML=ctFileHTML();}}).catch(()=>{});
 }
 async function ctAddFile(ev){
   const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f||!ctDraft)return;
-  if(!window.sb){toast('📎 I file si salvano con l\'account online');return;}
+  if(!sb){toast('📎 I file si salvano con l\'account online');return;}
   if(f.size>25*1024*1024){toast('⚠ File oltre 25MB');return;}
   toast('📤 Carico…');
   try{

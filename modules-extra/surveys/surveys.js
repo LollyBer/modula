@@ -167,7 +167,7 @@ async function svLoadUrls(id){
 }
 async function svAddPhoto(id,ev){
   const f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f)return;
-  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
+  if(!sb){toast('📷 Le foto si salvano con l\'account online');return;}
   const s=byId(S.surveys,id);if(!s)return;
   if(!s.photos)s.photos=[];
   toast('📤 Carico foto…');svPhotoStatus('📤 Sto caricando…');
@@ -187,9 +187,9 @@ async function svAddPhoto(id,ev){
 function svDelPhoto(pid){
   const s=S.surveys.find(x=>(x.photos||[]).some(p=>p.id===pid));if(!s)return;
   const p=s.photos.find(x=>x.id===pid);
-  if(p&&p.storagePath&&window.sb)sb.storage.from('allegati').remove([p.storagePath]).catch(()=>{});
+  if(p&&p.storagePath&&sb)sb.storage.from('allegati').remove([p.storagePath]).catch(()=>{});
   s.photos=s.photos.filter(x=>x.id!==pid);
-  if(window.sb)sb.from('surveys').update({photos:s.photos}).eq('id',s.id).then(()=>{}).catch(()=>{});
+  if(sb)sb.from('surveys').update({photos:s.photos}).eq('id',s.id).then(()=>{}).catch(()=>{});
   save();svRefreshPhotos(s.id);toast('Foto rimossa');
 }
 

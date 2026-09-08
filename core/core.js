@@ -1541,7 +1541,7 @@ function renderClientAtt(clientId){
 }
 async function addClientPhoto(clientId,ev){
   const f=ev.target.files[0];if(!f)return; ev.target.value='';
-  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
+  if(!sb){toast('📷 Le foto si salvano con l\'account online');return;}
   toast('📤 Carico foto…');
   try{
     const{blob,ext,type}=await preparePhoto(f);

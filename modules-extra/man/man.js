@@ -210,7 +210,7 @@ async function manLoadUrls(id){
 }
 async function manAddPhoto(id,ev){
   const f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f)return;
-  if(!window.sb){toast('📷 Le foto si salvano con l\'account online');return;}
+  if(!sb){toast('📷 Le foto si salvano con l\'account online');return;}
   const m=byId(S.maintenances,id);if(!m)return;
   if(!m.photos)m.photos=[];
   toast('📤 Carico foto…');
@@ -230,9 +230,9 @@ async function manAddPhoto(id,ev){
 function manDelPhoto(pid){
   const m=S.maintenances.find(x=>(x.photos||[]).some(p=>p.id===pid));if(!m)return;
   const p=m.photos.find(x=>x.id===pid);
-  if(p&&p.storagePath&&window.sb)sb.storage.from('allegati').remove([p.storagePath]).catch(()=>{});
+  if(p&&p.storagePath&&sb)sb.storage.from('allegati').remove([p.storagePath]).catch(()=>{});
   m.photos=m.photos.filter(x=>x.id!==pid);
-  if(window.sb)sb.from('maintenances').update({photos:m.photos}).eq('id',m.id).then(()=>{}).catch(()=>{});
+  if(sb)sb.from('maintenances').update({photos:m.photos}).eq('id',m.id).then(()=>{}).catch(()=>{});
   save();manRefreshPhotos(m.id);toast('Foto rimossa');
 }
 /* ================= BOLLETTINO INTERVENTO ================= */
