@@ -1,5 +1,7 @@
 # Promemoria appuntamenti — messa in funzione (una volta sola)
 
+> Runbook aggiornato e completo (send-push + reminders, senza Docker): vedi `../NOTIFICHE.md`.
+
 La Edge Function `reminders` manda le notifiche push prima di ogni
 appuntamento/manutenzione. Al **titolare** arrivano quelle di tutta l'azienda,
 a ogni **dipendente** solo le sue. Gira da sola ogni ~5 minuti.
@@ -17,8 +19,8 @@ Supabase → **Edge Functions → Secrets** (o `supabase secrets set …`):
 
 | Nome | Valore |
 |------|--------|
-| `SUPABASE_URL` | `https://yohtthmcjqwlxoihvcrt.supabase.co` |
-| `SERVICE_ROLE_KEY` | (Project settings → API → service_role) — **segreto** |
+| `SUPABASE_URL` | **non impostare**: iniettata da Supabase (la CLI rifiuta i nomi `SUPABASE_*`) |
+| `SERVICE_ROLE_KEY` | **non più necessaria**: la funzione usa `SUPABASE_SERVICE_ROLE_KEY`, iniettata da Supabase |
 | `VAPID_PUBLIC` | la chiave pubblica VAPID (stessa di `core/config.js`) |
 | `VAPID_PRIVATE` | la chiave privata VAPID (da `vapid.local.json`, **mai nel repo**) |
 | `VAPID_SUBJECT` | `mailto:tuaemail@dominio` |
@@ -26,7 +28,7 @@ Supabase → **Edge Functions → Secrets** (o `supabase secrets set …`):
 
 ## 3) Deploy della funzione
 ```bash
-supabase functions deploy reminders --no-verify-jwt
+supabase functions deploy reminders --project-ref yohtthmcjqwlxoihvcrt --use-api --no-verify-jwt
 ```
 (`--no-verify-jwt` perché la protegge il nostro `CRON_SECRET`, non il JWT.)
 

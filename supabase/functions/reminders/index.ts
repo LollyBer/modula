@@ -8,15 +8,15 @@
 // Ogni evento viene notificato UNA volta sola (tabella reminders_sent).
 //
 // SEGRETI (Supabase → Edge Functions → Secrets):
-//   SUPABASE_URL, SERVICE_ROLE_KEY, VAPID_PUBLIC, VAPID_PRIVATE,
-//   VAPID_SUBJECT (es. mailto:tu@dominio), CRON_SECRET (stringa a caso).
-// Deploy:  supabase functions deploy reminders --no-verify-jwt
+//   VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT, CRON_SECRET. SUPABASE_URL e
+//   SUPABASE_SERVICE_ROLE_KEY le inietta Supabase (SERVICE_ROLE_KEY: compat).
+// Deploy:  supabase functions deploy reminders --project-ref <ref> --use-api --no-verify-jwt
 // Chiamata da pg_cron con header  x-cron-key: <CRON_SECRET>  (vedi schema.sql).
 // ============================================================================
 import webpush from "npm:web-push@3.6.7";
 
 const URL = Deno.env.get("SUPABASE_URL")!;
-const KEY = Deno.env.get("SERVICE_ROLE_KEY")!;
+const KEY = Deno.env.get("SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE")!;
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:admin@modula.app";

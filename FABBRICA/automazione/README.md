@@ -7,7 +7,7 @@ Usa la **service-role key** di Supabase (salta la RLS), tenuta SOLO in `secrets.
 ## Setup (una volta)
 Apri `secrets.local.json` e incolla la chiave segreta al posto di `INCOLLA_QUI_LA_SECRET_KEY`:
 ```json
-{ "SUPABASE_URL": "https://hdhaptzsgkpdhuelwede.supabase.co", "SERVICE_ROLE_KEY": "sb_secret_…" }
+{ "SUPABASE_URL": "https://yohtthmcjqwlxoihvcrt.supabase.co", "SERVICE_ROLE_KEY": "sb_secret_…" }
 ```
 
 ## Uso

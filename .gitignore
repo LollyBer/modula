@@ -13,3 +13,6 @@ secrets.local.json
 *.local.json
 .env
 .env.*
+
+# File temporanei della Supabase CLI (deploy funzioni)
+supabase/.temp/

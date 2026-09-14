@@ -263,7 +263,7 @@ async function pushNotify(empIds,title,body){
 const ownerIds=()=>S.employees.filter(e=>e.isOwner&&e.active!==false).map(e=>e.id);
 async function pushTest(){
   if(!S.session)return;
-  try{const{error}=await sb.functions.invoke('send-push',{body:{empIds:[S.session.empId],title:'🔔 Notifica di prova',body:'Funziona! Le notifiche di '+(BRAND.name||'questa app')+' sono attive su questo dispositivo.'}});if(error)throw error;toast('📩 Inviata — dovrebbe arrivarti tra pochi secondi');}catch(e){toast('⚠ '+(e.message||e));}
+  try{const{data,error}=await sb.functions.invoke('send-push',{body:{empIds:[S.session.empId],title:'🔔 Notifica di prova',body:'Funziona! Le notifiche di '+(BRAND.name||'questa app')+' sono attive su questo dispositivo.'}});if(error)throw error;if(data&&data.devices===0){toast('⚠ Nessun dispositivo iscritto: disattiva e riattiva le notifiche qui sopra, poi riprova');return;}toast('📩 Inviata — dovrebbe arrivarti tra pochi secondi');}catch(e){toast('⚠ '+(e.message||e));}
 }
 /* ---------- promemoria IN-APP (funziona ad app aperta, senza deploy) ----------
    Avvisa X minuti prima di un evento di oggi con orario (toast + notifica del browser
