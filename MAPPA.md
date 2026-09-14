@@ -88,6 +88,13 @@ liberi), foto sul posto, promemoria + calendario, storico cliente; da "vinto" �
 (tabella `surveys` + colonna `maintenances.photos`). · **"Trasforma in…" dal calendario**: da un appuntamento/nota,
 un tocco crea il lavoro collegato (manutenzione/sopralluogo/cantiere/consegna) ereditando cliente/luogo/data;
 meccanismo a **registro auto-estensibile** (`registerEventTarget`) → i moduli nuovi si aggiungono da soli.
+2026-09-14: **notifiche push FUNZIONANTI** — nuova Edge Function `send-push` (quella che `core.js` chiamava
+da sempre e che non esisteva: notifiche fra colleghi, solo dentro il proprio tenant) + `reminders` **deployata**
+con job pg_cron `modula-reminders` ogni 5 min (promemoria automatici) · secrets VAPID/CRON caricati · runbook
+`supabase/functions/NOTIFICHE.md` · `pubblica.sh` passa da solo all'account gh `LollyBer` per il push ·
+**nuova copia di sviluppo `~/Desktop/MODULA-dev`** (clone di `LollyBer/modula`; `Desktop/MODULA` è un prototipo
+React NON in produzione) · analisi read-only completa della produzione (repo/commit/hosting/Supabase/RLS).
+Nessun cambio schema.
 
 ## Stati → colori pill
 online/pronto/template = success (verde) · scheletro = warning (ambra) · da fare/da strutturare = neutro.
