@@ -18,6 +18,21 @@ REPO="LollyBer/modula"
 LIVE_BRANCH="main"
 cd "$(dirname "$0")"
 
+# 0a. L'account GitHub attivo in `gh` deve essere il PROPRIETARIO del repo: il push
+#     passa dal credential helper di gh, con un altro account risponde 403.
+#     Se serve cambia account per la durata dello script e poi ripristina quello di prima.
+owner=${REPO%%/*}
+gh_prev=$(gh api user --jq .login 2>/dev/null || true)
+if [ -n "$gh_prev" ] && [ "$gh_prev" != "$owner" ]; then
+  if gh auth switch --user "$owner" >/dev/null 2>&1; then
+    echo "  ↻ account gh: $gh_prev → $owner (per il push; ripristino a fine script)"
+    trap 'gh auth switch --user "$gh_prev" >/dev/null 2>&1 || true' EXIT
+  else
+    echo "✋ L'account gh attivo ($gh_prev) non può pushare su $REPO e «$owner» non è loggato: esegui  gh auth login"
+    exit 1
+  fi
+fi
+
 cur=$(git branch --show-current)
 echo "▶ Pubblico il branch «$cur» su «$LIVE_BRANCH» (sito live)"
 
