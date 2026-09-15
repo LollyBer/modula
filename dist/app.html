@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Modula — accedi alla tua app</title>
-<meta name="description" content="Accedi al tuo gestionale Modula. La tua azienda, i tuoi moduli, su telefono e computer.">
+<title>MODULA TEST — app di prova</title>
+<meta name="description" content="Ambiente di prova MODULA TEST con soli dati fittizi.">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="manifest" href="./manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,21 +19,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- ===== CORE (stile base, sempre presente) ===== -->
-<link rel="stylesheet" href="./core/core.css?v=2026091503">
-<link rel="stylesheet" href="./modules-base/lavagna/lavagna.css?v=20260908145255">
+<link rel="stylesheet" href="./core/core.css?v=20260914231928">
+<link rel="stylesheet" href="./modules-base/lavagna/lavagna.css?v=20260914231928">
 
 <!-- ===== MODULI EXTRA (stili) ===== -->
-<link rel="stylesheet" href="./macchine.css?v=20260908145255">
+<link rel="stylesheet" href="./macchine.css?v=20260914231928">
 <link rel="stylesheet" href="./vendor/leaflet.css">
-<link rel="stylesheet" href="./zone.css?v=20260908145255">
+<link rel="stylesheet" href="./zone.css?v=20260914231928">
 
 <script>try{var _r=document.documentElement;
   if(localStorage.getItem('caywork_theme')==='dark'){_r.dataset.theme='dark';var _m=document.querySelector('meta[name=theme-color]');if(_m)_m.content='#14160F';}
   var _bg=localStorage.getItem('modula_bg');if(_bg&&_bg!=='foglie')_r.dataset.bg=_bg;
-  var _ac=localStorage.getItem('modula_accent');if(_ac){_r.style.setProperty('--brand',_ac);}
+  var _ac=localStorage.getItem('modula_accent');if(_ac){var _c2={'#5BA02C':'#6FB23A','#3B6D91':'#4E86AE','#2E9E5E':'#3FBF77','#C77F12':'#E0982A','#D64528':'#E8613F','#7C5CBF':'#9576D6'};_r.style.setProperty('--cy',_ac);_r.style.setProperty('--cy2',_c2[_ac]||_ac);}
 }catch(e){}</script>
 </head>
 <body>
+<div class="environment-banner" role="status">AMBIENTE TEST · dati fittizi · MODULA-TEST</div>
 <div id="app">
   <div class="sidewrap">
     <div class="topbar">
@@ -61,34 +62,34 @@
      ============================================================ -->
 
 <!-- config backend condiviso (multi-tenant) — DEVE precedere core.js -->
-<script src="./core/config.js?v=20260908145255"></script>
+<script src="./core/config.js?v=20260914231928"></script>
 <!-- core -->
-<script src="./core/core.js?v=2026091503"></script>
+<script src="./core/core.js?v=20260914231928"></script>
 
 <!-- moduli BASE (l'app base: ogni azienda ce li ha) -->
-<script src="./modules-base/hub/hub.js?v=20260908145255"></script>
-<script src="./modules-base/lavagna/lavagna.js?v=20260908145255"></script>
-<script src="./modules-base/cal/cal.js?v=20260908145255"></script>
-<script src="./modules-base/notes/notes.js?v=20260908145255"></script>
-<script src="./modules-base/notif/notif.js?v=20260908145255"></script>
-<script src="./modules-base/clients/clients.js?v=20260908145255"></script>
-<script src="./modules-base/emps/emps.js?v=20260908145255"></script>
-<script src="./modules-base/settings/settings.js?v=20260908145255"></script>
+<script src="./modules-base/hub/hub.js?v=20260914231928"></script>
+<script src="./modules-base/lavagna/lavagna.js?v=20260914231928"></script>
+<script src="./modules-base/cal/cal.js?v=20260914231928"></script>
+<script src="./modules-base/notes/notes.js?v=20260914231928"></script>
+<script src="./modules-base/notif/notif.js?v=20260914231928"></script>
+<script src="./modules-base/clients/clients.js?v=20260914231928"></script>
+<script src="./modules-base/emps/emps.js?v=20260914231928"></script>
+<script src="./modules-base/settings/settings.js?v=20260914231928"></script>
 
 <!-- moduli EXTRA (su misura ptek: un'azienda li attiva se le servono) -->
-<script src="./modules-extra/man/man.js?v=20260908145255"></script>
-<script src="./modules-extra/pellet/pellet.js?v=20260908145255"></script>
-<script src="./modules-extra/sites/sites.js?v=20260908145255"></script>
-<script src="./modules-extra/surveys/surveys.js?v=20260908145255"></script>
-<script src="./modules-extra/reports/reports.js?v=20260908145255"></script>
-<script src="./modules-extra/fatture/fatture.js?v=20260908145255"></script>
-<script src="./modules-extra/documenti/documenti.js?v=20260908145255"></script>
-<script src="./modules-extra/contratti/contratti.js?v=20260908145255"></script>
-<script src="./modules-extra/conti/conti.js?v=20260908145255"></script>
-<script src="./modules-extra/todo/todo.js?v=20260908145255"></script>
-<script src="./macchine.js?v=20260908145255"></script>
+<script src="./modules-extra/man/man.js?v=20260914231928"></script>
+<script src="./modules-extra/pellet/pellet.js?v=20260914231928"></script>
+<script src="./modules-extra/sites/sites.js?v=20260914231928"></script>
+<script src="./modules-extra/surveys/surveys.js?v=20260914231928"></script>
+<script src="./modules-extra/reports/reports.js?v=20260914231928"></script>
+<script src="./modules-extra/fatture/fatture.js?v=20260914231928"></script>
+<script src="./modules-extra/documenti/documenti.js?v=20260914231928"></script>
+<script src="./modules-extra/contratti/contratti.js?v=20260914231928"></script>
+<script src="./modules-extra/conti/conti.js?v=20260914231928"></script>
+<script src="./modules-extra/todo/todo.js?v=20260914231928"></script>
+<script src="./macchine.js?v=20260914231928"></script>
 <script src="./vendor/leaflet.js"></script>
-<script src="./zone-data.js?v=20260908145255"></script>
-<script src="./zone.js?v=20260908145255"></script>
+<script src="./zone-data.js?v=20260914231928"></script>
+<script src="./zone.js?v=20260914231928"></script>
 </body>
 </html>

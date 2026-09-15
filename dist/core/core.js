@@ -27,23 +27,6 @@ let ACTIVE_MODULES=null;
    da clienti/personale, e nav/aggregazioni devono restare coerenti con activeModuleIds(). */
 const BASE_MODULE_IDS=['hub','notif','cal','notes','clients','emps'];
 const moduleActive=id=>!ACTIVE_MODULES||BASE_MODULE_IDS.includes(id)||ACTIVE_MODULES.includes(id);
-/* Ogni modulo riceve una tinta compagna del brand, non una palette estranea.
-   Il mix mantiene riconoscibile il colore scelto dall'azienda anche quando si
-   passa, ad esempio, da Conti a Cantieri. */
-const MODULE_TONES={
-  hub:'#5BA02C',cal:'#3B82C4',notes:'#7866B8',notif:'#C77F12',clients:'#2E9E5E',emps:'#0F766E',
-  todo:'#C77F12',man:'#D66B2D',pellet:'#91722D',surveys:'#B56077',sites:'#557FA8',reports:'#6B7280',
-  fatture:'#247B6B',documenti:'#8B6C45',contratti:'#6255A5',macchine:'#64748B',zone:'#267D93',
-  conti:'#17805F',lavagna:'#45654E',settings:'#71717A',
-};
-function applyModuleTone(id=view){
-  const tone=MODULE_TONES[id]||MODULE_TONES.hub;
-  const root=document.documentElement;
-  root.dataset.module=id||'hub';
-  root.style.setProperty('--module-tone',tone);
-  root.style.setProperty('--cy',`color-mix(in oklab, var(--brand) 68%, ${tone})`);
-  root.style.setProperty('--cy2',`color-mix(in oklab, var(--brand) 42%, ${tone})`);
-}
 /* Posti dipendente del piano (titolare incluso). null = illimitato (demo/retrocompat).
    Lo decide il super-admin per ogni azienda; l'app impedisce di superarlo. */
 let MAX_EMP=null;
@@ -280,7 +263,7 @@ async function pushNotify(empIds,title,body){
 const ownerIds=()=>S.employees.filter(e=>e.isOwner&&e.active!==false).map(e=>e.id);
 async function pushTest(){
   if(!S.session)return;
-  try{const{error}=await sb.functions.invoke('send-push',{body:{empIds:[S.session.empId],title:'🔔 Notifica di prova',body:'Funziona! Le notifiche di '+(BRAND.name||'questa app')+' sono attive su questo dispositivo.'}});if(error)throw error;toast('📩 Inviata — dovrebbe arrivarti tra pochi secondi');}catch(e){toast('⚠ '+(e.message||e));}
+  try{const{data,error}=await sb.functions.invoke('send-push',{body:{empIds:[S.session.empId],title:'🔔 Notifica di prova',body:'Funziona! Le notifiche di '+(BRAND.name||'questa app')+' sono attive su questo dispositivo.'}});if(error)throw error;if(data&&data.devices===0){toast('⚠ Nessun dispositivo iscritto: disattiva e riattiva le notifiche qui sopra, poi riprova');return;}toast('📩 Inviata — dovrebbe arrivarti tra pochi secondi');}catch(e){toast('⚠ '+(e.message||e));}
 }
 /* ---------- promemoria IN-APP (funziona ad app aperta, senza deploy) ----------
    Avvisa X minuti prima di un evento di oggi con orario (toast + notifica del browser
@@ -699,8 +682,8 @@ function getBg(){try{return localStorage.getItem('modula_bg')||'foglie';}catch(e
 function setBg(id){try{if(id&&id!=='foglie')localStorage.setItem('modula_bg',id);else localStorage.removeItem('modula_bg');}catch(e){}applyBg();}
 function applyBg(){const id=getBg();if(id&&id!=='foglie')document.documentElement.dataset.bg=id;else document.documentElement.removeAttribute('data-bg');}
 function getAccent(){try{return localStorage.getItem('modula_accent')||'';}catch(e){return '';}}
-function setAccent(hex){try{if(hex)localStorage.setItem('modula_accent',hex);else localStorage.removeItem('modula_accent');}catch(e){}applyAccent();applyModuleTone();if(typeof renderNav==='function')renderNav();}
-function applyAccent(){const a=getAccent();if(!a)return;document.documentElement.style.setProperty('--brand',a);}
+function setAccent(hex){try{if(hex)localStorage.setItem('modula_accent',hex);else localStorage.removeItem('modula_accent');}catch(e){}applyAccent();if(typeof renderNav==='function')renderNav();}
+function applyAccent(){const a=getAccent();if(!a)return;const p=ACCENTS.find(x=>x.cy.toLowerCase()===a.toLowerCase());document.documentElement.style.setProperty('--cy',a);document.documentElement.style.setProperty('--cy2',p?p.cy2:a);}
 function applyPersonalization(){applyBg();applyAccent();}
 function navKey(){return 'caywork_nav_'+(S.session?S.session.empId:'x');}
 function getBottomNav(){const k=navKey();if(bottomNavMem[k])return bottomNavMem[k];try{const v=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(v)&&v.length){bottomNavMem[k]=v;return v;}}catch(e){}return NAV_DEFAULT;}
@@ -1236,7 +1219,6 @@ function render(){
   const lk=document.querySelector('.lock');if(lk)lk.remove();
   const vperm=view==='zone'?'clients':view; /* la Mappa/Zone si sblocca col permesso Clienti (non esiste un permesso 'zone') */
   if((!can(vperm)||!moduleActive(view))&&view!=='hub'&&view!=='notif'&&view!=='settings')view='hub';
-  applyModuleTone(view);
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
@@ -1347,7 +1329,7 @@ async function loadTenant(tenantId){
     BRAND={name:t.name||'',tagline:t.tagline||'',logo:t.logo||''};
     ACTIVE_MODULES=Array.isArray(t.modules)?t.modules:(t.modules?JSON.parse(t.modules):[]);
     MAX_EMP=(typeof t.max_employees==='number'&&t.max_employees>0)?t.max_employees:null; /* 0 o assente = illimitato (es. piano Tutto compreso) */
-    if(t.accent){document.documentElement.style.setProperty('--brand',t.accent);document.documentElement.style.setProperty('--accent',t.accent);}
+    if(t.accent){document.documentElement.style.setProperty('--cy',t.accent);document.documentElement.style.setProperty('--accent',t.accent);}
     if(BRAND.name)document.title=BRAND.name;
     applyBrandIcon(BRAND.logo);
   }catch(e){console.error('loadTenant',e);}
@@ -1729,7 +1711,7 @@ function demoBoot(){
   const oid=uid(),e2=uid(),c1=uid(),c2=uid(),c3=uid();const t=todayIso();const now=Date.now();
   S=blank();
   BRAND={name:'Demo Impianti Verdi',tagline:'gestionale dimostrativo',logo:''};
-  ACTIVE_MODULES=['cal','notes','clients','emps']; /* demo del sito: solo i moduli dell'abbonamento base */
+  ACTIVE_MODULES=['cal','notes','clients','emps','man','pellet','sites','zone','conti']; /* demo: moduli mostrati (Macchine escluso, e' su misura di ptek) */
   {const bt=document.getElementById('brandtop');if(bt)bt.textContent=BRAND.name;}document.title=BRAND.name;
   S.employees=[
     {id:oid,name:'Tu (demo)',role:'Titolare',phone:'',perms:[],isOwner:true,active:true},
@@ -1755,9 +1737,7 @@ function demoBoot(){
     {id:uid(),date:t,category:'Ricambi',amount:240,note:'Caldaie',siteId:null,recur:0,created:now}
   ];
   rebuildSnapshot();
-  const demoView=new URLSearchParams(location.search).get('screen');
-  view=['hub','cal','notes','clients','emps'].includes(demoView)?demoView:'hub';
-  render();applyPersonalization();
+  view='hub';render();applyPersonalization();
   setTimeout(()=>{try{toast('🎬 Modalità demo — dati di esempio. Prova a cliccare tutto.');}catch(e){}},700);
 }
 
