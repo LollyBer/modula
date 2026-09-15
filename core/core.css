@@ -2,6 +2,7 @@
   color-scheme:light; /* i controlli nativi (popup del datalist, scrollbar, date picker) seguono il tema → nomi leggibili */
   --bg0:#F5F2EA; --bg1:#FFFFFF; --bg2:#F2EEE4; --bg3:#E9E3D5;
   --line:rgba(70,55,30,.12); --line2:rgba(70,55,30,.24);
+  --brand:#D64528; --brand2:#E8613F;
   --cy:#D64528; --cy2:#E8613F; --teal:#2E9E5E; --amber:#C77F12; --fire:#E2722E; --coral:#D64528; --blue:#A9742F;
   --t1:#2B2A24; --t2:#6E6557; --t3:#9C9384;
   --glow:0 0 16px rgba(214,69,40,.22);
@@ -202,6 +203,40 @@ html[data-bg="onde"] body::before{background:
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 2px 0}
 .legend span{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--t2)}
 .legend i{width:7px;height:7px;border-radius:50%}
+/* Il Calendario è il quadro operativo della giornata: ha una superficie più
+   ariosa e una tinta propria, sempre calcolata dal colore aziendale. */
+html[data-module="cal"] .main{background:radial-gradient(72% 220px at 18% 0,color-mix(in srgb,var(--cy) 19%,transparent),transparent 74%)}
+html[data-module="cal"] .pagetitle{margin-bottom:10px}
+.cal-brief{width:100%;display:flex;align-items:baseline;gap:8px;margin:0 0 12px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--cy) 34%,var(--line));border-radius:12px;background:linear-gradient(100deg,color-mix(in srgb,var(--cy) 14%,var(--bg1)),var(--bg1));color:var(--t1);text-align:left;cursor:pointer;font:inherit}
+.cal-brief span{font-family:var(--mono);font-size:10px;color:var(--cy);letter-spacing:.4px}
+.cal-brief strong{font-family:var(--disp);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-brief b{margin-left:auto;color:var(--cy);font-size:20px;line-height:.7;font-weight:500}
+.cal-brief:hover{border-color:var(--cy);box-shadow:0 7px 18px color-mix(in srgb,var(--cy) 14%,transparent)}
+.cal-brief:focus-visible{outline:3px solid color-mix(in srgb,var(--cy) 38%,transparent);outline-offset:2px}
+.calendar-card{border-color:color-mix(in srgb,var(--cy) 27%,var(--line2));box-shadow:0 12px 30px color-mix(in srgb,var(--cy) 8%,transparent)}
+.calendar-card .cal-head{padding-bottom:9px;border-bottom:1px solid color-mix(in srgb,var(--cy) 16%,var(--line))}
+.calendar-card .cal-grid{padding-top:6px;gap:6px}
+.calendar-card .cal-cell:not(.today):not(.sel){background:color-mix(in srgb,var(--cy) 3%,var(--bg1));border-color:color-mix(in srgb,var(--cy) 22%,var(--line2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cy) 6%,transparent)}
+.calendar-card .cal-cell:hover{border-color:color-mix(in srgb,var(--cy) 46%,transparent);background:color-mix(in srgb,var(--cy) 10%,var(--bg1))}
+.calendar-card .cal-cell.today{box-shadow:0 5px 15px color-mix(in srgb,var(--cy) 33%,transparent)}
+@media(max-width:520px){.cal-brief{align-items:center}.cal-brief strong{font-size:13px}}
+/* Giorno, settimana e agenda: stesso linguaggio colorato del mese, con più
+   contrasto quando serve scegliere cosa fare e non solo leggere una data. */
+.calendar-day-card,.calendar-week-card,.calendar-agenda-day{border-color:color-mix(in srgb,var(--cy) 28%,var(--line2))}
+.calendar-day-card{background:linear-gradient(155deg,color-mix(in srgb,var(--cy) 10%,var(--bg1)),var(--bg1) 44%)}
+.calendar-day-card .subtle{display:inline-flex;padding:4px 8px;border-radius:99px;background:color-mix(in srgb,var(--cy) 12%,var(--bg2));color:var(--cy);font-size:10px}
+.calendar-agenda-day{background:linear-gradient(100deg,color-mix(in srgb,var(--cy) 8%,var(--bg1)),var(--bg1) 42%)}
+.calendar-agenda-day.today{border-color:var(--cy);box-shadow:0 8px 22px color-mix(in srgb,var(--cy) 13%,transparent)}
+.calendar-agenda-day .sh{padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--cy) 16%,var(--line))}
+.calendar-agenda-day .sh .t{color:var(--cy)}
+.calendar-late{border-color:color-mix(in srgb,var(--coral) 46%,var(--line2));background:linear-gradient(100deg,color-mix(in srgb,var(--coral) 9%,var(--bg1)),var(--bg1) 48%)}
+.calendar-late .sh .t{color:var(--coral)}
+.calendar-week-card{background:linear-gradient(165deg,color-mix(in srgb,var(--cy) 8%,var(--bg1)),var(--bg1) 34%)}
+.calendar-week-card .wk-col:not(.today){border-color:color-mix(in srgb,var(--cy) 19%,var(--line2));background:color-mix(in srgb,var(--cy) 4%,var(--bg1))}
+.calendar-week-card .wk-h{background:color-mix(in srgb,var(--cy) 10%,var(--bg2));border-bottom:1px solid color-mix(in srgb,var(--cy) 18%,var(--line))}
+.calendar-week-card .wk-col.today{box-shadow:0 7px 18px color-mix(in srgb,var(--cy) 24%,transparent)}
+.calendar-week-card .wk-chip{background:color-mix(in srgb,var(--cy) 5%,var(--bg2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cy) 7%,transparent)}
+.calendar-week-card .wk-add{background:color-mix(in srgb,var(--cy) 7%,transparent)}
 /* ---- Impostazioni ---- */
 .set-h{font-family:var(--disp);font-weight:700;font-size:16px;margin-bottom:6px}
 .set-modlist{display:flex;flex-direction:column;gap:6px}

@@ -30,7 +30,7 @@
 <script>try{var _r=document.documentElement;
   if(localStorage.getItem('caywork_theme')==='dark'){_r.dataset.theme='dark';var _m=document.querySelector('meta[name=theme-color]');if(_m)_m.content='#14160F';}
   var _bg=localStorage.getItem('modula_bg');if(_bg&&_bg!=='foglie')_r.dataset.bg=_bg;
-  var _ac=localStorage.getItem('modula_accent');if(_ac){var _c2={'#5BA02C':'#6FB23A','#3B6D91':'#4E86AE','#2E9E5E':'#3FBF77','#C77F12':'#E0982A','#D64528':'#E8613F','#7C5CBF':'#9576D6'};_r.style.setProperty('--cy',_ac);_r.style.setProperty('--cy2',_c2[_ac]||_ac);}
+  var _ac=localStorage.getItem('modula_accent');if(_ac){var _c2={'#5BA02C':'#6FB23A','#3B6D91':'#4E86AE','#2E9E5E':'#3FBF77','#C77F12':'#E0982A','#D64528':'#E8613F','#7C5CBF':'#9576D6'};_r.style.setProperty('--brand',_ac);_r.style.setProperty('--brand2',_c2[_ac]||_ac);}
 }catch(e){}</script>
 </head>
 <body>
@@ -64,12 +64,12 @@
 <!-- config backend condiviso (multi-tenant) — DEVE precedere core.js -->
 <script src="./core/config.js?v=20260914231928"></script>
 <!-- core -->
-<script src="./core/core.js?v=20260914231928"></script>
+<script src="./core/core.js?v=2026091509"></script>
 
 <!-- moduli BASE (l'app base: ogni azienda ce li ha) -->
 <script src="./modules-base/hub/hub.js?v=20260914231928"></script>
 <script src="./modules-base/lavagna/lavagna.js?v=20260914231928"></script>
-<script src="./modules-base/cal/cal.js?v=20260914231928"></script>
+<script src="./modules-base/cal/cal.js?v=2026091508"></script>
 <script src="./modules-base/notes/notes.js?v=20260914231928"></script>
 <script src="./modules-base/notif/notif.js?v=20260914231928"></script>
 <script src="./modules-base/clients/clients.js?v=20260914231928"></script>

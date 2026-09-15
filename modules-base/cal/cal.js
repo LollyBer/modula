@@ -23,6 +23,7 @@ function renderCal(){
   const first=new Date(y,m,1);let startDow=(first.getDay()+6)%7; // lun=0
   const daysIn=new Date(y,m+1,0).getDate();
   const map=calDayMap();
+  const todayEvents=(map[todayIso()]||[]).filter(e=>!e.done);
   let cells='';
   const prevDays=new Date(y,m,0).getDate();
   for(let i=0;i<42;i++){
@@ -40,7 +41,8 @@ function renderCal(){
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>Calendario</div>
   ${calTabs}
-  <div class="card hl">
+  <button type="button" class="cal-brief" onclick="openDayPreview('${todayIso()}')" aria-label="Apri gli impegni di oggi"><span>Oggi</span><strong>${todayEvents.length?`${todayEvents.length} ${todayEvents.length===1?'impegno':'impegni'} in programma`:'Giornata libera'}</strong><b aria-hidden="true">›</b></button>
+  <div class="card hl calendar-card">
     <div class="cal-head">
       <div class="mon">${MESI[m]} ${y}</div>
       <button class="cal-nav" onclick="calShift(-1)">‹</button>
@@ -64,13 +66,13 @@ function renderAgenda(){
     const d=new Date(now);d.setDate(d.getDate()+i);const di=iso(d);
     const evs=ev.filter(e=>e.date===di);
     if(!evs.length&&i>0)continue;
-    daysHtml+=`<div class="card ${i===0?'hl':''}"><div class="sh"><span class="t" style="${i===0?'color:var(--cy)':''}">${fmtD(di)}</span><span class="a" onclick="openQuickAdd('${di}')">+ Aggiungi</span></div>
+    daysHtml+=`<div class="card calendar-agenda-day ${i===0?'hl today':''}"><div class="sh"><span class="t">${fmtD(di)}</span><span class="a" onclick="openQuickAdd('${di}')">+ Aggiungi</span></div>
     ${evs.length?evs.map(evRow).join(''):'<div class="empty" style="padding:18px">Libero.</div>'}</div>`;
   }
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>Calendario</div>
   ${calTabsBar()}
-  ${late.length?`<div class="card" style="border-color:rgba(214,69,40,.35)"><div class="sh"><span class="t" style="color:var(--coral)">⚠ In ritardo</span></div>${late.map(evRow).join('')}</div>`:''}
+  ${late.length?`<div class="card calendar-late"><div class="sh"><span class="t">⚠ In ritardo</span></div>${late.map(evRow).join('')}</div>`:''}
   ${daysHtml||'<div class="card"><div class="empty"><div class="big">🌊</div>Prossime 2 settimane libere.</div></div>'}`;
 }
 /* mappa giorno→eventi, espandendo gli eventi multi-giorno su ogni giornata coperta.
@@ -100,7 +102,7 @@ function renderDay(){
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>Calendario</div>
   ${calTabsBar()}
-  <div class="card hl">
+  <div class="card hl calendar-day-card">
     <div class="cal-head">
       <div class="mon">${fmtDayLong(d)}${d===todayIso()?' <span class="badge" style="border-color:var(--cy);color:var(--cy)">oggi</span>':''}</div>
       <button class="cal-nav" onclick="calStep('giorno',-1)">‹</button>
@@ -130,7 +132,7 @@ function renderWeek(){
   $('#main').innerHTML=`
   <div class="pagetitle"><span class="accent" style="background:var(--cy)"></span>Calendario</div>
   ${calTabsBar()}
-  <div class="card hl">
+  <div class="card hl calendar-week-card">
     <div class="cal-head">
       <div class="mon">${weekLabel(mon,calAddDays(mon,6))}</div>
       <button class="cal-nav" onclick="calStep('settimana',-1)">‹</button>
@@ -255,4 +257,3 @@ function saveCalType(id){
   save();openCalTypes();toast('✓ Voce salvata');
 }
 function delCalType(id){S.settings.eventTypes=(S.settings.eventTypes||[]).filter(x=>x.id!==id);save();openCalTypes();toast('Voce eliminata');}
-
