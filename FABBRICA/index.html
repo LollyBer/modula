@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fabbrica Modula</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./fabbrica.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a class="brand" href="./index.html"><span class="dot"></span>Modula <span class="sub">FABBRICA</span></a>
+    <a class="back" href="../landing/">← Sito</a>
+  </header>
+
+  <h1 class="h1"><span class="ac"></span>La Fabbrica</h1>
+  <p class="lead">Quattro reparti, quattro <b>agenti</b>. Ognuno ha un quaderno che cresce: <b>prima</b> di lavorare legge ciò che ha imparato, <b>dopo</b> ci scrive le nuove regole e il suo livello sale. Il livello qui sotto è un numero <b>vero</b>, letto dalle metriche di ciascun agente.</p>
+
+  <div class="loop" style="margin:0 0 20px">
+    <div class="lt">Il flusso di un ordine</div>
+    <div class="steps">
+      <span>📨 config</span> <span class="ar">→</span>
+      <span>🧭 <b>Dirigenza</b> smista</span> <span class="ar">→</span>
+      <span>🛠 <b>Assemblaggio</b> <span style="color:var(--t3)">(pronti)</span></span> <span class="ar">+</span>
+      <span>🧪 <b>Laboratorio</b> <span style="color:var(--t3)">(da creare)</span></span> <span class="ar">→</span>
+      <span>📱 app cliente</span> <span class="ar">→</span>
+      <span>🔄 <b>Conversione</b> dati <span style="color:var(--t3)">(opz.)</span></span>
+    </div>
+  </div>
+
+  <div class="reparti" id="reparti">
+    <div class="empty">Carico i reparti…</div>
+  </div>
+
+  <div class="loop">
+    <div class="lt">Il ciclo che fa salire ogni agente</div>
+    <div class="steps">
+      <span>📖 legge la sua <b>MEMORIA</b></span> <span class="ar">→</span>
+      <span>🛠 <b>lavora</b> sul compito</span> <span class="ar">→</span>
+      <span>✍️ scrive <b>cosa ha imparato</b></span> <span class="ar">→</span>
+      <span>📈 <b>livello +1</b></span>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:26px">Agenti reali</div>
+  <div class="card" style="font-size:13.5px;color:var(--t2);line-height:1.6">
+    Ogni reparto è anche un <b style="color:var(--t1)">subagent Claude Code</b> in <code>.claude/agents/</code>, invocabile per nome:
+    <code>fabbrica-assemblatore</code> · <code>fabbrica-direttore</code> · <code>fabbrica-inventore</code> · <code>fabbrica-convertitore</code>.
+    Il loro quaderno e le metriche vivono in <code>FABBRICA/agenti/&lt;id&gt;/</code>.
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const JOB={
+  direttore:"Entrata della Fabbrica: riceve la config, classifica i moduli e <b>smista</b> (pronti → Assemblaggio, da creare → Laboratorio). Tiene il registro e fa la QA.",
+  assemblatore:"Dalla config del cliente all'app pronta in clienti/&lt;slug&gt;/. Qui c'è la console che mostra il piano e genera i blocchi da incollare.",
+  inventore:"Riceve dal Direttore i moduli «da creare»: Loris contatta l'azienda e li costruisce, poi li promuove a pronto per l'assemblaggio.",
+  convertitore:"Il cliente arriva da un altro gestionale? Converte i suoi file (Excel/PDF/foto) nel formato Modula, pronti per 📥 Importa dati."
+};
+const ORDER=['direttore','assemblatore','inventore','convertitore'];
+const fmtCont=c=>Object.entries(c||{}).map(([k,v])=>`${v} ${k}`).join(' · ');
+
+async function load(){
+  try{
+    const data=await Promise.all(ORDER.map(id=>fetch(`./agenti/${id}/metriche.json`).then(r=>{if(!r.ok)throw 0;return r.json();})));
+    document.getElementById('reparti').innerHTML=data.map(a=>card(a)).join('');
+  }catch(e){
+    document.getElementById('reparti').innerHTML='<div class="empty">Per vedere i livelli apri la Fabbrica da un server locale (<code>python3 -m http.server</code>) o online, non con doppio-click.</div>';
+  }
+}
+function card(a){
+  const exp=Math.max(0,Math.min(100,a.esperienza||0));
+  return `<a class="reparto" href="./${a.pagina}" style="--rc:${a.colore}">
+    <div class="rep-head">
+      <div class="rep-ic">${a.icona}</div>
+      <div>
+        <div class="rep-name">${a.reparto}</div>
+        <div class="rep-agent">agente <b>${a.nome}</b></div>
+      </div>
+    </div>
+    <div class="rep-job">${JOB[a.id]||''}</div>
+    <div class="lvl-row"><span>LIVELLO <span class="lvl-num">${a.livello}</span></span><span>${exp}%</span></div>
+    <div class="bar"><div class="bar-fill" style="width:${exp}%"></div></div>
+    <div class="stats">${fmtCont(a.contatori)}</div>
+    <div class="lesson"><span class="ic">💡</span><span>${a.ultima_lezione||''}</span></div>
+    <div class="enter">Entra nel reparto →</div>
+  </a>`;
+}
+load();
+</script>
+</body>
+</html>

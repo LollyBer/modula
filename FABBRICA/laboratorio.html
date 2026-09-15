@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio — Fabbrica Modula</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./fabbrica.css">
+<style>:root{--ac:#FBBF24}
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:9px;margin:0;padding:0;list-style:none}
+.steps li{counter-increment:s;display:flex;gap:11px;font-size:13.5px;color:var(--t2);line-height:1.5}
+.steps li::before{content:counter(s);flex:0 0 22px;height:22px;border-radius:50%;background:rgba(251,191,36,.12);color:var(--amber);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600}
+.steps li b{color:var(--t1);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a class="brand" href="./index.html"><span class="dot"></span>Modula <span class="sub">FABBRICA</span></a>
+    <a class="back" href="./index.html">← Reparti</a>
+  </header>
+
+  <div class="agbar" id="agbar">
+    <div class="ic">🧪</div>
+    <div><div class="nm">l'Inventore</div><div class="meta">reparto Laboratorio</div></div>
+    <div class="lv" id="lv">livello <b>—</b></div>
+  </div>
+
+  <h1 class="h1"><span class="ac"></span>Laboratorio nuovi moduli</h1>
+  <p class="lead">Qui nascono i moduli «in arrivo». Quando l'Inventore ne finisce uno, lo promuove a <b>pronto</b> e l'Assemblatore può includerlo nelle app dei clienti.</p>
+
+  <div class="sec">Coda — da costruire</div>
+  <div class="list" id="coda"><div class="empty">Carico la coda…</div></div>
+
+  <div class="sec">Già pronti — assemblabili</div>
+  <div class="list" id="pronti"></div>
+
+  <div class="sec">Come nasce un modulo — ricetta base</div>
+  <div class="card"><ol class="steps">
+    <li>Crea il file <code>modules-extra/&lt;id&gt;/&lt;id&gt;.js</code> (o in root se ha asset propri come macchine/zone).</li>
+    <li>Scrivi <b><code>function render&lt;Nome&gt;()</code></b> che dipinge in <code>#main</code> con gli helper del core.</li>
+    <li>Registra l'<code>id</code> ovunque: <b>VIEWS</b>, dispatcher <b>R</b>, riga nel <b>MANIFEST</b>, <code>stato:'pronto'</code> nel catalogo.</li>
+    <li>Se ha dati propri: aggiungi la tabella in <code>S</code>, <code>MAPS</code>, <code>TBL</code>, <code>UP/DEL_ORDER</code>.</li>
+    <li>Solo struttura + segnaposto: <b>nessun dato reale</b>.</li>
+  </ol></div>
+
+  <p class="lead" style="margin-top:18px;font-size:13px;color:var(--t3)">Ogni modulo costruito lascia una ricetta in <code>FABBRICA/agenti/inventore/MEMORIA.md</code>: il prossimo si fa più in fretta.</p>
+
+</div>
+<div id="toast"></div>
+
+<script src="./MANIFEST.js"></script>
+<script src="../configuratore/catalogo.js"></script>
+<script>
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const M=FABBRICA_MANIFEST;
+const CAT=(typeof MODULI_BASE!=='undefined')?[...MODULI_BASE,...MODULI_EXTRA]:[];
+const meta=id=>{const c=CAT.find(m=>m.id===id);const man=M.base[id]||M.extra[id];return{ic:(c&&c.ic)||(man&&man.view.ic)||'•',nome:(c&&c.nome)||(man&&man.view.label)||id,desc:(c&&c.desc)||''};};
+
+fetch('./agenti/inventore/metriche.json').then(r=>r.json()).then(a=>{
+  document.getElementById('lv').innerHTML=`livello <b>${a.livello}</b> · ${a.esperienza}%`;
+}).catch(()=>{});
+
+const row=(id,pill,cls)=>{const m=meta(id);return `<div class="item">
+  <span class="ic">${m.ic}</span>
+  <div><div class="nm">${esc(m.nome)}</div><div class="ds">${esc(m.desc)}</div></div>
+  <div class="sp"></div><span class="pill ${cls}">${pill}</span></div>`;};
+
+document.getElementById('coda').innerHTML = M.inArrivo.length
+  ? M.inArrivo.map(id=>row(id,'da costruire','wait')).join('')
+  : '<div class="empty">Coda vuota — tutti i moduli previsti sono pronti! 🎉</div>';
+
+document.getElementById('pronti').innerHTML =
+  Object.keys(M.extra).map(id=>row(id,'pronto','ok')).join('');
+</script>
+</body>
+</html>

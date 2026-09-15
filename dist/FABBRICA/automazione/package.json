@@ -1,0 +1,9 @@
+{
+  "name": "modula-automazione",
+  "private": true,
+  "type": "module",
+  "description": "Strumenti locali Modula (super-admin): attivazione e invio notifiche push",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

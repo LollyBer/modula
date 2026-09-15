@@ -1,0 +1,13 @@
+{
+  "id": "inventore",
+  "nome": "l'Inventore",
+  "reparto": "Laboratorio",
+  "icona": "🧪",
+  "colore": "#FBBF24",
+  "pagina": "laboratorio.html",
+  "livello": 1,
+  "esperienza": 0,
+  "contatori": { "moduli costruiti": 0, "ricette riusabili": 0 },
+  "ultima_lezione": "— nessun modulo ancora costruito —",
+  "ultima_attivita": null
+}

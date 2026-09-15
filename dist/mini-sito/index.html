@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- SCHELETRO mini sito azienda. title/meta riempiti da sito.js (CONFIG). -->
+<title>Mini sito azienda</title>
+<meta name="description" content="Vetrina e prenotazioni online.">
+<meta name="theme-color" content="#080B10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./sito.css?v=1">
+</head>
+<body>
+
+<div class="orbs" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div></div>
+<div class="bg-grid" aria-hidden="true"></div>
+
+<!-- ===== NAV ===== -->
+<nav class="nav">
+  <div class="wrap row">
+    <div class="brand" id="brandName">Azienda</div>
+    <div class="links">
+      <a href="#servizi">Servizi</a>
+      <a href="#chi">Chi siamo</a>
+      <a href="#contatti">Contatti</a>
+    </div>
+    <div class="sp"></div>
+    <a class="btn" data-prenota href="#">Prenota →</a>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="wrap hero">
+  <div>
+    <div class="eyebrow" id="heroCat">Categoria</div>
+    <h1><span class="g" id="heroTitle">Azienda</span></h1>
+    <p id="heroClaim">Claim dell'azienda.</p>
+    <div class="cta">
+      <a class="btn lg" data-prenota href="#">Prenota ora →</a>
+      <a class="btn ghost lg" href="#contatti">Contattaci</a>
+    </div>
+  </div>
+  <!-- TODO: foto hero reale -->
+  <div class="ph-img" style="min-height:340px"><span class="pi">🖼️</span><span class="pt">FOTO HERO — da inserire</span></div>
+</header>
+
+<!-- ===== SERVIZI ===== -->
+<section class="section" id="servizi">
+  <div class="center"><div class="eyebrow">Servizi</div><div class="h2">Cosa offriamo</div><p class="sub center">I nostri servizi e i prezzi.</p></div>
+  <div class="serv-grid" id="servGrid"><!-- da CONFIG.servizi --></div>
+</section>
+
+<!-- ===== CHI SIAMO ===== -->
+<section class="section" id="chi">
+  <div class="about">
+    <div>
+      <div class="eyebrow">Chi siamo</div>
+      <div class="h2">La nostra storia</div>
+      <div id="aboutCopy"><!-- copy placeholder da CONFIG --></div>
+    </div>
+    <!-- TODO: foto locale/team -->
+    <div class="ph-img"><span class="pi">📷</span><span class="pt">FOTO LOCALE / TEAM — da inserire</span></div>
+  </div>
+</section>
+
+<!-- ===== GALLERIA ===== -->
+<section class="section" id="galleria">
+  <div class="center"><div class="eyebrow">Galleria</div><div class="h2">Il nostro lavoro</div></div>
+  <!-- TODO: 6 foto reali -->
+  <div class="gallery">
+    <div class="ph-img"><span class="pi">📸</span><span class="pt">FOTO 1</span></div>
+    <div class="ph-img"><span class="pi">📸</span><span class="pt">FOTO 2</span></div>
+    <div class="ph-img"><span class="pi">📸</span><span class="pt">FOTO 3</span></div>
+    <div class="ph-img"><span class="pi">📸</span><span class="pt">FOTO 4</span></div>
+    <div class="ph-img"><span class="pi">📸</span><span class="pt">FOTO 5</span></div>
+    <div class="ph-img"><span class="pi">📸</span><span class="pt">FOTO 6</span></div>
+  </div>
+</section>
+
+<!-- ===== ORARI + MAPPA ===== -->
+<section class="section" id="orari">
+  <div class="center"><div class="eyebrow">Dove e quando</div><div class="h2">Orari e posizione</div></div>
+  <div class="hours-wrap">
+    <div class="hours" id="hoursList"><!-- da CONFIG.orari --></div>
+    <!-- TODO: mappa (embed) o immagine -->
+    <div class="ph-img" style="min-height:300px"><span class="pi">🗺️</span><span class="pt">MAPPA / INDIRIZZO — da inserire</span></div>
+  </div>
+</section>
+
+<!-- ===== CONTATTI + CTA FINALE ===== -->
+<section class="section" id="contatti">
+  <div class="center"><div class="eyebrow">Contatti</div><div class="h2">Scrivici o passa a trovarci</div></div>
+  <div class="contacts" id="contactGrid"><!-- da CONFIG --></div>
+  <div class="final">
+    <div class="h2">Pronto a prenotare?</div>
+    <p>Scegli il servizio e l'orario che preferisci, in pochi tocchi.</p>
+    <a class="btn lg" data-prenota href="#">Prenota ora →</a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer"><div class="wrap" id="footerTxt">Powered by <b>Modula</b></div></footer>
+
+<script src="./sito.js?v=1"></script>
+</body>
+</html>

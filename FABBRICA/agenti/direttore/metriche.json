@@ -1,0 +1,13 @@
+{
+  "id": "direttore",
+  "nome": "il Direttore",
+  "reparto": "Direzione",
+  "icona": "🧭",
+  "colore": "#60A5FA",
+  "pagina": "direzione.html",
+  "livello": 3,
+  "esperienza": 69,
+  "contatori": { "clienti in gestione": 1, "controlli QA": 8 },
+  "ultima_lezione": "Moduli promessi ma non assemblati (es. fatture) vanno tenuti fuori da app.html/VIEWS/dispatcher: verifica con grep dello slug = 0 hit operativi.",
+  "ultima_attivita": "2026-06-22"
+}

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direzione — Fabbrica Modula</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./fabbrica.css">
+<style>:root{--ac:#60A5FA}
+.qa{display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:var(--t2)}
+.qa .i{display:flex;gap:9px}.qa .i b{color:var(--t1);font-weight:500}
+.todos{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.todochip{font-family:var(--mono);font-size:10.5px;color:var(--amber);border:1px solid rgba(251,191,36,.4);border-radius:99px;padding:2px 9px}
+textarea{width:100%;min-height:96px;background:var(--bg1);border:1.5px solid var(--line2);border-radius:12px;color:var(--t1);font-family:var(--mono);font-size:12.5px;line-height:1.6;padding:13px 15px;outline:none;resize:vertical;transition:border-color .2s}
+textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(96,165,250,.12)}
+.err{color:var(--coral);font-size:13px;font-family:var(--mono);margin-top:8px;min-height:16px}
+#smista{display:none;margin-top:18px}#smista.show{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.lane{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.lane{grid-template-columns:1fr}}
+.route{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:rgba(15,19,25,.5)}
+.route h4{margin:0 0 4px;font-family:var(--disp);font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:7px}
+.route .sub{font-size:11.5px;color:var(--t2);margin-bottom:7px}
+.route.asm{border-left:3px solid #6EE7B7}.route.asm h4{color:#6EE7B7}
+.route.lab{border-left:3px solid #FBBF24}.route.lab h4{color:#FBBF24}
+.route.conv{border-left:3px solid #A78BFA}.route.conv h4{color:#A78BFA}
+.route .mods{display:flex;flex-wrap:wrap;gap:5px}
+.route .m{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:7px;background:var(--bg2);color:var(--t2)}
+.route .none{font-size:12px;color:var(--t3)}
+.block{background:var(--bg1);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.block .bh{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.block .bh .t{font-family:var(--mono);font-size:11px;color:var(--t2)}.block .bh .t b{font-weight:500}
+.bh.asm .t b{color:#6EE7B7}.bh.lab .t b{color:#FBBF24}
+.copy{font-family:var(--disp);font-weight:600;font-size:11.5px;padding:5px 12px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--t1);cursor:pointer;transition:.15s}
+.copy:hover{border-color:var(--blue);color:var(--blue)}.copy.done{background:var(--blue);color:#04121f;border-color:var(--blue)}
+pre{margin:0;padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--t1);overflow-x:auto;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a class="brand" href="./index.html"><span class="dot"></span>Modula <span class="sub">FABBRICA</span></a>
+    <a class="back" href="./index.html">← Reparti</a>
+  </header>
+
+  <div class="agbar" id="agbar">
+    <div class="ic">🧭</div>
+    <div><div class="nm">il Direttore</div><div class="meta">reparto Direzione · entrata della Fabbrica</div></div>
+    <div class="lv" id="lv">livello <b>—</b></div>
+  </div>
+
+  <h1 class="h1"><span class="ac"></span>Direzione</h1>
+  <p class="lead">Ogni ordine arriva <b>qui per primo</b>. La Direzione classifica i moduli e smista: i <b style="color:#6EE7B7">pronti</b> all'Assemblaggio, quelli <b style="color:#FBBF24">da creare</b> al Laboratorio. Poi tiene il registro e fa la QA.</p>
+
+  <div class="sec">① Accettazione &amp; smistamento</div>
+  <div class="card">
+    <div class="lbl">📨 Config in arrivo dal configuratore</div>
+    <textarea id="ord" spellcheck="false" placeholder='Incolla qui la config (anche solo la riga JSON): {"azienda":"...","moduli_extra":[...],"accento":"#..."}'></textarea>
+    <div class="row">
+      <button class="btn pri" onclick="smista()">🧭 Smista l'ordine</button>
+      <button class="btn ghost" onclick="esempioOrd()">Esempio</button>
+      <button class="btn ghost" onclick="document.getElementById('ord').value='';hideSmista()">Pulisci</button>
+    </div>
+    <div class="err" id="oerr"></div>
+  </div>
+  <div id="smista"></div>
+
+  <div class="sec">② Clienti in gestione</div>
+  <div class="list" id="lista"><div class="empty">Carico il registro…</div></div>
+
+  <div class="sec">③ Checklist QA — prima di pubblicare</div>
+  <div class="card"><div class="qa">
+    <div class="i"><span>☐</span><span><b>app.html</b> carica solo gli script/css dei moduli inclusi (niente 404)</span></div>
+    <div class="i"><span>☐</span><span><b>VIEWS</b> e dispatcher <code>R</code> non citano <code>render*</code> di moduli rimossi</span></div>
+    <div class="i"><span>☐</span><span><b>BRAND.name</b> compilato · accento <code>--cy</code> iniettato</span></div>
+    <div class="i"><span>☐</span><span>segnaposto Supabase/VAPID compilati <b>oppure</b> dichiarati TODO in CONSEGNA.md</span></div>
+    <div class="i"><span>☐</span><span><b>nessun dato reale</b> nel repo pubblico (template = zero PII)</span></div>
+    <div class="i"><span>☐</span><span>moduli <b>promessi</b> tenuti fuori da app.html/VIEWS/dispatcher</span></div>
+  </div></div>
+
+  <p class="lead" style="margin-top:18px;font-size:13px;color:var(--t3)">La checklist e lo smistamento vivono nel quaderno del Direttore (<code>FABBRICA/agenti/direttore/</code>) e crescono col lavoro.</p>
+
+</div>
+<div id="toast"></div>
+
+<script src="./MANIFEST.js"></script>
+<script src="../configuratore/catalogo.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const M=FABBRICA_MANIFEST;
+const CAT=(typeof MODULI_BASE!=='undefined')?[...MODULI_BASE,...MODULI_EXTRA]:[];
+const SET=(typeof SETTORI!=='undefined')?SETTORI:[];
+const nm=id=>{const c=CAT.find(m=>m.id===id);if(c)return c.nome;const man=M.base[id]||M.extra[id];return man?man.view.label:id;};
+const setNm=id=>{const s=SET.find(x=>x.id===id);return s?s.nome:(id||'—');};
+const slugify=n=>(String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'la-tua-app');
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1900);}
+function hideSmista(){$('#smista').classList.remove('show');$('#smista').innerHTML='';}
+
+/* agbar livello */
+fetch('./agenti/direttore/metriche.json').then(r=>r.json()).then(a=>{ $('#lv').innerHTML=`livello <b>${a.livello}</b> · ${a.esperienza}%`; }).catch(()=>{});
+
+function esempioOrd(){
+  $('#ord').value='{"azienda":"Bar Centrale","settore":"ristorazione","accento":"#F472B6","moduli_base":["hub","cal","notes","clients","emps"],"moduli_extra":["conti","prenota","fidelity"],"generato":"configuratore"}';
+  smista();
+}
+
+function parseConfig(txt){
+  const m=txt.match(/\{[\s\S]*\}/); if(!m) throw new Error('Nessun blocco JSON trovato nel testo.');
+  let c; try{c=JSON.parse(m[0]);}catch(e){throw new Error('JSON non valido: '+e.message);}
+  c.moduli_extra=Array.isArray(c.moduli_extra)?c.moduli_extra:[];
+  c.azienda=c.azienda||'';
+  c.accento=/^#?[0-9a-fA-F]{3,8}$/.test(String(c.accento||''))?(String(c.accento)[0]==='#'?c.accento:'#'+c.accento):'#5BA02C';
+  return c;
+}
+
+function smista(){
+  $('#oerr').textContent='';
+  let c; try{c=parseConfig($('#ord').value);}catch(e){$('#oerr').textContent='⚠ '+e.message;hideSmista();return;}
+  const slug=slugify(c.azienda);
+  const pronti=c.moduli_extra.filter(id=>M.extra[id]);          // → Assemblaggio
+  const daCreare=c.moduli_extra.filter(id=>M.inArrivo.includes(id)); // → Laboratorio
+  const ignoti=c.moduli_extra.filter(id=>!M.extra[id]&&!M.inArrivo.includes(id));
+  const baseIds=Object.keys(M.base);
+  const split=daCreare.length>0;
+
+  const jsonLine=JSON.stringify({azienda:c.azienda,settore:c.settore,accento:c.accento,moduli_base:baseIds,moduli_extra:c.moduli_extra,generato:'configuratore'});
+
+  const promptAsm=
+`[ORDINE → ASSEMBLAGGIO]  (agente: l'Assemblatore / subagent fabbrica-assemblatore)
+Assembla l'app del cliente «${c.azienda||'(azienda)'}».
+slug: ${slug} · settore: ${setNm(c.settore)} · accento: ${c.accento}
+Moduli da montare ORA (pronti): base + ${pronti.length?pronti.join(', '):'(solo base)'}.${split?`
+In attesa dal Laboratorio (aggiungerli all'app quando pronti): ${daCreare.join(', ')}.`:''}
+Segui FABBRICA/RICETTA.md. Config:
+${jsonLine}`;
+
+  const promptLab=split?
+`[ORDINE → LABORATORIO]  (Loris + agente: l'Inventore / subagent fabbrica-inventore)
+Il cliente «${c.azienda||'(azienda)'}» (slug ${slug}) ha richiesto moduli NON ancora pronti: ${daCreare.join(', ')}.
+Azione: Loris contatta l'azienda, raccoglie i requisiti del modulo, poi lo costruisce (anatomia in agenti/inventore/AGENTE.md).
+Quando un modulo è pronto → promuovilo a stato 'pronto' (MANIFEST + catalogo) e avvisa la Direzione per aggiungerlo all'app di «${c.azienda||'(azienda)'}».`:'';
+
+  const block=(cls,title,id,content)=>`<div class="block"><div class="bh ${cls}"><div class="t">${title}</div><button class="copy" onclick="cp(this,'${id}')">⧉ Copia prompt</button></div><pre id="${id}">${esc(content)}</pre></div>`;
+
+  $('#smista').innerHTML=`
+  <div class="card" style="margin-bottom:14px">
+    <div style="font-family:var(--disp);font-weight:600;font-size:15px;margin-bottom:3px">${esc(c.azienda||'(azienda)')} <span style="color:var(--t3);font-weight:400">· ${esc(setNm(c.settore))} · </span><span style="color:${esc(c.accento)}">${esc(c.accento)}</span></div>
+    <div style="font-size:12.5px;color:var(--t2)">${split?'🔀 Ordine <b style="color:var(--t1)">SPLIT</b>: una parte ad Assemblaggio, una al Laboratorio.':'➡️ Ordine <b style="color:var(--t1)">diretto</b>: tutti i moduli sono pronti → solo Assemblaggio.'}</div>
+  </div>
+
+  <div class="lane">
+    <div class="route asm"><h4>🛠 → Assemblaggio</h4><div class="sub">monta subito (moduli pronti)</div>
+      <div class="mods">${[...baseIds,...pronti].map(id=>`<span class="m">${esc(nm(id))}</span>`).join('')}</div></div>
+    <div class="route lab"><h4>🧪 → Laboratorio</h4><div class="sub">${split?'da creare (Loris + Inventore)':'niente da creare'}</div>
+      ${split?`<div class="mods">${daCreare.map(id=>`<span class="m">${esc(nm(id))}</span>`).join('')}</div>`:'<div class="none">tutti i moduli richiesti esistono già ✓</div>'}</div>
+  </div>
+  ${ignoti.length?`<div class="err" style="margin-top:8px">⚠ moduli non riconosciuti (ignorati): ${ignoti.join(', ')}</div>`:''}
+
+  <div class="sec" style="margin:20px 2px 10px">Prompt pronti da inviare</div>
+  ${block('asm','→ <b>ASSEMBLAGGIO</b>','pA',promptAsm)}
+  ${split?block('lab','→ <b>LABORATORIO</b>','pL',promptLab):'<div style="font-size:12.5px;color:var(--t3);margin-bottom:10px">Nessun prompt per il Laboratorio: non ci sono moduli da creare.</div>'}
+
+  <div class="route conv" style="margin-top:4px"><h4>🔄 Conversione (opzionale, dopo)</h4>
+    <div class="sub">Se «${esc(c.azienda||'(azienda)')}» vuole portare i dati dal vecchio gestionale: raccoglie i suoi file → il Convertitore li trasforma in <code>modula-import.json</code> → si caricano nell'app (📥 Importa dati).</div>
+  </div>
+
+  <div style="font-size:12px;color:var(--t3);margin-top:12px">Dopo l'assemblaggio, registra il cliente qui sotto e fai la QA.</div>
+  `;
+  $('#smista').classList.add('show');
+}
+
+function cp(btn,id){
+  const txt=document.getElementById(id).textContent;
+  (navigator.clipboard?.writeText(txt)||Promise.reject()).then(()=>{
+    btn.classList.add('done');btn.textContent='✓ Copiato';toast('Prompt copiato');
+    setTimeout(()=>{btn.classList.remove('done');btn.textContent='⧉ Copia prompt';},1600);
+  }).catch(()=>toast('Copia non riuscita'));
+}
+
+/* registro clienti */
+fetch('../clienti/registro.json').then(r=>r.json()).then(reg=>{
+  const cl=(reg&&reg.clienti)||[];
+  const box=$('#lista');
+  if(!cl.length){ box.innerHTML='<div class="empty">Nessun cliente ancora. La prima voce arriva quando l\'Assemblatore consegna un\'app e il Direttore la registra.</div>'; return; }
+  box.innerHTML=cl.map(c=>{
+    const todo=(c.todo_aperti||c.todo||[]);
+    const nMod=((c.moduli_base||[]).length)+((c.moduli_extra||[]).length);
+    const prom=(c.moduli_promessi||[]);
+    const done=!todo.length;
+    const short=t=>esc(String(t).split(/[:—]/)[0].trim());
+    return `<div class="item">
+      <span class="ic">${done?'🟢':'🟠'}</span>
+      <div>
+        <div class="nm">${esc(c.azienda||c.slug)}</div>
+        <div class="ds"><code>clienti/${esc(c.slug)}/</code> · ${nMod} moduli${prom.length?` · ${prom.length} promesso/i`:''}</div>
+        ${todo.length?`<div class="todos">${todo.map(t=>`<span class="todochip">${short(t)}</span>`).join('')}</div>`:''}
+      </div>
+      <div class="sp"></div>
+      <span class="pill ${done?'ok':'todo'}">${done?'pronto':todo.length+' TODO'}</span>
+    </div>`;
+  }).join('');
+}).catch(()=>{ $('#lista').innerHTML='<div class="empty">Apri la Fabbrica da un server locale o online per leggere il registro.</div>'; });
+</script>
+</body>
+</html>
