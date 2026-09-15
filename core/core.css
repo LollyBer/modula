@@ -2,9 +2,9 @@
   color-scheme:light; /* i controlli nativi (popup del datalist, scrollbar, date picker) seguono il tema → nomi leggibili */
   --bg0:#F5F2EA; --bg1:#FFFFFF; --bg2:#F2EEE4; --bg3:#E9E3D5;
   --line:rgba(70,55,30,.12); --line2:rgba(70,55,30,.24);
-  --cy:#5BA02C; --cy2:#6FB23A; --teal:#2E9E5E; --amber:#C77F12; --fire:#E2722E; --coral:#D64528; --blue:#A9742F;
+  --cy:#D64528; --cy2:#E8613F; --teal:#2E9E5E; --amber:#C77F12; --fire:#E2722E; --coral:#D64528; --blue:#A9742F;
   --t1:#2B2A24; --t2:#6E6557; --t3:#9C9384;
-  --glow:0 0 16px rgba(111,178,58,.22);
+  --glow:0 0 16px rgba(214,69,40,.22);
   --r:14px;
   --disp:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
 }
