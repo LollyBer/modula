@@ -20,6 +20,9 @@ html[data-theme="dark"] .nav-bottom{background:rgba(20,22,15,.95)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{background:var(--bg0);color:var(--t1);font-family:var(--body);font-size:14px;overflow:hidden}
+.environment-banner{display:none}
+html[data-modula-environment="TEST"] .environment-banner{display:block;position:fixed;z-index:1000;top:0;left:0;right:0;padding:6px 12px;background:#963c00;color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-align:center;pointer-events:none}
+html[data-modula-environment="TEST"] #app{padding-top:28px}
 body::before{content:'';position:fixed;inset:0;background:
   radial-gradient(900px 520px at 82% -8%,rgba(111,178,58,.12),transparent 60%),
   radial-gradient(820px 480px at -8% 108%,rgba(226,114,46,.07),transparent 60%),

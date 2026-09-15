@@ -16,3 +16,8 @@ secrets.local.json
 
 # File temporanei della Supabase CLI (deploy funzioni)
 supabase/.temp/
+
+# Backup, estrazioni e configurazioni specifiche dell'ambiente TEST
+05_BACKUP/private/
+*.dump
+*.sql.enc
