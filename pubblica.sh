@@ -41,7 +41,7 @@ echo "▶ Pubblico il branch «$cur» su «$LIVE_BRANCH» (sito live)"
 if [ -f cache-bust.py ]; then
   python3 cache-bust.py >/dev/null 2>&1 || true
   if [ -n "$(git status --porcelain app.html)" ]; then
-    git add app.html && git commit -q -m "chore: cache-bust asset app (pubblica)"
+    git add app.html core/core.js version.json && git commit -q -m "chore: aggiorna versione app (pubblica)"
     echo "  ↻ cache-bust applicato ad app.html"
   fi
 fi

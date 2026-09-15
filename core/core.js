@@ -38,7 +38,7 @@ const seatFull=()=>MAX_EMP!=null && seatCount()>=MAX_EMP;
 /* viste visibili = permesso utente (can) ∩ modulo attivo per il tenant */
 function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.id==='settings'||((v.id==='zone'?can('clients'):can(v.id))&&moduleActive(v.id)));return typeof applyModOrder==='function'?applyModOrder(base):base;}
 
-const APP_VERSION='2026.07.06-140421';
+const APP_VERSION='2026.09.15-161200';
 
 const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],surveys:[],contracts:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{},contractTemplates:[]},speaker:null,session:null});
 let S=blank();
@@ -1708,11 +1708,20 @@ async function checkUpdate(){
       if(sessionStorage.getItem('cw_upd')===j.version)return; /* gia' tentato: evita loop */
       sessionStorage.setItem('cw_upd',j.version);
       try{toast('Aggiornamento in corso…');}catch(e){}
-      setTimeout(()=>location.reload(),1300);
+      /* Il parametro di versione aggira anche la cache di app.html: chi apre
+         l'icona PWA riceve il nuovo codice senza cancellare il collegamento. */
+      setTimeout(()=>{
+        const u=new URL(location.href);
+        u.searchParams.set('v',j.version);
+        location.replace(u.href);
+      },1300);
     }
   }catch(e){/* offline o errore: ignora, l'app continua a funzionare */}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate();});
+/* Controllo anche all'avvio: un collegamento PWA non deve restare indietro. */
+setTimeout(checkUpdate,1800);
+setInterval(checkUpdate,5*60*1000);
 
 /* ================= DEMO / VETRINA ================= */
 function demoBoot(){
