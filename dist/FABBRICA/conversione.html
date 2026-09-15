@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversione — Fabbrica Modula</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./fabbrica.css">
+<style>:root{--ac:#A78BFA}
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px}
+.fstep{flex:1;min-width:150px;background:rgba(15,19,25,.5);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.fstep .n{font-family:var(--mono);font-size:10px;color:var(--ac);letter-spacing:.5px}
+.fstep .t{font-family:var(--disp);font-weight:600;font-size:14px;margin:5px 0 3px}
+.fstep .d{font-size:12px;color:var(--t2);line-height:1.45}
+.farr{display:flex;align-items:center;color:var(--t3);font-size:18px}
+.cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.ent{background:rgba(15,19,25,.5);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.ent .h{font-family:var(--disp);font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.ent .f{font-family:var(--mono);font-size:11px;color:var(--t2);line-height:1.6}
+.gdpr{border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.06)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a class="brand" href="./index.html"><span class="dot"></span>Modula <span class="sub">FABBRICA</span></a>
+    <a class="back" href="./index.html">← Reparti</a>
+  </header>
+
+  <div class="agbar" id="agbar">
+    <div class="ic">🔄</div>
+    <div><div class="nm">il Convertitore</div><div class="meta">reparto Conversione</div></div>
+    <div class="lv" id="lv">livello <b>—</b></div>
+  </div>
+
+  <h1 class="h1"><span class="ac"></span>Conversione &amp; migrazione</h1>
+  <p class="lead">Il cliente arriva da <b>un altro gestionale</b>? Qui i suoi file (Excel, CSV, PDF, foto) vengono convertiti nel formato di Modula ed entrano nella sua app con un clic. Il motore è la skill <code>importa-dati</code>.</p>
+
+  <div class="sec">Come funziona</div>
+  <div class="card"><div class="flow">
+    <div class="fstep"><div class="n">1 · ENTRATA</div><div class="t">File altro gestionale</div><div class="d">Excel/CSV, PDF (anche scansioni), foto. Ogni gestionale ha il suo tracciato.</div></div>
+    <div class="farr">→</div>
+    <div class="fstep"><div class="n">2 · SKILL</div><div class="t">importa-dati normalizza</div><div class="d">Allinea allo schema Modula (<code>core.js</code> MAPS), pulisce date/indirizzi/importi.</div></div>
+    <div class="farr">→</div>
+    <div class="fstep"><div class="n">3 · USCITA</div><div class="t">modula-import.json</div><div class="d">File pulito, con anteprima in chat: conteggi, righe campione, avvisi.</div></div>
+    <div class="farr">→</div>
+    <div class="fstep"><div class="n">4 · APP</div><div class="t">📥 Importa dati</div><div class="d">Si carica nell'app del cliente: anteprima in-app → Conferma → dati dentro.</div></div>
+  </div></div>
+
+  <div class="sec">Cosa converte — le 4 entità</div>
+  <div class="cols2">
+    <div class="ent"><div class="h">👥 Clienti</div><div class="f">firstName · lastName · street · streetNo · cap · town · phone · email · group · notes</div></div>
+    <div class="ent"><div class="h">🪵 Pellet / consegne</div><div class="f">clientName · qty · unit (sacchi/t) · date · price · status · notes</div></div>
+    <div class="ent"><div class="h">🔧 Manutenzioni</div><div class="f">clientName · title · date · type · price · status · notes</div></div>
+    <div class="ent"><div class="h">📅 Appuntamenti</div><div class="f">clientName · title · date · time · done</div></div>
+  </div>
+  <p class="lead" style="margin-top:10px;font-size:12.5px;color:var(--t3)">Importa solo le entità dei moduli che il cliente ha attivato. Fonte di verità dei campi: <code>const MAPS</code> in <code>core/core.js</code>.</p>
+
+  <div class="sec">Privacy — sempre</div>
+  <div class="card gdpr" style="font-size:13.5px;color:var(--t2);line-height:1.6">
+    🔒 I file di un cliente vero contengono <b style="color:var(--t1)">dati personali</b> (GDPR): si lavora <b style="color:var(--t1)">solo in locale</b>, niente upload esterni, e <b style="color:var(--t1)">mai nel repo pubblico</b>. Il Convertitore lavora in coppia con la skill <code>dati-sensibili</code>. Nessun dato inventato: campo assente → vuoto.
+  </div>
+
+  <div class="sec">Gestionali mappati</div>
+  <div class="list" id="tracciati"><div class="empty">Carico…</div></div>
+  <p class="lead" style="margin-top:10px;font-size:12.5px;color:var(--t3)">Ogni gestionale nuovo lascia un <b>tracciato</b> riutilizzabile in <code>FABBRICA/agenti/convertitore/MEMORIA.md</code>: la volta dopo, stessa fonte → conversione immediata.</p>
+
+  <div class="card" style="margin-top:16px;font-size:13.5px;color:var(--t2);line-height:1.6">
+    <b style="color:var(--t1)">Per avviare:</b> dai i file a Claude e di' <i>«converti questi dati dal gestionale X»</i> — oppure invoca il subagent <code>fabbrica-convertitore</code>. Parte la skill <code>importa-dati</code>.
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+fetch('./agenti/convertitore/metriche.json').then(r=>r.json()).then(a=>{
+  document.getElementById('lv').innerHTML=`livello <b>${a.livello}</b> · ${a.esperienza}%`;
+  const n=(a.contatori&&a.contatori['gestionali mappati'])||0;
+  document.getElementById('tracciati').innerHTML = n
+    ? `<div class="item"><span class="ic">📑</span><div><div class="nm">${n} gestionali mappati</div><div class="ds">vedi i tracciati in MEMORIA.md</div></div></div>`
+    : '<div class="empty">Nessun gestionale mappato ancora. Il primo tracciato arriva con la prima migrazione.</div>';
+}).catch(()=>{ document.getElementById('tracciati').innerHTML='<div class="empty">Apri da un server locale o online per leggere le metriche.</div>'; });
+</script>
+</body>
+</html>

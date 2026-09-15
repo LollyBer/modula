@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Editor / tooling locale
+.claude/
+*.log
+
+# Dipendenze node (script di automazione)
+node_modules/
+
+# Segreti locali — MAI nel repo (service-role key Supabase e simili)
+secrets.local.json
+*.local.json
+.env
+.env.*
+
+# File temporanei della Supabase CLI (deploy funzioni)
+supabase/.temp/
+
+# Backup, estrazioni e configurazioni specifiche dell'ambiente TEST
+05_BACKUP/private/
+*.dump
+*.sql.enc

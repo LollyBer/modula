@@ -1,0 +1,6 @@
+# GitHub Pages (Jekyll)
+# La Fabbrica è il banco di regia INTERNO (gira su Claude), non un sito pubblico:
+# i file restano nel repo — versionati, con la memoria degli agenti — ma NON vengono
+# serviti online. Tutto il resto (landing, configuratore, portale, app cliente) sì.
+exclude:
+  - FABBRICA

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gestionale</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gestionale">
+<meta name="theme-color" content="#F5F2EA">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ===== CORE (stile base, sempre presente) ===== -->
+<link rel="stylesheet" href="./core/core.css">
+<style>:root{--cy:#34D399}</style>
+
+<!-- ===== MODULI EXTRA (stili) ===== -->
+<link rel="stylesheet" href="./vendor/leaflet.css">
+<link rel="stylesheet" href="./zone.css">
+
+<script>try{if(localStorage.getItem('caywork_theme')==='dark'){document.documentElement.dataset.theme='dark';var _m=document.querySelector('meta[name=theme-color]');if(_m)_m.content='#14160F';}}catch(e){}</script>
+</head>
+<body>
+<div id="app">
+  <div class="sidewrap">
+    <div class="topbar">
+      <div class="logo"><span class="dot"></span><span id="brandtop">La tua app</span> <span class="sub">GESTIONALE</span></div>
+      <div class="sp"></div>
+      <div class="topbar-tools">
+        <div class="today-pill" id="todaypill"></div>
+        <div class="today-pill" style="cursor:pointer" onclick="openSearch()">🔍</div>
+      </div>
+    </div>
+    <div class="nav-side" id="navside"></div>
+  </div>
+  <div class="main" id="main"></div>
+  <div class="nav-bottom" id="navbottom"></div>
+</div>
+<div id="toast"></div>
+
+<!-- ============================================================
+     CARICAMENTO MODULI
+     1) core.js          → stato, Supabase/auth, helper, render()
+     2) moduli BASE      → hub (poi: cal, notes, clients, emps, notif)
+     3) moduli EXTRA     → macchine, zone (su misura per ptek)
+     L'ordine: il core per primo; i moduli dopo (il boot del core è
+     async, quindi tutti i moduli sono pronti prima del primo render).
+     ============================================================ -->
+
+<!-- core -->
+<script src="./core/core.js"></script>
+
+<!-- moduli BASE (l'app base: ogni azienda ce li ha) -->
+<script src="./modules-base/hub/hub.js"></script>
+<script src="./modules-base/cal/cal.js"></script>
+<script src="./modules-base/notes/notes.js"></script>
+<script src="./modules-base/notif/notif.js"></script>
+<script src="./modules-base/clients/clients.js"></script>
+<script src="./modules-base/emps/emps.js"></script>
+
+<!-- moduli EXTRA (assemblati per questo cliente: man, conti, zone) -->
+<script src="./modules-extra/man/man.js"></script>
+<script src="./modules-extra/conti/conti.js"></script>
+<!-- zone: ordine leaflet → zone-data → zone -->
+<script src="./vendor/leaflet.js"></script>
+<script src="./zone-data.js"></script>
+<script src="./zone.js"></script>
+</body>
+</html>

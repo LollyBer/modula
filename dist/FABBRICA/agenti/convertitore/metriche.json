@@ -1,0 +1,13 @@
+{
+  "id": "convertitore",
+  "nome": "il Convertitore",
+  "reparto": "Conversione",
+  "icona": "🔄",
+  "colore": "#A78BFA",
+  "pagina": "conversione.html",
+  "livello": 1,
+  "esperienza": 0,
+  "contatori": { "conversioni fatte": 0, "gestionali mappati": 0 },
+  "ultima_lezione": "— nessuna conversione ancora: imparerò dal primo gestionale —",
+  "ultima_attivita": null
+}

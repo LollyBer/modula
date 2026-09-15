@@ -1,0 +1,13 @@
+{
+  "id": "assemblatore",
+  "nome": "l'Assemblatore",
+  "reparto": "Assemblaggio",
+  "icona": "🛠",
+  "colore": "#6EE7B7",
+  "pagina": "assemblaggio.html",
+  "livello": 1,
+  "esperienza": 13,
+  "contatori": { "clienti serviti": 1, "regole apprese": 1 },
+  "ultima_lezione": "Verifica coerenza senza browser: loop su dispatcher (render*) + node --check core.js + curl su ogni asset relativo. man/conti non hanno css.",
+  "ultima_attivita": "2026-06-22"
+}
