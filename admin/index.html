@@ -259,7 +259,12 @@ async function loadData(){
   DATA={tenants:tenants||[], codes, adm:admById, ov:ovById, requests:requests||[]};
 }
 function renderTabs(){ $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${TAB===t.id?'on':''}" onclick="setTab('${t.id}')">${t.label}</button>`).join(''); }
-function setTab(t){ TAB=t; renderTabs(); renderTab(); window.scrollTo({top:0}); }
+async function setTab(t){
+  TAB=t;renderTabs();
+  if(t==='lavoro')await refreshRequests();
+  else renderTab();
+  window.scrollTo({top:0});
+}
 function renderTab(){
   const c=$('#content');
   if(TAB==='hub') c.innerHTML=sectionHub();
@@ -533,6 +538,7 @@ function sectionLavoro(){
   return `
     <div class="row" style="justify-content:space-between;align-items:baseline">
       <h2>Configurazioni ricevute</h2>
+      <button class="sm" onclick="refreshRequests()">↻ Aggiorna</button>
     </div>
     <div class="tiny" style="margin:4px 0 14px">Le richieste inviate dal Configuratore arrivano qui automaticamente.</div>${req}<div class="sec">Aziende da personalizzare</div>
     <input id="search" placeholder="\u{1F50D} Cerca azienda…" oninput="filterTenants(this.value)">
@@ -754,6 +760,30 @@ function loadConfig(){
   document.querySelectorAll('#nt-mods .chip').forEach(ch=>{if(ch.classList.contains('lock'))return;ch.classList.toggle('on',want.has(ch.dataset.m));});
   er.style.color='var(--ac)';er.textContent='✓ Form compilato dalla configurazione — controlla e premi «Crea azienda»';
 }
+async function refreshRequests(){
+  const{data,error}=await sb.from('configurator_requests').select('*').order('created_at',{ascending:false});
+  if(error){alert('Impossibile aggiornare le richieste: '+error.message);return;}
+  DATA.requests=data||[];
+  renderTab();
+}
+async function loadRequest(id){
+  const request=(DATA.requests||[]).find(r=>r.id===id);
+  if(!request){alert('Richiesta non trovata. Aggiorna la pagina e riprova.');return;}
+  TAB='aziende';renderTabs();renderTab();
+  const form=document.querySelector('.newcard');if(form)form.open=true;
+  const paste=$('#nt-paste');
+  if(paste){
+    paste.value=JSON.stringify(request.configuration||{});
+    loadConfig();
+    if(!$('#nt-name').value)$('#nt-name').value=request.company_name||'';
+    if(!$('#nt-owner').value)$('#nt-owner').value=request.contact_name||'';
+    if(!$('#nt-email').value)$('#nt-email').value=request.contact_email||'';
+    if(!$('#nt-phone').value)$('#nt-phone').value=request.contact_phone||'';
+  }
+  const{error}=await sb.from('configurator_requests').update({status:'in_valutazione'}).eq('id',id);
+  if(!error)request.status='in_valutazione';
+  window.scrollTo({top:document.querySelector('.newcard')?.offsetTop||0,behavior:'smooth'});
+}
 
 /* ---------- BOOT ---------- */
 async function boot(){
@@ -766,6 +796,7 @@ async function boot(){
   if(!isAdmin){viewClaim();return;}
   viewDash();
 }
+setInterval(()=>{if(session&&TAB==='lavoro')refreshRequests();},10000);
 boot();
 </script>
 </body>

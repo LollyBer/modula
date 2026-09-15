@@ -4,10 +4,31 @@ const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&l
 const byId = (arr,id)=>arr.find(x=>x.id===id);
 const ALL_MODS = [...MODULI_BASE, ...MODULI_EXTRA];
 const modById = id => byId(ALL_MODS, id);
+const tr = (source, values={}) => {
+  const translated=window.ModulaI18n?window.ModulaI18n.t(source):source;
+  return translated.replace(/\{\{(\w+)\}\}/g,(match,key)=>Object.prototype.hasOwnProperty.call(values,key)?String(values[key]):match);
+};
+const moduleName = id => tr((modById(id)||{nome:id}).nome);
 
-const STEPS = ['Azienda','Settore','Moduli','Anteprima'];
-const S = { step:1, azienda:'', referente:'', email:'', telefono:'', dipendenti:'', logo:'', settore:null, extra:new Set(), richiesta:'', dominio:false, migrazione:false, previewView:'hub', device:'phone', accent:'#FF453A' };
-function toggleServizio(key){ S[key]=!S[key]; if(S.step===4){ $('#view').innerHTML=step4(); } }
+const STEPS = ['Azienda','Settore','Moduli','Riepilogo'];
+const S = { step:1, azienda:'', referente:'', email:'', telefono:'', dipendenti:'', logo:'', settore:null, extra:new Set(), richiesta:'', dominio:false, migrazione:false, formula:'abbonamento', previewView:'hub', device:'phone', accent:'#FF453A' };
+const FORMULE = {
+  abbonamento: {nome:'Abbonamento', prezzo:null, descrizione:'Accesso alla piattaforma centrale, con aggiornamenti inclusi.'},
+  licenza: {nome:'Licenza fai-da-te', prezzo:6000, descrizione:'Uso permanente della versione acquistata. Gestisci tu l’avvio e l’infrastruttura.'},
+  setup: {nome:'Licenza con setup', prezzo:7000, descrizione:'La stessa licenza, con configurazione e avvio accompagnati da Modula.'}
+};
+const chf = valore => 'CHF '+Number(valore).toLocaleString('de-CH');
+function setFormula(id){
+  if(!FORMULE[id])return;
+  S.formula=id;
+  if(S.step===4)render({preserveScroll:true,focusSelector:'[name="formula"][value="'+id+'"]'});
+}
+function chooseLogo(input){
+  S.logo=input.files&&input.files[0]?input.files[0].name:'';
+  const info=$('#logo-ok');
+  if(info)info.textContent=S.logo?tr('File scelto: {{file}}. Allegalo alla mail.',{file:S.logo}):tr('Il logo va allegato alla mail; qui conserviamo solo il nome del file.');
+}
+function toggleServizio(key){ S[key]=!S[key]; if(S.step===4)render({preserveScroll:true,focusSelector:'[data-service="'+key+'"]'}); }
 
 /* ---------------- color picker (accento per-azienda) ---------------- */
 const COLORI = [
@@ -19,12 +40,12 @@ const COLORI = [
 function colorPicker(opts={}){
   const title = opts.title || 'Colore della tua app';
   const hint  = opts.hint || '';
-  const sw = COLORI.map(c=>`<button class="sw ${S.accent.toLowerCase()===c.h.toLowerCase()?'on':''}" data-c="${c.h}" style="--swc:${c.h}" title="${esc(c.n)}" onclick="setAccent('${c.h}')"></button>`).join('');
+  const sw = COLORI.map(c=>`<button type="button" class="sw ${S.accent.toLowerCase()===c.h.toLowerCase()?'on':''}" data-c="${c.h}" style="--swc:${c.h}" title="${esc(c.n)}" aria-label="${esc(c.n)}" aria-pressed="${S.accent.toLowerCase()===c.h.toLowerCase()}" onclick="setAccent('${c.h}')"></button>`).join('');
   return `<div class="cpick">
     <div class="cpick-h">${esc(title)}${hint?`<span class="cpick-hint">${esc(hint)}</span>`:''}</div>
     <div class="cpick-row">
       ${sw}
-      <label class="sw sw-custom" title="Colore personalizzato"><input type="color" value="${S.accent}" oninput="setAccent(this.value)"></label>
+      <label class="sw sw-custom" title="Colore personalizzato"><input type="color" aria-label="Colore personalizzato" value="${S.accent}" oninput="setAccent(this.value)"></label>
     </div>
   </div>`;
 }
@@ -32,53 +53,69 @@ function setAccent(hex){
   if(!hex) return;
   S.accent = hex;
   document.querySelectorAll('.cpick .sw[data-c]').forEach(s=>{
-    s.classList.toggle('on', s.getAttribute('data-c').toLowerCase()===hex.toLowerCase());
+    const selected=s.getAttribute('data-c').toLowerCase()===hex.toLowerCase();
+    s.classList.toggle('on',selected);s.setAttribute('aria-pressed',String(selected));
   });
   document.querySelectorAll('.cpick .sw-custom input').forEach(i=>{ i.value=hex; });
   if(S.step===4) refreshPreview();
 }
 
 /* ---------------- render router ---------------- */
-function render(){
+function updateGuide(){
+  const hints=['Nome, contatti e stile','Il tuo settore di attività','La base e le funzioni extra','Formula e richiesta finale'];
+  const available=S.azienda.trim()?(S.settore?4:2):1;
   $('#steps').innerHTML = STEPS.map((t,i)=>{
     const n=i+1; const cls = n===S.step?'on':(n<S.step?'done':'');
-    return `<div class="s ${cls}">${n}. ${t}</div>`;
+    return `<button type="button" class="s ${cls}" onclick="goStep(${n})" ${n>available?'disabled':''} ${n===S.step?'aria-current="step"':''}><span class="step-number" aria-hidden="true">${n<S.step?'✓':String(n).padStart(2,'0')}</span><span class="step-copy"><strong>${esc(tr(t))}</strong><small>${esc(tr(hints[i]))}</small></span></button>`;
   }).join('');
+  const P=calcPrezzo(), subscription=S.formula==='abbonamento';
+  $('#live-summary').innerHTML=`<span class="summary-eyebrow">${esc(tr('La configurazione prende forma'))}</span>${S.azienda.trim()?`<p class="summary-company" data-i18n-ignore>${esc(S.azienda.trim())}</p>`:''}<p class="guide-plan">${esc(tr(subscription?'Abbonamento indicativo':FORMULE[S.formula].nome))}</p><div class="guide-price">${chf(subscription?P.canone:FORMULE[S.formula].prezzo)}<small>${esc(tr(subscription?'/mese':'una tantum'))}</small></div><p class="guide-modules">${esc(tr(P.tutti&&subscription?'Tutti i moduli inclusi':P.extra?'5 moduli base + {{count}} extra':'5 moduli base inclusi',{count:P.extra}))}</p>${P.custom?`<p class="guide-custom">${esc(tr('Su misura: da valutare'))}</p>`:''}`;
+}
+function goStep(step){
+  const available=S.azienda.trim()?(S.settore?4:2):1;
+  if(step<1||step>available)return;
+  S.step=step;render({focusHeading:true});
+}
+function render(options={}){
+  updateGuide();
   const v = $('#view');
-  if(S.step===1) v.innerHTML = step1();
-  else if(S.step===2) v.innerHTML = step2();
-  else if(S.step===3) v.innerHTML = step3();
-  else v.innerHTML = step4();
-  window.scrollTo({top:0,behavior:'smooth'});
-  if(S.step===1){ const inp=$('#az'); if(inp){ inp.focus(); inp.addEventListener('keydown',e=>{if(e.key==='Enter')next();}); } }
+  const content=S.step===1?step1():S.step===2?step2():S.step===3?step3():step4();
+  v.dataset.step=String(S.step);
+  v.innerHTML='<p class="stage-label">'+esc(tr('Passaggio {{current}} di 4',{current:S.step}))+'</p>'+content;
+  setupPreview();
+  if(!options.preserveScroll)window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  if(options.focusHeading)$('.h1')?.focus({preventScroll:true});
+  if(options.focusSelector)$(options.focusSelector)?.focus({preventScroll:true});
+  if(S.step===1)$('#az')?.addEventListener('keydown',e=>{if(e.key==='Enter')next();});
 }
 
 /* ---------------- STEP 1 — nome azienda ---------------- */
 function step1(){
   return `
-  <div class="h1"><span class="accent"></span>Crea la tua app</div>
+  <h1 class="h1" tabindex="-1">Crea la tua app</h1>
   <div class="lead">In pochi passi componi il gestionale della tua attività. Iniziamo dal nome: comparirà nella tua app.</div>
-  <div class="card">
+  <section class="card identity-card">
+    <h2 class="card-title">La tua attività</h2>
     <div class="bigfield">
-      <label>Nome dell'azienda</label>
-      <input id="az" value="${esc(S.azienda)}" placeholder="es. La Mia Azienda S.r.l." oninput="S.azienda=this.value" maxlength="48">
+      <label for="az">Nome dell'azienda</label>
+      <input id="az" value="${esc(S.azienda)}" autocomplete="organization" placeholder="es. La Mia Azienda S.r.l." oninput="S.azienda=this.value;updateGuide()" maxlength="48">
     </div>
-  </div>
-  <div class="card" style="margin-top:12px">
-    ${colorPicker({title:"Colore della tua app", hint:"sarà l'accento dell'app — lo vedrai nell'anteprima"})}
-  </div>
-  <div class="card" style="margin-top:12px">
-    <div class="bigfield"><label>Referente — chi gestirà l'app</label>
+  <div class="identity-color">
+    ${colorPicker({title:"Colore richiesto per la tua app", hint:"Lo includiamo nella richiesta. La demo mantiene i suoi colori."})}
+  </div></section>
+  <section class="card contact-card">
+    <h2 class="card-title">Come possiamo ricontattarti?</h2>
+    <div class="bigfield"><label for="ref">Referente — chi gestirà l'app</label>
       <input id="ref" value="${esc(S.referente)}" placeholder="es. Mario Rossi" oninput="S.referente=this.value" maxlength="60"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="bigfield"><label>Email</label><input id="eml" type="email" value="${esc(S.email)}" placeholder="tu@azienda.ch" oninput="S.email=this.value"></div>
-      <div class="bigfield"><label>Telefono</label><input id="tel" value="${esc(S.telefono)}" placeholder="+41 ..." oninput="S.telefono=this.value"></div>
+    <div class="field-grid">
+      <div class="bigfield"><label for="eml">Email per la risposta</label><input id="eml" type="email" autocomplete="email" value="${esc(S.email)}" placeholder="tu@azienda.ch" oninput="S.email=this.value"></div>
+      <div class="bigfield"><label for="tel">Telefono</label><input id="tel" type="tel" autocomplete="tel" value="${esc(S.telefono)}" placeholder="+41 ..." oninput="S.telefono=this.value"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:2px">
-      <div class="bigfield"><label>Quanti utenti useranno l'app?</label><input id="dip" type="number" min="1" value="${esc(S.dipendenti)}" placeholder="es. 4" oninput="S.dipendenti=this.value"></div>
-      <div class="bigfield"><label>Logo (facoltativo)</label><input id="logo" type="file" accept="image/*" onchange="S.logo=this.files[0]?this.files[0].name:'';var o=document.getElementById('logo-ok');if(o)o.textContent=S.logo?('caricato: '+S.logo):''"><div id="logo-ok" style="color:var(--ac);font-size:12px;margin-top:4px">${S.logo?('caricato: '+esc(S.logo)):''}</div></div>
+    <div class="field-grid">
+      <div class="bigfield"><label for="dip">Quanti utenti useranno l'app?</label><input id="dip" type="number" min="1" step="1" value="${esc(S.dipendenti)}" placeholder="es. 4" oninput="S.dipendenti=this.value"><p class="field-help">Il numero ci aiuta a preparare la proposta. Gli utenti inclusi sono da concordare.</p></div>
+      <div class="bigfield"><label for="logo">Logo (facoltativo)</label><label class="file-picker" for="logo"><span>Scegli file</span><span data-i18n-ignore>${S.logo?esc(S.logo):esc(tr('Nessun file selezionato'))}</span></label><input id="logo" class="file-input" type="file" accept="image/*" aria-describedby="logo-ok" onchange="chooseLogo(this);this.previousElementSibling.lastElementChild.textContent=S.logo||tr('Nessun file selezionato')"><p class="field-help" id="logo-ok">${S.logo?esc(tr('File scelto: {{file}}. Allegalo alla mail.',{file:S.logo})):tr('Il logo va allegato alla mail; qui conserviamo solo il nome del file.')}</p></div>
     </div>
-  </div>
+  </section>
   <div class="navbar">
     <div class="sp"></div>
     <button class="btn pri" onclick="next()">Continua →</button>
@@ -88,15 +125,15 @@ function step1(){
 /* ---------------- STEP 2 — settore ---------------- */
 function step2(){
   return `
-  <div class="h1"><span class="accent"></span>Che attività fai?</div>
+  <h1 class="h1" tabindex="-1">Che attività fai?</h1>
   <div class="lead">Scegli il settore più vicino al tuo: ti proporremo i moduli più utili. Potrai comunque aggiungere tutti gli altri.</div>
-  <div class="grid">
+  <div class="grid sector-grid">
     ${SETTORI.map(s=>`
-      <div class="tile ${S.settore===s.id?'on':''}" onclick="pickSettore('${s.id}')">
+      <button type="button" class="tile ${S.settore===s.id?'on':''}" data-sector="${s.id}" aria-pressed="${S.settore===s.id}" onclick="pickSettore('${s.id}')">
         <span class="ic">${s.ic}</span>
-        <div class="nm">${esc(s.nome)}</div>
-        <div class="ds">${esc(s.desc)}</div>
-      </div>`).join('')}
+        <span class="nm">${esc(tr(s.nome))}</span>
+        <span class="ds">${esc(tr(s.desc))}</span>
+      </button>`).join('')}
   </div>
   <div class="navbar">
     <button class="btn ghost" onclick="back()">← Indietro</button>
@@ -109,7 +146,7 @@ function pickSettore(id){
   // pre-seleziona i moduli proposti del settore (solo quelli già pronti)
   const st=byId(SETTORI,id);
   if(st) st.proposti.forEach(m=>{ const mod=modById(m); if(mod && mod.stato!=='arrivo') S.extra.add(m); });
-  render();
+  render({preserveScroll:true,focusSelector:'[data-sector="'+id+'"]'});
 }
 
 /* ---------------- STEP 3 — moduli ---------------- */
@@ -119,18 +156,18 @@ function step3(){
   const proposti = pronti.filter(m=>st.proposti.includes(m.id));
   const altri    = pronti.filter(m=>!st.proposti.includes(m.id));
   const tile = (m,extra=true)=>`
-    <div class="tile ${extra?(S.extra.has(m.id)?'on':''):'locked'} ${extra&&m.stato==='arrivo'?'dim':''}" ${extra?`onclick="toggleExtra('${m.id}')"`:''}>
+    <${extra?'button type="button"':'div'} class="tile ${extra?(S.extra.has(m.id)?'on':''):'locked'} ${extra&&m.stato==='arrivo'?'dim':''}" data-included="${esc(tr('incluso'))}" ${extra?`data-extra="${m.id}" aria-pressed="${S.extra.has(m.id)}" onclick="toggleExtra('${m.id}')"`:''}>
       <span class="ic">${m.ic}</span>
-      <div class="nm">${esc(m.nome)}</div>
-      <div class="ds">${esc(m.desc)}</div>
+      <span class="nm">${esc(tr(m.nome))}</span>
+      <span class="ds">${esc(tr(m.desc))}</span>
       ${extra&&st.proposti.includes(m.id)?'<span class="tag">consigliato</span>':''}${extra&&m.stato==='arrivo'?'<span class="soon">in arrivo</span>':''}
-    </div>`;
+    </${extra?'button':'div'}>`;
   return `
-  <div class="h1"><span class="accent"></span>Componi la tua app</div>
+  <h1 class="h1" tabindex="-1">Componi la tua app</h1>
   <div class="lead">I moduli <b>base</b> ci sono sempre. Aggiungi quelli che ti servono: i <b style="color:var(--amber)">consigliati</b> sono pensati per il tuo settore.</div>
 
   <div class="section-label first">Inclusi sempre — la base</div>
-  <div class="grid">${MODULI_BASE.map(m=>tile(m,false)).join('')}</div>
+  <div class="grid base-grid">${MODULI_BASE.map(m=>tile(m,false)).join('')}</div>
 
   ${proposti.length?`<div class="section-label">Consigliati per il tuo settore</div>
   <div class="grid">${proposti.map(m=>tile(m)).join('')}</div>`:''}
@@ -140,9 +177,9 @@ function step3(){
 
   <div class="custom-mod">
     <div class="cm-h"><span class="ic">✨</span>Non trovi quello che ti serve?</div>
-    <div class="cm-sub">Descrivi il <b>modulo su misura</b> che vorresti: a cosa serve, cosa deve gestire, chi lo usa. Lo costruiamo noi e te lo ricontattiamo.</div>
+    <div class="cm-sub">Descrivi il <b>modulo su misura</b> che vorresti: a cosa serve, cosa deve gestire, chi lo usa. Ne valuteremo insieme fattibilità, tempi e prezzo.</div>
     <div class="bigfield">
-      <label>Modulo su misura — descrizione</label>
+      <label for="rich">Modulo su misura — descrizione</label>
       <textarea id="rich" placeholder="es. «Mi serve un modulo per registrare i controlli F-Gas dei condizionatori: per ogni apparecchio data del controllo, kg di gas, e un avviso quando scade.»" oninput="S.richiesta=this.value;updCount()" maxlength="1200">${esc(S.richiesta)}</textarea>
     </div>
   </div>
@@ -150,29 +187,25 @@ function step3(){
   <div class="navbar">
     <button class="btn ghost" onclick="back()">← Indietro</button>
     <div class="sp"></div>
-    <span class="count">${MODULI_BASE.length + S.extra.size} moduli${S.richiesta.trim()?' + 1 su misura':''}</span>
-    <button class="btn pri" onclick="next()">Vedi l'anteprima →</button>
+    <span class="count">${esc(moduleCountText())}</span>
+    <button class="btn pri" onclick="next()">Formula e riepilogo →</button>
   </div>`;
 }
-function toggleExtra(id){ S.extra.has(id)?S.extra.delete(id):S.extra.add(id); render(); }
-function updCount(){ const c=$('.count'); if(c) c.textContent=`${MODULI_BASE.length + S.extra.size} moduli${S.richiesta.trim()?' + 1 su misura':''}`; }
+function toggleExtra(id){ S.extra.has(id)?S.extra.delete(id):S.extra.add(id); render({preserveScroll:true,focusSelector:'[data-extra="'+id+'"]'}); }
+function moduleCountText(){return tr('{{count}} moduli',{count:MODULI_BASE.length+S.extra.size})+(S.richiesta.trim()?' '+tr('+ 1 su misura'):'');}
+function updCount(){ const c=$('.count'); if(c) c.textContent=moduleCountText(); updateGuide(); }
 
 /* ---------------- STEP 4 — anteprima + invio ---------------- */
 function chosenMods(){ return [...MODULI_BASE, ...MODULI_EXTRA.filter(m=>S.extra.has(m.id))]; }
 
-/* ---- prezzo (stesso listino della landing) ---- */
-const MOD_TIER={conti:12, man:19, macchine:19, pellet:19, sites:29, zone:29};
-const tierPrezzo=id=>MOD_TIER[id]||25;
+/* ---- prezzi indicativi, coerenti con la landing ---- */
+const PREZZI={base:59,extra:10,tetto:129,soglia:7};
 function calcPrezzo(){
   const extra=[...S.extra].filter(id=>{const m=modById(id);return m && m.stato!=='arrivo' && !m.custom;});
-  const modSum=extra.reduce((s,id)=>s+tierPrezzo(id),0);
-  const n=extra.length;
-  const sconto=n>=6?0.15:(n>=3?0.10:0);
-  const dip=parseInt(S.dipendenti)||0;
-  const utentiExtra=Math.max(0,dip-4);
-  const costoUtenti=utentiExtra*4;
-  const canone=Math.round(59+modSum*(1-sconto))+costoUtenti;
-  return {modSum, sconto, canone, utentiExtra, costoUtenti, custom:!!S.richiesta.trim()};
+  const modSum=extra.length*PREZZI.extra;
+  const tutti=extra.length>=PREZZI.soglia;
+  const canone=tutti?PREZZI.tetto:Math.min(PREZZI.tetto,PREZZI.base+modSum);
+  return {extra:extra.length,modSum,canone,tutti,custom:!!S.richiesta.trim()};
 }
 
 function step4(){
@@ -180,58 +213,75 @@ function step4(){
   const settore = byId(SETTORI,S.settore);
   const extraChosen = MODULI_EXTRA.filter(m=>S.extra.has(m.id));
   const P = calcPrezzo();
-  const extraPriceRows = extraChosen.filter(m=>m.stato!=='arrivo'&&!m.custom)
-    .map(m=>`<div class="rowl"><span class="k">${esc(m.nome.toUpperCase())}</span><span>+ CHF ${tierPrezzo(m.id)} / mese</span></div>`).join('');
-  const svc=(key,label,sub)=>`<span onclick="toggleServizio('${key}')" style="cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;padding:9px 13px;border-radius:11px;border:1px solid ${S[key]?'#34D399':'rgba(255,255,255,.15)'};background:${S[key]?'rgba(52,211,153,.12)':'transparent'};color:${S[key]?'#EAF0EC':'var(--t2,#9aa)'}">${S[key]?'✓':'+'} ${label} <span style="opacity:.7;font-size:11.5px">· ${sub}</span></span>`;
+  const formula=FORMULE[S.formula]||FORMULE.abbonamento;
+  const svc=(key,label)=>`<button type="button" class="service-option ${S[key]?'on':''}" data-service="${key}" aria-pressed="${S[key]}" onclick="toggleServizio('${key}')"><span>${S[key]?'✓':'+'} ${esc(tr(label))}</span><small>Da concordare</small></button>`;
   // assicura una schermata valida selezionata
   const validi = new Set([...chosenMods().map(m=>m.id),'altro']);
   if(!validi.has(S.previewView)) S.previewView='hub';
 
   return `
-  <div class="h1"><span class="accent"></span>Ecco la tua app</div>
-  <div class="lead"><b>Tocca i moduli</b> nell'anteprima per vederne le schermate. Ecco come si presenterebbe <b>${esc(nome)}</b>.</div>
+  <h1 class="h1" tabindex="-1">La tua configurazione</h1>
+  <div class="lead">${esc(tr('Scegli come avere Modula e controlla la richiesta per {{azienda}}. Prezzi indicativi: definiremo insieme la proposta finale.',{azienda:nome}))}</div>
+
+  <fieldset class="purchase-options">
+    <legend>Come vuoi avere Modula?</legend>
+    <div class="purchase-grid">${Object.entries(FORMULE).map(([id,f])=>`<label class="purchase-option ${S.formula===id?'on':''}">
+      <input type="radio" name="formula" value="${id}" ${S.formula===id?'checked':''} onchange="setFormula(this.value)">
+      <span class="purchase-name">${esc(tr(f.nome))}</span>
+      <strong>${chf(id==='abbonamento'?P.canone:f.prezzo)}<small>${id==='abbonamento'?'/mese':' una tantum'}</small></strong>
+      <span class="purchase-desc">${esc(tr(f.descrizione))}</span>
+    </label>`).join('')}</div>
+  </fieldset>
+
+  <div class="preview-intro"><h3>Esplora la demo base</h3><p>È la vera app con dati di esempio e i 5 moduli base. Il nome, il logo, i colori e gli extra che hai scelto fanno parte della richiesta e non modificano questa demo.</p><p class="field-help">La demo dell’app è in italiano.</p></div>
 
   <div id="preview-area">${previewArea()}</div>
 
   <div class="summary" style="margin-top:18px">
     <h3>Riepilogo</h3>
-    <div class="rowl"><span class="k">AZIENDA</span><span>${esc(nome)}</span></div>
-    <div class="rowl"><span class="k">SETTORE</span><span>${settore?esc(settore.ic+' '+settore.nome):'—'}</span></div>
-    <div class="rowl"><span class="k">BASE</span><div class="chips">${MODULI_BASE.map(m=>`<span class="chip b">${m.ic} ${esc(m.nome)}</span>`).join('')}</div></div>
-    <div class="rowl"><span class="k">EXTRA</span><div class="chips">${extraChosen.length?extraChosen.map(m=>`<span class="chip">${m.ic} ${esc(m.nome)}${m.stato==='arrivo'?' · in arrivo':''}</span>`).join(''):'<span class="cs" style="color:var(--t3)">nessuno</span>'}</div></div>
-    ${S.richiesta.trim()?`<div class="rowl"><span class="k">SU MISURA</span><div class="chips"><span class="chip" style="white-space:normal;line-height:1.45;text-align:left">✨ ${esc(S.richiesta.trim())}</span></div></div>`:''}
+    <div class="rowl"><span class="k">AZIENDA</span><span data-i18n-ignore>${esc(nome)}</span></div>
+    <div class="rowl"><span class="k">FORMULA</span><span>${esc(tr(formula.nome))}</span></div>
+    <div class="rowl"><span class="k">SETTORE</span><span>${settore?esc(settore.ic+' '+tr(settore.nome)):'—'}</span></div>
+    <div class="rowl"><span class="k">COLORE</span><span>${esc(S.accent)} · ${esc(tr('richiesto per la tua app'))}</span></div>
+    ${S.logo?`<div class="rowl"><span class="k">LOGO</span><span>${esc(tr('{{file}} · da allegare alla mail',{file:S.logo}))}</span></div>`:''}
+    <div class="rowl"><span class="k">BASE</span><div class="chips">${MODULI_BASE.map(m=>`<span class="chip b">${m.ic} ${esc(tr(m.nome))}</span>`).join('')}</div></div>
+    <div class="rowl"><span class="k">EXTRA</span><div class="chips">${extraChosen.length?extraChosen.map(m=>`<span class="chip">${m.ic} ${esc(tr(m.nome))}${m.stato==='arrivo'?' · '+esc(tr('in arrivo')):''}</span>`).join(''):'<span class="cs" style="color:var(--t3)">'+esc(tr('nessuno'))+'</span>'}</div></div>
+    ${S.richiesta.trim()?`<div class="rowl"><span class="k">SU MISURA</span><div class="chips"><span class="chip" data-i18n-ignore style="white-space:normal;line-height:1.45;text-align:left">✨ ${esc(S.richiesta.trim())}</span></div></div>`:''}
 
     <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
-      <h3>➕ Servizi aggiuntivi <span style="color:var(--t3);font-size:13px;font-weight:400">· facoltativi</span></h3>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
-        ${svc('dominio','🌐 Dominio personalizzato','CHF 90/anno')}
-        ${svc('migrazione','📦 Migrazione dati','da concordare')}
+      <h3>Servizi da valutare insieme</h3>
+      <div class="service-options">
+        ${svc('dominio','Dominio personalizzato')}
+        ${svc('migrazione','Migrazione dati')}
       </div>
-      <div class="cs" style="margin-top:8px;color:var(--t3);font-size:12px">Il dominio è un indirizzo tuo (es. miazienda.ch). La migrazione porta dentro i dati dal tuo vecchio gestionale.</div>
+      <p class="field-help">Indica se hai bisogno di un indirizzo personalizzato o di trasferire i dati dal gestionale che usi oggi. Modalità e costi dipendono dalla formula e dai dati da trasferire.</p>
     </div>
 
     <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
-      <h3>💳 Il tuo abbonamento</h3>
-      <div class="rowl"><span class="k">CANONE BASE</span><span>CHF 59 / mese</span></div>
-      ${extraPriceRows}
-      ${P.utentiExtra?`<div class="rowl"><span class="k">+${P.utentiExtra} UTENTI</span><span>+ CHF ${P.costoUtenti} / mese</span></div>`:''}
-      ${P.sconto?`<div class="rowl"><span class="k">SCONTO VOLUME</span><span>− ${Math.round(P.sconto*100)}%</span></div>`:''}
-      <div class="rowl" style="border-top:1px solid var(--line);margin-top:6px;padding-top:10px"><span class="k" style="color:var(--t1);font-weight:700">TOTALE MENSILE</span><span style="font-weight:700;font-size:18px;color:var(--t1)">CHF ${P.canone} / mese</span></div>
-      <div class="rowl"><span class="k">ATTIVAZIONE</span><span>CHF 690 una tantum <span style="color:var(--t3);font-size:12px">· progettazione iniziale</span></span></div>
-      ${S.dominio?`<div class="rowl"><span class="k">DOMINIO</span><span>CHF 90 / anno</span></div>`:''}
-      ${S.migrazione?`<div class="rowl"><span class="k">MIGRAZIONE DATI</span><span style="text-align:right;color:var(--amber)">da concordare<br><span style="font-size:12px">in base ai dati · una tantum</span></span></div>`:''}
-      ${P.custom?`<div class="rowl"><span class="k" style="color:var(--amber)">MODULO SU MISURA</span><span style="text-align:right;color:var(--amber)">da concordare insieme<br><span style="font-size:12px">ti contatto io · si paga una volta sola</span></span></div>`:''}
+      <h3>La formula scelta</h3>
+      ${S.formula==='abbonamento'?`
+        <div class="rowl"><span class="k">BASE</span><span>${esc(tr('{{prezzo}}/mese · 5 moduli inclusi',{prezzo:chf(PREZZI.base)}))}</span></div>
+        <div class="rowl"><span class="k">EXTRA</span><span>${esc(tr('{{numero}} selezionati · {{prezzo}}/mese ciascuno',{numero:P.extra,prezzo:chf(PREZZI.extra)}))}</span></div>
+        <div class="price-summary"><span>Canone indicativo</span><strong>${chf(P.canone)}<small>/mese</small></strong></div>
+        <p class="price-help">${P.tutti?'Hai raggiunto il tetto: a CHF 129/mese accedi a tutti i moduli disponibili.':'Dal settimo extra il canone si ferma a CHF 129/mese, con accesso a tutti i moduli disponibili.'}</p>
+      `:`
+        <div class="price-summary"><span>Licenza indicativa</span><strong>${chf(formula.prezzo)}<small> una tantum</small></strong></div>
+        <p class="price-help">${esc(tr('Uso permanente della versione acquistata.'))} ${S.formula==='setup'?esc(tr('Configurazione e avvio con Modula.'))+' ':''}${esc(tr('Hosting, dominio e servizi esterni comportano costi separati. Moduli inclusi e assistenza si definiscono nella proposta; nuove funzioni e upgrade possono essere acquistati separatamente.'))}</p>
+      `}
+      ${P.custom?'<p class="price-help">Il modulo su misura richiede una valutazione separata di fattibilità, tempi e prezzo.</p>':''}
+      <p class="field-help">Prezzi indicativi in CHF. IVA, utenti inclusi, condizioni di assistenza e servizi aggiuntivi saranno precisati nella proposta.</p>
     </div>
 
     <div class="send-box">
-      <h3>📨 ${P.custom?'Parliamone':'Invia la richiesta'}</h3>
-      <p>${P.custom?'Hai chiesto un modulo su misura: ti contatto io per progettarlo e concordare il prezzo prima di procedere. Intanto inviami la configurazione.':'Inviami la configurazione: ti preparo l\'app e ti mando il link per pagare. Oppure contattami per qualsiasi domanda. Nessun dato viene salvato online.'}</p>
+      <h3>Invia la richiesta alla Regia</h3>
+      <p>La configurazione viene registrata direttamente nella Regia TEST. Ti contatteremo per definire proposta e attivazione; nessuna email da inviare.</p>
       <div class="send-actions">
         <button class="btn pri" onclick="sendToRegia()">Invia richiesta</button>
         ${CONTATTO.whatsapp?`<button class="btn" onclick="sendWhatsApp()">💬 WhatsApp</button>`:''}
         <button class="btn ghost" onclick="copyConfig()">⧉ Copia configurazione</button>
       </div>
-      <div class="code" id="code">${esc(buildText())}</div>
+      <p class="email-help">Dopo l’invio, apri la Regia TEST → <strong>Configurazioni</strong> per vedere la richiesta.</p>
+      <details class="request-details"><summary>Dettagli della richiesta</summary><div class="code" id="code" data-i18n-ignore>${esc(buildText())}</div></details>
     </div>
   </div>
 
@@ -244,18 +294,25 @@ function step4(){
 /* ---- anteprima navigabile (telefono / pc) ---- */
 const _short = n => esc(n.split(/[\s\/]/)[0]);
 function previewArea(){
-  return `
-  <div class="preview-controls">
-    <div class="device-toggle">
-      <button class="${S.device==='phone'?'on':''}" onclick="setDevice('phone')">📱 Telefono</button>
-      <button class="${S.device==='pc'?'on':''}" onclick="setDevice('pc')">💻 Computer</button>
-    </div>
-    ${colorPicker({title:'Colore', hint:'toccalo: la tua app cambia subito'})}
-  </div>
-  <div class="mock-wrap" style="--cy:${S.accent};--glow:0 0 24px ${S.accent}55">${S.device==='pc'?pcMockup():phoneMockup()}</div>`;
+  const view=MODULI_BASE.some(m=>m.id===S.previewView)?S.previewView:'hub';
+  return `<div class="demo-tabs" role="group" aria-label="Esplora la demo base">${MODULI_BASE.map(m=>`<button type="button" data-preview-view="${m.id}" aria-pressed="${m.id===view}" onclick="setPreviewView('${m.id}')">${esc(tr(m.nome))}</button>`).join('')}</div><div class="monitor"><div class="monitor-top" aria-hidden="true"><i></i></div><div class="monitor-viewport"><iframe title="Demo reale Modula con dati di esempio e moduli base" src="../app.html?demo=1&screen=${view}" loading="lazy"></iframe></div><div class="monitor-chin" aria-hidden="true">modula<i></i></div></div><div class="monitor-support" aria-hidden="true"><div class="monitor-neck"></div><div class="monitor-base"></div></div><div class="demo-bottom"><p>La demo mantiene i colori e i dati dell’app reale.</p><button type="button" onclick="openConfigDemo()">Ingrandisci la demo <span aria-hidden="true">⤢</span></button></div>`;
 }
-function refreshPreview(){ const a=$('#preview-area'); if(a) a.innerHTML=previewArea(); }
-function setPreviewView(id){ S.previewView=id; refreshPreview(); }
+let previewObserver;
+function setupPreview(){
+  previewObserver?.disconnect();
+  const viewport=$('.monitor-viewport');
+  if(!viewport)return;
+  const resize=()=>viewport.style.setProperty('--demo-scale',String(viewport.clientWidth/1440));
+  resize();if('ResizeObserver'in window){previewObserver=new ResizeObserver(resize);previewObserver.observe(viewport);}
+}
+function openConfigDemo(){
+  const frame=document.createElement('iframe');
+  frame.title=tr('Demo reale Modula con dati di esempio e moduli base');
+  frame.src='../app.html?demo=1&screen='+S.previewView;
+  $('#config-demo-host').replaceChildren(frame);$('#config-demo-dialog').showModal();document.body.classList.add('modal-open');
+}
+function refreshPreview(){ const a=$('#preview-area'); if(a){a.innerHTML=previewArea();setupPreview();} }
+function setPreviewView(id){ if(!MODULI_BASE.some(m=>m.id===id))return;S.previewView=id; refreshPreview();$('[data-preview-view="'+id+'"]')?.focus({preventScroll:true}); }
 function setDevice(d){ S.device=d; if(d==='pc'&&S.previewView==='altro') S.previewView='hub'; refreshPreview(); }
 
 function altroScreen(){
@@ -312,6 +369,12 @@ function buildConfig(){
     logo: S.logo||false,
     dominio: !!S.dominio,
     migrazione: !!S.migrazione,
+    lingua_configuratore: window.ModulaI18n?window.ModulaI18n.language:'it',
+    formula: S.formula,
+    formula_nome: tr(FORMULE[S.formula].nome),
+    prezzo_indicativo_chf: S.formula==='abbonamento'?calcPrezzo().canone:FORMULE[S.formula].prezzo,
+    periodicita: S.formula==='abbonamento'?'mensile':'una_tantum',
+    accesso_tutti_moduli: S.formula==='abbonamento'&&calcPrezzo().tutti,
     moduli_base: MODULI_BASE.map(m=>m.id),
     moduli_extra: [...S.extra],
     generato: 'configuratore'
@@ -323,38 +386,46 @@ function buildText(){
   const c = buildConfig();
   const settore = byId(SETTORI,S.settore);
   const P = calcPrezzo();
-  const nm = id => (modById(id)||{nome:id}).nome;
+  const field=(label,value)=>tr(label)+': '+value;
   return [
-    `NUOVA APP — configurazione`,
-    `Azienda: ${c.azienda||'(da indicare)'}`,
-    `Settore: ${settore?settore.nome:'—'}`,
-    `Colore accento: ${c.accento}`,
-    `Referente: ${c.referente||'-'}`,
-    `Email: ${c.email||'-'}  ·  Tel: ${c.telefono||'-'}`,
-    `Utenti previsti: ${c.dipendenti||'-'}`,
-    ...(c.logo?[`Logo: ${c.logo} (allega il file alla mail)`]:[]),
-    `Moduli base: ${c.moduli_base.map(nm).join(', ')}`,
-    `Moduli extra: ${c.moduli_extra.length?c.moduli_extra.map(nm).join(', '):'nessuno'}`,
+    tr('NUOVA APP — configurazione'),
+    field('Azienda',c.azienda||tr('(da indicare)')),
+    field('Settore',settore?tr(settore.nome):'—'),
+    field('Lingua della richiesta',c.lingua_configuratore.toUpperCase()),
+    field('Colore accento',c.accento),
+    field('Referente',c.referente||'-'),
+    field('Email',c.email||'-')+'  ·  '+field('Tel',c.telefono||'-'),
+    field('Utenti previsti',c.dipendenti||'-'),
+    ...(c.logo?[field('Logo',c.logo+' '+tr('(allega il file alla mail)'))]:[]),
+    field('Moduli base',c.moduli_base.map(moduleName).join(', ')),
+    field('Moduli extra',c.moduli_extra.length?c.moduli_extra.map(moduleName).join(', '):tr('nessuno')),
     ``,
-    `STIMA COSTO: CHF ${P.canone}/mese + CHF 690 attivazione${S.dominio?' + CHF 90/anno dominio':''}${S.migrazione?' + migrazione dati (da concordare)':''}${P.custom?' + modulo su misura da concordare (una tantum)':''}`,
-    ...((S.dominio||S.migrazione)?[`Servizi extra richiesti: ${[S.dominio?'dominio personalizzato (CHF 90/anno)':null,S.migrazione?'migrazione dati (da concordare)':null].filter(Boolean).join(', ')}`]:[]),
-    ...(c.modulo_su_misura?[``,`MODULO SU MISURA (da costruire, da concordare prezzo):`,c.modulo_su_misura]:[]),
+    field('FORMULA RICHIESTA',c.formula_nome),
+    field('PREZZO INDICATIVO',chf(c.prezzo_indicativo_chf)+' '+tr(c.periodicita==='mensile'?'/mese':'una tantum')),
+    ...(S.formula==='abbonamento'?[tr('Base CHF 59/mese + {{numero}} extra a CHF 10/mese ciascuno; tetto CHF 129/mese dal settimo extra.',{numero:P.extra}),...(P.tutti?[tr('Accesso a tutti i moduli disponibili incluso nel tetto di CHF 129/mese.')]:[])]:[tr('Uso permanente della versione acquistata. Hosting, dominio e servizi esterni separati. Moduli inclusi, assistenza e upgrade da definire nella proposta.')]),
+    tr('Proposta finale da concordare: IVA, utenti inclusi e condizioni di assistenza da precisare.'),
+    ...((S.dominio||S.migrazione)?[field('Servizi richiesti, con modalità e costi da concordare',[S.dominio?tr('Dominio personalizzato'):null,S.migrazione?tr('Migrazione dati'):null].filter(Boolean).join(', '))]:[]),
+    ...(c.modulo_su_misura?['',tr('MODULO SU MISURA (da costruire, da concordare prezzo):'),c.modulo_su_misura]:[]),
     ``,
-    `--- config (per l'assemblaggio) ---`,
+    tr('--- config (per l’assemblaggio) ---'),
     JSON.stringify(c)
   ].join('\n');
 }
-function sendEmail(){
-  const sub = `Nuova app — ${S.azienda.trim()||'configurazione'}`;
-  window.location.href = `mailto:${CONTATTO.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(buildText())}`;
-}
 async function sendToRegia(){
-  const c=buildConfig();
-  if(!c.azienda||!c.referente||!c.email){toast('Inserisci azienda, referente ed email');return;}
+  if(!S.azienda.trim()||!/^\S+@[^\s@]+\.[^\s@]+$/.test(S.email.trim())){
+    const field=!S.azienda.trim()?'az':'eml';
+    S.step=1;render();$('#'+field)?.focus();
+    toast(field==='az'?'Scrivi il nome dell’azienda':'Indica un’email valida per ricevere la proposta');
+    return;
+  }
   const cfg=window.MODULA_CONFIG;
   if(!cfg||!window.supabase){toast('Connessione TEST non disponibile');return;}
+  const c=buildConfig();
   const db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const button=document.querySelector('[onclick="sendToRegia()"]');
+  if(button){button.disabled=true;button.textContent='Invio alla Regia…';}
   const{error}=await db.from('configurator_requests').insert({company_name:c.azienda,contact_name:c.referente,contact_email:c.email,contact_phone:c.telefono,configuration:c});
+  if(button){button.disabled=false;button.textContent='Invia richiesta';}
   if(error){toast('Invio non riuscito: '+error.message);return;}
   toast('Richiesta inviata alla Regia ✓');
 }
@@ -369,14 +440,16 @@ function copyConfig(){
     ta.remove();
   });
 }
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2200); }
+function toast(msg){ const t=$('#toast'); t.textContent=tr(msg); t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2200); }
 
 /* ---------------- navigazione step ---------------- */
 function next(){
   if(S.step===1 && !S.azienda.trim()){ $('#az')?.focus(); toast('Scrivi il nome dell\'azienda'); return; }
   if(S.step===2 && !S.settore){ toast('Scegli un settore'); return; }
-  if(S.step<4){ S.step++; if(S.step===4){ S.previewView='hub'; S.device='phone'; } render(); }
+  if(S.step<4){ S.step++; if(S.step===4){ S.previewView='hub'; S.device='pc'; } render({focusHeading:true}); }
 }
-function back(){ if(S.step>1){ S.step--; render(); } }
+function back(){ if(S.step>1){ S.step--; render({focusHeading:true}); } }
 
+$('#config-demo-dialog').addEventListener('close',()=>{$('#config-demo-host').replaceChildren();document.body.classList.remove('modal-open');});
+document.addEventListener('modula:languagechange',()=>render({preserveScroll:true}));
 render();
