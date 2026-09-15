@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crea la tua app — Configuratore</title>
+<meta name="theme-color" content="#0B0A0C">
+<link rel="icon" type="image/png" href="../icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./studio.css?v=20260915">
+</head>
+<body class="configurator">
+<a class="skip-link" href="#view">Vai al contenuto</a>
+<header class="site-header">
+  <div class="top shell">
+    <a class="brand" href="../landing/index.html" aria-label="Modula"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span>modula<span class="brand-period">.</span></a>
+    <span class="header-context">Configuratore</span>
+    <a href="../landing/index.html" class="back-landing"><span aria-hidden="true">←</span> Torna al sito</a>
+    <select class="language-select" data-language-select aria-label="Lingua">
+      <option value="it">IT</option><option value="en">EN</option><option value="de">DE</option><option value="fr">FR</option>
+    </select>
+  </div>
+</header>
+<div class="workspace shell">
+  <aside class="guide">
+    <p class="guide-title">La tua Modula,<br> passo dopo passo.</p>
+    <nav class="steps" id="steps" aria-label="Navigazione dei passaggi"></nav>
+    <div id="live-summary" class="live-summary" aria-live="polite"></div>
+    <p class="guide-note">Nessun pagamento in questa fase.</p>
+  </aside>
+  <main id="view" tabindex="-1"></main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<dialog class="demo-dialog" id="config-demo-dialog" aria-label="Modula · demo base con dati di esempio"><div class="demo-dialog-bar"><span>Modula · demo base con dati di esempio</span><button type="button" onclick="document.querySelector('#config-demo-dialog').close()" aria-label="Chiudi demo">×</button></div><div id="config-demo-host"></div></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../modula-test/core/config.js"></script>
+<script src="./catalogo.js?v=4"></script>
+<script src="./schermate.js?v=2"></script>
+<script src="./config.js?v=20260915-studio"></script>
+<script src="./translations.js?v=20260915-lang"></script>
+<script src="./studio-translations.js?v=20260915"></script>
+<script src="../i18n.js?v=20260915-lang"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "_nota": "Registro dei clienti assemblati. Lo mantiene il Direttore: una voce per ogni app in clienti/<slug>/. Letto da direzione.html.",
+  "clienti": [
+    {
+      "slug": "demo-impianti-verdi",
+      "azienda": "Demo Impianti Verdi",
+      "settore": "impianti",
+      "accento": "#34D399",
+      "origine": "configuratore",
+      "moduli_base": ["hub", "cal", "notes", "notif", "clients", "emps"],
+      "moduli_extra": ["man", "conti", "zone"],
+      "moduli_promessi": ["fatture"],
+      "qa": "passata",
+      "stato": "demo — pronta alla struttura, in attesa di collegamento dati",
+      "todo_aperti": [
+        "Supabase: compilare __SUPABASE_URL__ e __SUPABASE_ANON_KEY__ in core/core.js",
+        "Push (VAPID): compilare __VAPID_PUBLIC_KEY__ in core/core.js",
+        "Logo: ricevere logo.png e impostare BRAND.logo='./logo.png' in core/core.js",
+        "Modulo Fatture promesso: da costruire (Inventore), secondo rilascio"
+      ],
+      "consegna": "clienti/demo-impianti-verdi/CONSEGNA.md",
+      "aggiornato": "2026-06-22"
+    }
+  ]
+}

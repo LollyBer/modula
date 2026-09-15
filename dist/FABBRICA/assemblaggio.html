@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assemblaggio — Fabbrica Modula</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./fabbrica.css">
+<style>
+:root{ --ac:#6EE7B7 }
+textarea{width:100%;min-height:120px;background:var(--bg1);border:1.5px solid var(--line2);border-radius:12px;color:var(--t1);font-family:var(--mono);font-size:12.5px;line-height:1.6;padding:13px 15px;outline:none;resize:vertical;transition:border-color .2s}
+textarea:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(110,231,183,.12)}
+.err{color:var(--coral);font-size:13px;font-family:var(--mono);margin-top:8px;min-height:18px}
+#out{display:none;margin-top:26px}
+#out.show{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.ticket{display:flex;flex-wrap:wrap;gap:22px;align-items:center}
+.tk .k{font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.5px}
+.tk .v{font-family:var(--disp);font-weight:600;font-size:17px;margin-top:2px}
+.sw{width:15px;height:15px;border-radius:5px;display:inline-block;vertical-align:-2px;margin-right:6px;box-shadow:0 0 0 1px var(--line2)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.rawchip{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:8px;background:var(--bg2);color:var(--t2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px}
+.mod{border:1px solid var(--line);border-left:2px solid var(--line);border-radius:11px;padding:10px 12px;background:rgba(15,19,25,.5);transition:.15s}
+.mod .nm{font-family:var(--disp);font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:7px}
+.mod .st{font-family:var(--mono);font-size:10px;margin-top:3px;display:flex;align-items:center;gap:5px}
+.mod.base{border-left-color:var(--teal);background:rgba(52,211,153,.06)} .mod.base .st{color:var(--teal)}
+.mod.on{border-left-color:var(--cy);border-color:rgba(110,231,183,.25);background:rgba(110,231,183,.07)} .mod.on .st{color:var(--cy)}
+.mod.soon{border-left-color:var(--amber);background:rgba(251,191,36,.06)} .mod.soon .st{color:var(--amber)}
+.mod.off{opacity:.4;border-style:dashed} .mod.off .st{color:var(--t3)}
+.mod .badge{font-family:var(--mono);font-size:9px;color:var(--indigo);border:1px solid rgba(129,140,248,.4);border-radius:99px;padding:1px 6px;margin-left:auto}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.phone{width:200px;margin:0 auto;background:var(--bg0);border:7px solid #03060A;border-radius:30px;box-shadow:0 0 0 1px rgba(255,255,255,.05),0 18px 44px rgba(0,0,0,.55);overflow:hidden;padding:14px 12px 12px}
+.phone .pt{display:flex;align-items:center;gap:7px}
+.phone .pt .d{width:8px;height:8px;border-radius:50%;background:var(--pcy,var(--cy));box-shadow:0 0 8px var(--pcy,var(--cy))}
+.phone .pt .nm{font-family:var(--disp);font-weight:700;font-size:13px}
+.phone .gest{font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:1px;margin:3px 0 11px}
+.phone .nav{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px;font-size:15px;color:var(--t2)}
+.phone .nav .a{color:var(--pcy,var(--cy))}
+.check{display:flex;flex-direction:column;gap:7px;font-size:13px}
+.check .i{display:flex;align-items:start;gap:8px}
+.ok{color:var(--teal)} .todo{color:var(--amber)}
+.block{background:var(--bg1);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.block .bh{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.block .bh .t{font-family:var(--mono);font-size:11px;color:var(--t2)}
+.block .bh .t b{color:var(--cy);font-weight:500}
+.copy{font-family:var(--disp);font-weight:600;font-size:11.5px;padding:5px 12px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--t1);cursor:pointer;transition:.15s}
+.copy:hover{border-color:var(--cy);color:var(--cy)}
+.copy.done{background:var(--cy);color:#06231A;border-color:var(--cy)}
+pre{margin:0;padding:13px 15px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--t1);overflow-x:auto;white-space:pre}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a class="brand" href="./index.html"><span class="dot"></span>Modula <span class="sub">FABBRICA</span></a>
+    <a class="back" href="./index.html">← Reparti</a>
+  </header>
+
+  <div class="agbar" id="agbar">
+    <div class="ic">🛠</div>
+    <div><div class="nm">l'Assemblatore</div><div class="meta">reparto Assemblaggio</div></div>
+    <div class="lv" id="lv">livello <b>—</b></div>
+  </div>
+
+  <h1 class="h1"><span class="ac"></span>Console di Assemblaggio</h1>
+  <p class="lead">Incolla la configurazione che arriva dal configuratore (anche solo la riga JSON). La console legge il <code>MANIFEST.js</code> e mostra il piano + i blocchi pronti da incollare nel template. <b>Non scrive file</b>: l'assemblaggio vero lo eseguo io seguendo la <code>RICETTA.md</code>.</p>
+
+  <div class="card">
+    <div class="lbl">📨 Configurazione del cliente</div>
+    <textarea id="in" spellcheck="false" placeholder='Incolla qui il testo dell&apos;email / WhatsApp, oppure solo: {"azienda":"...","accento":"#...","moduli_extra":[...]}'></textarea>
+    <div class="row">
+      <button class="btn pri" onclick="analizza()">⚙️ Analizza &amp; assembla il piano</button>
+      <button class="btn ghost" onclick="esempio()">Carica esempio</button>
+      <button class="btn ghost" onclick="document.getElementById('in').value='';hide()">Pulisci</button>
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="./MANIFEST.js"></script>
+<script src="../configuratore/catalogo.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const M=FABBRICA_MANIFEST;
+const CAT=(typeof MODULI_BASE!=='undefined')?[...MODULI_BASE,...MODULI_EXTRA]:[];
+const SET=(typeof SETTORI!=='undefined')?SETTORI:[];
+
+fetch('./agenti/assemblatore/metriche.json').then(r=>r.json()).then(a=>{
+  $('#lv').innerHTML=`livello <b>${a.livello}</b> · ${a.esperienza}%`;
+}).catch(()=>{});
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1900);}
+function hide(){$('#out').classList.remove('show');$('#out').innerHTML='';}
+const slugify=n=>(String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'la-tua-app');
+const modMeta=id=>{const c=CAT.find(m=>m.id===id);const man=M.base[id]||M.extra[id];return{ic:(c&&c.ic)||(man&&man.view.ic)||'•',nome:(c&&c.nome)||(man&&man.view.label)||id};};
+const setMeta=id=>{const s=SET.find(x=>x.id===id);return s?(s.ic+' '+s.nome):(id||'—');};
+
+function esempio(){
+  $('#in').value='NUOVA APP — configurazione\nAzienda: Rossi S.r.l.\nSettore: Impianti & Energia\n\n--- config (per l\'assemblaggio) ---\n{"azienda":"Rossi S.r.l.","settore":"impianti","accento":"#6EE7B7","moduli_base":["hub","cal","notes","clients","emps"],"moduli_extra":["man","macchine","zone","fatture"],"generato":"configuratore"}';
+  analizza();
+}
+
+function parseConfig(txt){
+  const m=txt.match(/\{[\s\S]*\}/); if(!m) throw new Error('Nessun blocco JSON trovato nel testo.');
+  let c; try{c=JSON.parse(m[0]);}catch(e){throw new Error('JSON non valido: '+e.message);}
+  if(!c||typeof c!=='object') throw new Error('Config non riconosciuta.');
+  c.moduli_extra=Array.isArray(c.moduli_extra)?c.moduli_extra:[];
+  c.azienda=c.azienda||'';
+  c.accento=/^#?[0-9a-fA-F]{3,8}$/.test(String(c.accento||''))?(c.accento[0]==='#'?c.accento:'#'+c.accento):'#5BA02C';
+  return c;
+}
+
+function analizza(){
+  $('#err').textContent='';
+  let c; try{c=parseConfig($('#in').value);}catch(e){$('#err').textContent='⚠ '+e.message;hide();return;}
+  const slug=slugify(c.azienda);
+  const baseIds=Object.keys(M.base);
+  const okExtra=c.moduli_extra.filter(id=>M.extra[id]);
+  const promessi=c.moduli_extra.filter(id=>M.inArrivo.includes(id));
+  const presenti=new Set([...baseIds,...okExtra]);
+  const views=M.viewOrder.filter(id=>presenti.has(id));
+  const files=[...M.core.files];
+  baseIds.forEach(id=>files.push(...M.base[id].js));
+  okExtra.forEach(id=>{files.push(...M.extra[id].js,...M.extra[id].css);});
+  render(c,slug,okExtra,promessi,views,[...new Set(files)]);
+}
+
+function modCard(id,cls,state,badge){
+  const m=modMeta(id);
+  return `<div class="mod ${cls}"><div class="nm">${m.ic} ${esc(m.nome)}${badge?`<span class="badge">${badge}</span>`:''}</div><div class="st">${state}</div></div>`;
+}
+
+function render(c,slug,okExtra,promessi,views,fileList){
+  const baseIds=Object.keys(M.base);
+  const offExtra=Object.keys(M.extra).filter(id=>!okExtra.includes(id));
+  const brandBlock=`const BRAND={\n  name:'${(c.azienda||'').replace(/'/g,"\\'")}',\n  tagline:'',\n  logo:''\n};`;
+  const accentBlock=`<style>:root{--cy:${c.accento}}</style>`;
+  const viewsBlock='const VIEWS=[\n'+views.map(id=>{const v=(M.base[id]||M.extra[id]).view;return `  {id:'${id}',ic:'${v.ic}',label:'${v.label}'},`;}).join('\n')+'\n];';
+  const dispBlock='const R={'+views.map(id=>{const r=(M.base[id]||M.extra[id]).render;return `${id}:window.${r}`;}).join(',')+'};';
+  const consegna=`# Consegna — ${c.azienda||'(azienda)'}\n\n- slug: ${slug}\n- accento: ${c.accento}\n- moduli inclusi: ${views.join(', ')}\n- moduli promessi (in arrivo, da costruire): ${promessi.length?promessi.join(', '):'nessuno'}\n\n## TODO\n- [ ] Supabase: crea progetto cliente, sostituisci __SUPABASE_URL__ e __SUPABASE_ANON_KEY__\n- [ ] Push: sostituisci __VAPID_PUBLIC_KEY__ (o rimuovi le notifiche)\n- [ ] Logo: aggiungi ./logo.png e imposta BRAND.logo\n- [ ] Verifica locale, poi push → /modula/clienti/${slug}/app.html`;
+  const block=(title,sub,id,content)=>`<div class="block"><div class="bh"><div class="t">${title}${sub?` <b>${sub}</b>`:''}</div><button class="copy" onclick="cp(this,'${id}')">⧉ Copia</button></div><pre id="${id}">${esc(content)}</pre></div>`;
+
+  $('#out').innerHTML=`
+  <div class="sec">1 · Ordine ricevuto</div>
+  <div class="card"><div class="ticket">
+    <div class="tk"><div class="k">AZIENDA</div><div class="v">${esc(c.azienda||'—')}</div></div>
+    <div class="tk"><div class="k">SLUG · CARTELLA</div><div class="v"><code>clienti/${slug}/</code></div></div>
+    <div class="tk"><div class="k">SETTORE</div><div class="v" style="font-size:15px">${esc(setMeta(c.settore))}</div></div>
+    <div class="tk"><div class="k">ACCENTO</div><div class="v" style="font-size:15px"><span class="sw" style="background:${esc(c.accento)}"></span><code>${esc(c.accento)}</code></div></div>
+  </div></div>
+
+  <div class="sec">2 · Assemblaggio — ${views.length} moduli inclusi · ${promessi.length} promessi · ${offExtra.length} esclusi</div>
+  <div class="grid">
+    ${baseIds.map(id=>modCard(id,'base','base · sempre','')).join('')}
+    ${okExtra.map(id=>{const e=M.extra[id];const b=e.deps?'root + '+e.deps:(e.root?'file in root':'');return modCard(id,'on','extra · scelto',b);}).join('')}
+    ${promessi.map(id=>modCard(id,'soon','⏳ in arrivo · promesso','')).join('')}
+    ${offExtra.map(id=>modCard(id,'off','non scelto','')).join('')}
+  </div>
+
+  <div class="sec">3 · Consegna</div>
+  <div class="cols">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div class="lbl" style="align-self:flex-start">Anteprima app</div>
+      <div class="phone" style="--pcy:${esc(c.accento)}">
+        <div class="pt"><span class="d"></span><span class="nm">${esc(c.azienda||'La tua app')}</span></div>
+        <div class="gest">GESTIONALE</div>
+        <div class="nav">${views.slice(0,4).map((id,i)=>`<span class="${i===0?'a':''}">${modMeta(id).ic}</span>`).join('')}<span>☰</span></div>
+      </div>
+      <div style="font-size:11px;color:var(--t3)">accento <code>--cy: ${esc(c.accento)}</code></div>
+    </div>
+    <div class="card">
+      <div class="lbl"><span style="color:var(--cy)">📁</span> clienti/${slug}/ · ${fileList.length} file</div>
+      <div class="check">
+        <div class="i"><span class="ok">✓</span> copia i ${fileList.length} file del piano (sotto)</div>
+        <div class="i"><span class="ok">✓</span> <code>app.html</code>: tieni script+css dei soli moduli inclusi</div>
+        <div class="i"><span class="ok">✓</span> <code>core.js</code>: incolla VIEWS + dispatcher generati</div>
+        <div class="i"><span class="ok">✓</span> <code>core.js</code>: incolla BRAND · <code>app.html</code>: accento</div>
+        <div class="i"><span class="todo">⚠</span> Supabase + VAPID = segnaposto (TODO)</div>
+        ${promessi.length?`<div class="i"><span class="todo">⏳</span> da costruire (Inventore): ${promessi.map(id=>esc(modMeta(id).nome)).join(', ')}</div>`:''}
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">Blocchi pronti da incollare</div>
+  ${block('BRAND','→ core/core.js','b1',brandBlock)}
+  ${block('Accento','→ &lt;head&gt; di app.html, dopo core.css','b2',accentBlock)}
+  ${block('VIEWS (potato)','→ core/core.js','b3',viewsBlock)}
+  ${block('Dispatcher R (potato)','→ core/core.js','b4',dispBlock)}
+  ${block('File da copiare','→ in clienti/'+slug+'/','b5',fileList.join('\n'))}
+  ${block('CONSEGNA.md','→ clienti/'+slug+'/CONSEGNA.md','b6',consegna)}
+  `;
+  $('#out').classList.add('show');
+}
+
+function cp(btn,id){
+  const txt=document.getElementById(id).textContent;
+  (navigator.clipboard?.writeText(txt)||Promise.reject()).then(()=>{
+    btn.classList.add('done');btn.textContent='✓ Copiato';toast('Copiato negli appunti');
+    setTimeout(()=>{btn.classList.remove('done');btn.textContent='⧉ Copia';},1600);
+  }).catch(()=>toast('Copia non riuscita'));
+}
+</script>
+</body>
+</html>
