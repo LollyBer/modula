@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Modula · Regia</title>
+<title>MODULA TEST · Regia TEST</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -105,9 +105,11 @@
   .link:hover{color:var(--ac)}
   a{color:var(--ac)}
   .sec{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin:26px 0 10px;font-weight:600}
+  .test-banner{background:#9A3412;color:#fff;text-align:center;padding:7px 12px;font-family:'JetBrains Mono';font-size:11px;font-weight:700;letter-spacing:1px}
 </style>
 </head>
 <body>
+<div class="test-banner">AMBIENTE TEST · DATI FITTIZI · NON È PRODUZIONE</div>
 <div class="wrap" id="app"></div>
 
 <script src="../core/config.js"></script>
@@ -160,13 +162,13 @@ const APP_URL=BASE+'app.html';
 
 let session=null, isAdmin=false, authBusy=false;
 
-function shell(inner){app.innerHTML=`<header><div class="brand"><span class="dot"></span>Modula <span class="sub">Regia</span></div><div class="row">${session?`<button class="sm" onclick="doLogout()">Esci</button>`:''}</div></header>${inner}`;}
+function shell(inner){app.innerHTML=`<header><div class="brand"><span class="dot"></span>MODULA TEST <span class="sub">Regia TEST</span></div><div class="row">${session?`<button class="sm" onclick="doLogout()">Esci</button>`:''}</div></header>${inner}`;}
 
 /* ---------- AUTH ---------- */
 function viewLogin(mode){
   const reg=mode==='signup';
   shell(`<div class="center"><div class="lbox">
-    <h2 style="text-align:center;margin-bottom:6px">${reg?'Crea il tuo accesso':'Regia Modula'}</h2>
+    <h2 style="text-align:center;margin-bottom:6px">${reg?'Crea il tuo accesso TEST':'Regia TEST'}</h2>
     <div class="tiny" style="text-align:center;margin-bottom:20px">${reg?'Sarà il tuo account super-admin':'Accedi per gestire le aziende'}</div>
     <div class="card">
       <label>Email</label><input id="em" type="email" autocomplete="email" placeholder="tu@email.it">
