@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0E1110;--bg2:#161A18;--card:#1B201D;--line:#2A312D;--line2:#374039;--t1:#EAF0EC;--t2:#9BA8A0;--t3:#6B776F;--ac:#34D399;--ac2:#10B981;--amber:#FBBF24;--red:#F87171}
+  :root{--bg:#0B0A0C;--bg2:#131215;--card:#1B191E;--line:#38343D;--line2:#544B57;--t1:#F5F5F6;--t2:#B4AEB8;--t3:#827B87;--ac:#FF6B5C;--ac2:#D6332D;--amber:#FBBF24;--red:#FB7185}
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--t1);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
   .wrap{max-width:920px;margin:0 auto;padding:22px 18px 80px}
@@ -105,7 +105,8 @@
   .link:hover{color:var(--ac)}
   a{color:var(--ac)}
   .sec{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin:26px 0 10px;font-weight:600}
-  .test-banner{background:#9A3412;color:#fff;text-align:center;padding:7px 12px;font-family:'JetBrains Mono';font-size:11px;font-weight:700;letter-spacing:1px}
+  .test-banner{background:#FF453A;color:#fff;text-align:center;padding:7px 12px;font-family:'JetBrains Mono';font-size:11px;font-weight:700;letter-spacing:1px}
+  .hub-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:6px 0 22px}.hub-head h1{font-size:30px}.hub-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}.hub-stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.hub-stat b{display:block;font:700 28px 'Space Grotesk';color:var(--t1)}.hub-stat span{font-size:12px;color:var(--t2)}.hub-stat.hot{border-color:#8f423c;background:#271719}.hub-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.hub-action{padding:16px;text-align:left}.hub-action strong{display:block;margin-bottom:3px}.hub-action small{color:var(--t2);font-weight:400}@media(max-width:700px){.hub-grid,.hub-actions{grid-template-columns:1fr 1fr}.hub-head{align-items:start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -114,7 +115,13 @@
 
 <script src="../core/config.js"></script>
 <script>
-const CFG=window.MODULA_CONFIG||{};
+/* Fallback TEST: permette di aprire la Regia anche direttamente dal Finder.
+   Sono chiavi browser pubbliche del solo progetto TEST, mai chiavi segrete. */
+const CFG=window.MODULA_CONFIG||{
+  SUPABASE_URL:'https://otseutvdqxenekldnwzy.supabase.co',
+  SUPABASE_ANON_KEY:'sb_publishable_ibfUKC08jO0HaAnqWttg1w_iic-ENCS',
+  ENVIRONMENT:'TEST'
+};
 const DEMO=/^__/.test(CFG.SUPABASE_URL||'__');
 const sb=DEMO?null:window.supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY);
 const $=s=>document.querySelector(s);
@@ -159,6 +166,10 @@ const MODULES_TODO=[
 const mLabel=id=>{const m=MODULES.find(x=>x.id===id);return m?m.label:id;};
 const BASE=location.origin+location.pathname.replace(/\/admin(\/.*)?$/,'/');
 const APP_URL=BASE+'app.html';
+/* Tutte le parti vivono nella stessa cartella MODULA TEST. */
+const SITE_URL='../landing/index.html';
+const CONFIGURATORE_URL='../configuratore/index.html';
+const REGIA_URL=location.href;
 
 let session=null, isAdmin=false, authBusy=false;
 
@@ -220,14 +231,15 @@ async function doClaim(){
 }
 
 /* ---------- DASHBOARD ---------- */
-let DATA=null, TAB='aziende';
+let DATA=null, TAB='hub';
 const TABS=[
-  {id:'aziende',  label:'\u{1F3E2} Aziende clienti'},
-  {id:'banco',    label:'\u{1F9EA} Banco di prova'},
-  {id:'lavoro',   label:'\u{1F6E0}️ Banco da lavoro'},
-  {id:'moduli',   label:'\u{1F9F1} Moduli'},
-  {id:'abbonamenti',label:'\u{1F4B3} Abbonamenti'},
-  {id:'link',     label:'\u{1F517} Link'}
+  {id:'hub',      label:'Hub'},
+  {id:'aziende',  label:'Aziende'},
+  {id:'banco',    label:'Laboratorio TEST'},
+  {id:'lavoro',   label:'Configurazioni'},
+  {id:'moduli',   label:'Moduli'},
+  {id:'abbonamenti',label:'Contratti'},
+  {id:'link',     label:'Collegamenti'}
 ];
 async function viewDash(){
   shell(`<div id="dash"><div class="muted">Carico…</div></div>`);
@@ -239,17 +251,19 @@ async function loadData(){
   const{data:tenants}=await sb.from('tenants').select('*').order('created_at',{ascending:false});
   const{data:pend}=await sb.from('employees').select('tenant_id,name,invite_code,is_owner').not('invite_code','is',null);
   const{data:adm}=await sb.from('tenant_admin').select('*');
+  const{data:requests}=await sb.from('configurator_requests').select('*').order('created_at',{ascending:false});
   const{data:ov}=await sb.rpc('tenant_overview');
   const codes={}; (pend||[]).forEach(e=>{(codes[e.tenant_id]=codes[e.tenant_id]||[]).push(e);});
   const admById={}; (adm||[]).forEach(a=>{admById[a.tenant_id]=a;});
   const ovById={}; (ov||[]).forEach(o=>{ovById[o.tenant_id]=o;});
-  DATA={tenants:tenants||[], codes, adm:admById, ov:ovById};
+  DATA={tenants:tenants||[], codes, adm:admById, ov:ovById, requests:requests||[]};
 }
 function renderTabs(){ $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${TAB===t.id?'on':''}" onclick="setTab('${t.id}')">${t.label}</button>`).join(''); }
 function setTab(t){ TAB=t; renderTabs(); renderTab(); window.scrollTo({top:0}); }
 function renderTab(){
   const c=$('#content');
-  if(TAB==='aziende') c.innerHTML=sectionAziende();
+  if(TAB==='hub') c.innerHTML=sectionHub();
+  else if(TAB==='aziende') c.innerHTML=sectionAziende();
   else if(TAB==='banco') c.innerHTML=sectionBanco();
   else if(TAB==='lavoro') c.innerHTML=sectionLavoro();
   else if(TAB==='moduli') c.innerHTML=sectionModuli();
@@ -257,6 +271,13 @@ function renderTab(){
   else c.innerHTML=sectionLink();
 }
 const isBench=t=>t.slug.startsWith('banco-');
+function sectionHub(){
+  const clients=DATA.tenants.filter(t=>!isBench(t));
+  const paid=clients.filter(t=>(DATA.adm[t.id]||{}).payment_status==='in_regola').length;
+  const newReq=clients.filter(t=>['da_avviare','in_configurazione'].includes((DATA.adm[t.id]||{}).onboarding_status||'da_avviare')).length;
+  const turnkey=clients.filter(t=>(DATA.adm[t.id]||{}).purchase_mode==='license_turnkey').length;
+  return `<div class="hub-head"><div><h1>Buongiorno</h1><p class="muted">Questa è la tua cabina di controllo per MODULA TEST.</p></div><button class="pri" onclick="setTab('aziende')">Crea azienda</button></div><div class="hub-grid"><div class="hub-stat"><b>${clients.length}</b><span>Aziende</span></div><div class="hub-stat"><b>${paid}</b><span>Pagamenti in regola</span></div><div class="hub-stat hot"><b>${newReq}</b><span>Avvii da seguire</span></div><div class="hub-stat"><b>${turnkey}</b><span>Chiavi in mano</span></div></div><div class="sec">Cosa vuoi fare?</div><div class="hub-actions"><button class="hub-action" onclick="setTab('aziende')"><strong>Gestisci aziende</strong><small>Accessi, formula, versione e stato.</small></button><button class="hub-action" onclick="setTab('lavoro')"><strong>Apri configurazioni</strong><small>Richieste arrivate dal configuratore.</small></button><button class="hub-action" onclick="setTab('banco')"><strong>Apri laboratorio</strong><small>Prove senza coinvolgere clienti.</small></button></div>`;
+}
 
 /* ---- sezione AZIENDE CLIENTI ---- */
 function sectionAziende(){
@@ -264,14 +285,14 @@ function sectionAziende(){
   const list=cli.map(t=>tenantCard(t,DATA.codes[t.id]||[],DATA.adm[t.id]||{},DATA.ov[t.id]||{})).join('')||`<div class="card muted">Nessuna azienda cliente ancora. Creane una qui sotto.</div>`;
   return `
     <div class="row" style="justify-content:space-between;align-items:baseline">
-      <h2>Aziende clienti <span class="muted" style="font-size:15px">(${cli.length})</span></h2>
+      <div><h2>Aziende clienti <span class="muted" style="font-size:15px">(${cli.length})</span></h2><div class="tiny">Formula, versione dell'app e stato di avvio restano nella scheda di ogni azienda.</div></div>
       <span class="tiny">App: <a href="${APP_URL}" target="_blank">${esc(APP_URL)}</a></span>
     </div>
     <input id="search" placeholder="\u{1F50D} Cerca azienda per nome o slug…" oninput="filterTenants(this.value)">
     <div id="tlist">${list}</div>
     <div id="noresult" class="card muted" style="display:none">Nessuna azienda trovata.</div>
-    <div class="sec">Aggiungi</div>
-    <details class="newcard"><summary>+ Nuova azienda</summary>${newTenantForm()}</details>`;
+    <div class="sec">Nuova azienda</div>
+    <details class="newcard"><summary>+ Crea azienda e accesso titolare</summary>${newTenantForm()}</details>`;
 }
 
 /* ---- sezione BANCO DI PROVA (piu' prove) ---- */
@@ -407,13 +428,13 @@ function sectionModuli(){
 
 /* ---- sezione LINK ---- */
 function sectionLink(){
-  const base=BASE;
   return `
-    <h2>Link utili</h2>
-    <div class="tiny" style="margin:4px 0 16px">I link da dare ai clienti o da tenere a portata di mano.</div>
-    ${linkCard(base+'landing/','\u{1F310} Landing','La vetrina pubblica di Modula — mandala a un potenziale cliente.')}
-    ${linkCard(base+'configuratore/','\u{1F9E9} Configuratore','Il cliente compone la sua app e ti manda la richiesta.')}
-    ${linkCard(APP_URL,'\u{1F4F1} App','Dove entrano titolari e dipendenti con il codice invito.')}`;
+    <h2>Collegamenti MODULA TEST</h2>
+    <div class="tiny" style="margin:4px 0 16px">Le quattro parti dello stesso sistema TEST.</div>
+    ${linkCard(SITE_URL,'\u{1F310} Sito MODULA TEST','La vetrina pubblica di Modula.')}
+    ${linkCard(CONFIGURATORE_URL,'\u{1F9E9} Configuratore TEST','Il cliente compone la sua app e ti manda la richiesta.')}
+    ${linkCard(APP_URL,'\u{1F4F1} App','Dove entrano titolari e dipendenti con il codice invito.')}
+    ${linkCard(REGIA_URL,'\u{1F3A7} Regia TEST','La tua cabina di controllo per aziende, contratti e laboratorio.')}`;
 }
 function linkCard(url,title,desc){
   return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
@@ -467,6 +488,9 @@ function tenantCard(t,codes,adm,ov){
         </div>
         <div><label>Scadenza / rinnovo</label><input id="c-due-${t.id}" type="date" value="${adm.plan_due||''}"></div>
         <div><label>Stato pagamento</label><select id="c-pay-${t.id}">${opt('in_regola','In regola')}${opt('insoluto','Insoluto')}${opt('sospeso','Sospeso')}</select></div>
+        <div><label>Formula</label><select id="c-mode-${t.id}"><option value="subscription" ${(adm.purchase_mode||'subscription')==='subscription'?'selected':''}>Abbonamento</option><option value="license_self" ${adm.purchase_mode==='license_self'?'selected':''}>Licenza · fai da te</option><option value="license_turnkey" ${adm.purchase_mode==='license_turnkey'?'selected':''}>Licenza · chiavi in mano</option></select></div>
+        <div><label>Versione dell'app</label><input id="c-version-${t.id}" value="${esc(adm.app_version||'TEST 1.0.0')}" placeholder="es. 1.2.0"></div>
+        <div><label>Stato avvio</label><select id="c-onboard-${t.id}"><option value="da_avviare" ${(adm.onboarding_status||'da_avviare')==='da_avviare'?'selected':''}>Da avviare</option><option value="in_configurazione" ${adm.onboarding_status==='in_configurazione'?'selected':''}>In configurazione</option><option value="consegnata" ${adm.onboarding_status==='consegnata'?'selected':''}>Consegnata</option><option value="attiva" ${adm.onboarding_status==='attiva'?'selected':''}>Attiva</option></select></div>
       </div>
       <div style="margin-top:10px"><label>Note (private)</label><input id="c-notes-${t.id}" value="${esc(adm.notes||'')}" placeholder="Promemoria, accordi, scadenze…"></div>
       <div class="row" style="margin-top:10px;align-items:center;gap:8px">
@@ -505,11 +529,12 @@ function filterTenants(q){
 function sectionLavoro(){
   const cli=DATA.tenants.filter(t=>!isBench(t));
   const list=cli.map(workbenchCard).join('')||`<div class="card muted">Nessuna azienda. Creala nel tab «Aziende clienti».</div>`;
+  const req=(DATA.requests||[]).filter(r=>r.status!=='archiviata').map(r=>`<div class="card"><b>${esc(r.company_name)}</b><span class="pill off" style="margin-left:7px">${esc(r.status)}</span><div class="tiny" style="margin:6px 0">${esc(r.contact_name)} · ${esc(r.contact_email)} · ${fmtDate(r.created_at)}</div><button class="sm pri" onclick="loadRequest('${r.id}')">Usa per creare azienda</button></div>`).join('')||'<div class="card muted">Nessuna richiesta ricevuta dal Configuratore.</div>';
   return `
     <div class="row" style="justify-content:space-between;align-items:baseline">
-      <h2>Banco da lavoro <span class="muted" style="font-size:15px">(${cli.length})</span></h2>
+      <h2>Configurazioni ricevute</h2>
     </div>
-    <div class="tiny" style="margin:4px 0 14px">Personalizza l'app di ogni cliente: colore, logo, moduli e dati.</div>
+    <div class="tiny" style="margin:4px 0 14px">Le richieste inviate dal Configuratore arrivano qui automaticamente.</div>${req}<div class="sec">Aziende da personalizzare</div>
     <input id="search" placeholder="\u{1F50D} Cerca azienda…" oninput="filterTenants(this.value)">
     <div id="tlist">${list}</div>
     <div id="noresult" class="card muted" style="display:none">Nessuna azienda trovata.</div>`;
@@ -613,6 +638,9 @@ async function saveAdmin(id){
     plan_price: g('c-price').value===''?null:parseFloat(g('c-price').value),
     plan_due: g('c-due').value||null,
     payment_status: g('c-pay').value,
+    purchase_mode: g('c-mode').value,
+    app_version: g('c-version').value.trim()||'TEST 1.0.0',
+    onboarding_status: g('c-onboard').value,
     updated_at:new Date().toISOString()
   };
   const el=$('#oka-'+id);el.textContent='…';
@@ -663,6 +691,8 @@ function newTenantForm(){
       <div><label>Email referente</label><input id="nt-email" placeholder="cliente@email.ch"></div>
       <div><label>Telefono</label><input id="nt-phone" placeholder="+41 …"></div>
       <div><label>Posti dipendente (0 = illimitati)</label><input id="nt-posti" type="number" min="0" value="4"></div>
+      <div><label>Formula scelta</label><select id="nt-mode"><option value="subscription">Abbonamento</option><option value="license_self">Licenza · fai da te</option><option value="license_turnkey">Licenza · chiavi in mano</option></select></div>
+      <div><label>Versione iniziale</label><input id="nt-version" value="TEST 1.0.0" placeholder="es. 1.0.0"></div>
       <div><label>Logo (URL, facoltativo)</label><input id="nt-logo" placeholder="https://… o vuoto"></div>
     </div>
     <div style="margin-top:14px"><label>Moduli da attivare</label><div class="modchips" id="nt-mods">${chips}</div></div>
@@ -687,7 +717,7 @@ async function createTenant(){
     if(posti!==4)upd.max_employees=posti;
     if(Object.keys(upd).length)await sb.from('tenants').update(upd).eq('id',tid);
     const email=$('#nt-email')?$('#nt-email').value.trim():'', phone=$('#nt-phone')?$('#nt-phone').value.trim():'';
-    if(owner||email||phone)await sb.from('tenant_admin').upsert({tenant_id:tid,contact_person:owner,contact_email:email,contact_phone:phone,updated_at:new Date().toISOString()});
+    if(owner||email||phone)await sb.from('tenant_admin').upsert({tenant_id:tid,contact_person:owner,contact_email:email,contact_phone:phone,purchase_mode:$('#nt-mode').value,app_version:$('#nt-version').value.trim()||'TEST 1.0.0',onboarding_status:$('#nt-mode').value==='license_turnkey'?'in_configurazione':'da_avviare',updated_at:new Date().toISOString()});
   }
   $('#nt-result').innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--ac)">
     <h3 style="color:var(--ac)">✓ ${esc(name)} creata!</h3>

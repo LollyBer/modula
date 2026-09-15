@@ -227,7 +227,7 @@ function step4(){
       <h3>📨 ${P.custom?'Parliamone':'Invia la richiesta'}</h3>
       <p>${P.custom?'Hai chiesto un modulo su misura: ti contatto io per progettarlo e concordare il prezzo prima di procedere. Intanto inviami la configurazione.':'Inviami la configurazione: ti preparo l\'app e ti mando il link per pagare. Oppure contattami per qualsiasi domanda. Nessun dato viene salvato online.'}</p>
       <div class="send-actions">
-        <button class="btn pri" onclick="sendEmail()">✉️ Invia via Email</button>
+        <button class="btn pri" onclick="sendToRegia()">Invia richiesta</button>
         ${CONTATTO.whatsapp?`<button class="btn" onclick="sendWhatsApp()">💬 WhatsApp</button>`:''}
         <button class="btn ghost" onclick="copyConfig()">⧉ Copia configurazione</button>
       </div>
@@ -347,6 +347,16 @@ function buildText(){
 function sendEmail(){
   const sub = `Nuova app — ${S.azienda.trim()||'configurazione'}`;
   window.location.href = `mailto:${CONTATTO.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(buildText())}`;
+}
+async function sendToRegia(){
+  const c=buildConfig();
+  if(!c.azienda||!c.referente||!c.email){toast('Inserisci azienda, referente ed email');return;}
+  const cfg=window.MODULA_CONFIG;
+  if(!cfg||!window.supabase){toast('Connessione TEST non disponibile');return;}
+  const db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const{error}=await db.from('configurator_requests').insert({company_name:c.azienda,contact_name:c.referente,contact_email:c.email,contact_phone:c.telefono,configuration:c});
+  if(error){toast('Invio non riuscito: '+error.message);return;}
+  toast('Richiesta inviata alla Regia ✓');
 }
 function sendWhatsApp(){
   window.open(`https://wa.me/${CONTATTO.whatsapp}?text=${encodeURIComponent(buildText())}`,'_blank');
