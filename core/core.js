@@ -38,7 +38,7 @@ const seatFull=()=>MAX_EMP!=null && seatCount()>=MAX_EMP;
 /* viste visibili = permesso utente (can) ∩ modulo attivo per il tenant */
 function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.id==='settings'||((v.id==='zone'?can('clients'):can(v.id))&&moduleActive(v.id)));return typeof applyModOrder==='function'?applyModOrder(base):base;}
 
-const APP_VERSION='2026.09.15-161200';
+const APP_VERSION='20260915162000';
 
 const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],surveys:[],contracts:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{},contractTemplates:[]},speaker:null,session:null});
 let S=blank();
