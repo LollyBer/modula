@@ -21,31 +21,31 @@ const MODS = [
   {id:'emps', ic:'👷', nm:'Personale', px:0, pitch:'Il team con ruoli e permessi: decidi tu chi vede cosa.',
    f:['Ogni persona vede solo ciò che le serve','Carico di lavoro per dipendente','Accesso con codice invito monouso','Attivi/disattivi un accesso in un tocco']},
 
-  {id:'conti', ic:'💰', nm:'Conti', px:12, pitch:'Entrate, spese e utile sempre sotto controllo.',
+  {id:'conti', ic:'💰', nm:'Conti', px:10, pitch:'Entrate, spese e utile sempre sotto controllo.',
    f:['Incassi e spese aggiornati in tempo reale','Categorie e spese ricorrenti','Utile del mese a colpo d’occhio','Export pulito per il commercialista']},
   {id:'todo', ic:'✅', nm:'Da fare', px:9, pitch:'Le cose da fare, con o senza scadenza, sempre sott’occhio.',
    f:['Liste spuntabili condivise col team','Scadenze che finiscono nel calendario','Avviso prima che scada','Assegna una cosa da fare a un collega']},
-  {id:'fatture', ic:'🧾', nm:'Fatture', px:19, pitch:'Fatture con QR-fattura svizzera, pronte da inviare.',
+  {id:'fatture', ic:'🧾', nm:'Fatture', px:10, pitch:'Fatture con QR-fattura svizzera, pronte da inviare.',
    f:['Righe, IVA e totali calcolati in automatico','QR-fattura svizzera: il cliente paga subito','Le fatture pagate entrano nei Conti','Salvi il PDF e lo mandi al cliente']},
-  {id:'documenti', ic:'📁', nm:'Documenti', px:15, pitch:'L’archivio dei documenti aziendali, sempre a portata.',
+  {id:'documenti', ic:'📁', nm:'Documenti', px:10, pitch:'L’archivio dei documenti aziendali, sempre a portata.',
    f:['Carichi contratti, assicurazioni, certificati, permessi…','Organizzati in categorie (cartelle)','Barra di ricerca: scrivi e trovi il documento','Promemoria per i documenti in scadenza']},
-  {id:'contratti', ic:'📄', nm:'Contratti', px:15, pitch:'I contratti per cliente: crei il modello una volta, lo compili in un attimo.',
+  {id:'contratti', ic:'📄', nm:'Contratti', px:10, pitch:'I contratti per cliente: crei il modello una volta, lo compili in un attimo.',
    f:['I tuoi modelli con i dati del cliente già inseriti','Firma col dito dal telefono, o stampa e fai firmare','Importi e archivi i contratti già esistenti (PDF)','Promemoria delle scadenze sul calendario']},
-  {id:'man', ic:'🔧', nm:'Manutenzioni', px:19, pitch:'Interventi, assistenza e storico, senza più foglietti.',
+  {id:'man', ic:'🔧', nm:'Manutenzioni', px:10, pitch:'Interventi, assistenza e storico, senza più foglietti.',
    f:['Programmi l’intervento e lo assegni al tecnico','Stato: da fare · in corso · fatta','Bollettino e firma del cliente sul telefono','Storico completo per cliente e per impianto']},
-  {id:'macchine', ic:'⚙️', nm:'Macchine / Impianti', px:19, custom:true, pitch:'Il parco macchine con schede e scadenze.',
+  {id:'macchine', ic:'⚙️', nm:'Macchine / Impianti', px:10, custom:true, pitch:'Il parco macchine con schede e scadenze.',
    f:['Scheda tecnica per ogni macchina','Scadenze di assistenza e revisione','Storico interventi per impianto','Collega la macchina al cliente']},
-  {id:'pellet', ic:'🪵', nm:'Consegne', px:19, pitch:'Consegne, bolle e firma, dal telefono.',
+  {id:'pellet', ic:'🪵', nm:'Consegne', px:10, pitch:'Consegne, bolle e firma, dal telefono.',
    f:['Consegne programmate con quantità e prezzo','Firma del cliente direttamente sullo schermo','Stato: da consegnare · consegnato','Organizza i giri della giornata']},
-  {id:'surveys', ic:'🔍', nm:'Sopralluoghi', px:19, pitch:'Ogni sopralluogo tracciato, con foto sul posto e stato del lavoro.',
+  {id:'surveys', ic:'🔍', nm:'Sopralluoghi', px:10, pitch:'Ogni sopralluogo tracciato, con foto sul posto e stato del lavoro.',
    f:['Scatta le foto direttamente dal telefono','Anche per potenziali clienti, non solo in anagrafica','Pipeline: da preventivare · vinto · perso','Da “vinto” lo trasformi in cantiere con un tocco']},
-  {id:'sites', ic:'🏗', nm:'Cantieri / Commesse', px:29, pitch:'Lavori in corso con ore, costi e avanzamento.',
+  {id:'sites', ic:'🏗', nm:'Cantieri / Commesse', px:10, pitch:'Lavori in corso con ore, costi e avanzamento.',
    f:['Avanzamento del cantiere sempre aggiornato','Ore registrate per dipendente','Costi, materiali e foto sul posto','Scadenze e chiusura commessa con resoconto']},
-  {id:'reports', ic:'📸', nm:'Rapportini', px:19, pitch:'Il rapporto giornaliero di cantiere, con foto, dal telefono.',
+  {id:'reports', ic:'📸', nm:'Rapportini', px:10, pitch:'Il rapporto giornaliero di cantiere, con foto, dal telefono.',
    f:['Ore, lavoro svolto e materiali per giornata','Foto del cantiere allegate al rapporto','Promemoria automatico a chi è in cantiere','Ore per commessa pronte per la fattura']},
-  {id:'zone', ic:'🗺️', nm:'Zone & Mappa', px:29, pitch:'I tuoi clienti sulla mappa, i giri ottimizzati.',
+  {id:'zone', ic:'🗺️', nm:'Zone & Mappa', px:10, pitch:'I tuoi clienti sulla mappa, i giri ottimizzati.',
    f:['Tutti i clienti visualizzati sulla mappa','Zone di consegna e di competenza','Raggruppa per area per organizzare i giri','Filtra per paese o quartiere']},
-  {id:'lavagna', ic:'📋', nm:'Lavagna', px:12, pitch:'La tua dashboard componibile: la giornata a colpo d’occhio.',
+  {id:'lavagna', ic:'📋', nm:'Lavagna', px:10, pitch:'La tua dashboard componibile: la giornata a colpo d’occhio.',
    f:['Post-it e widget che sposti come vuoi','Vedi chi è dove e i cantieri aperti','Componi la tua vista su tela libera','Ogni modulo porta i suoi widget']},
 
   {id:'prenota', ic:'🗓️', nm:'Prenotazioni', px:-1, pitch:'Appuntamenti e prenotazioni online per i tuoi clienti.', f:['Il cliente prenota da solo online','Calendario sincronizzato col team','Conferme e promemoria automatici']},
@@ -86,8 +86,7 @@ function initExplorer(){
       <div class="ed-nm">${escapeH(m.nm)} ${pxChip(m)}</div>
       <p class="ed-pitch">${escapeH(m.pitch)}</p>
       <div class="exp-funcs">${m.f.map((t,i)=>`<div class="exp-func" style="animation-delay:${i*0.06}s"><span class="efk">✓</span><span>${escapeH(t)}</span></div>`).join('')}</div>
-    </div>
-    <div class="exp-phone">${phoneFor(m)}</div>`;
+    </div>`;
     detail.classList.add('show');
     $$('#exp-list .exp-item').forEach(b=>b.classList.toggle('on', b.dataset.id===m.id));
   }
@@ -181,6 +180,46 @@ function initPerso(){
   });
 }
 
+/* ============================ ANTEPRIMA DESKTOP IN HERO ============================ */
+function initHeroConsole(){
+  const root=$('#hero-console-content');
+  const buttons=$$('.hero-console [data-view]');
+  if(!root||!buttons.length) return;
+  const views={
+    hub:{k:'BUONGIORNO',t:'Tutto è in ordine.',a:'+ Nuova attività',stats:[['12','Attività aperte'],['4','In programma oggi'],['CHF 4’250','Incassi settimana']],rows:[['08:30','Sopralluogo · Rossi Costruzioni','Calendario'],['11:00','Consegna materiali · Bar Centrale','Note'],['16:30','Intervento tecnico · Studio Ferri','Clienti']]},
+    cal:{k:'CALENDARIO',t:'La tua giornata.',a:'+ Appuntamento',stats:[['4','Eventi oggi'],['2','Questa settimana'],['1','Promemoria']],rows:[['08:30','Sopralluogo · Rossi Costruzioni','Oggi'],['11:00','Consegna materiali · Bar Centrale','Oggi'],['16:30','Intervento tecnico · Studio Ferri','Oggi']]},
+    notes:{k:'NOTE CONDIVISE',t:'Le cose da ricordare.',a:'+ Nuova nota',stats:[['3','Note fissate'],['8','Liste attive'],['5','Voci completate']],rows:[['','Materiale da ordinare','3 voci'],['','Riunione di venerdì','Aggiornata oggi'],['','Richiamare Studio Ferri','Da fare']]},
+    clients:{k:'CLIENTI',t:'Tutte le relazioni.',a:'+ Nuovo cliente',stats:[['248','Clienti attivi'],['6','Nuovi questo mese'],['14','Da ricontattare']],rows:[['RC','Rossi Costruzioni S.r.l.','Milano'],['BC','Bar Centrale','Torino'],['SF','Studio Ferri','Firenze']]},
+    emps:{k:'PERSONALE',t:'Il team, coordinato.',a:'+ Invita persona',stats:[['8','Persone attive'],['3','Sul campo oggi'],['2','Ruoli configurati']],rows:[['MB','Marco B.','Titolare'],['LV','Luca V.','Tecnico'],['SD','Sara D.','Ufficio']]}
+  };
+  function render(id){const v=views[id];root.innerHTML=`<div class="console-head"><div><small>${v.k}</small><h3>${v.t}</h3></div><button type="button">${v.a}</button></div><div class="console-kpis">${v.stats.map(x=>`<div><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div><div class="console-list">${v.rows.map(x=>`<div><i>${x[0]}</i><b>${x[1]}</b><span>${x[2]}</span></div>`).join('')}</div>`;buttons.forEach(b=>b.classList.toggle('on',b.dataset.view===id));}
+  buttons.forEach(b=>b.addEventListener('click',()=>render(b.dataset.view)));render('hub');
+}
+
+/* ============================ DETTAGLIO OFFERTE ============================ */
+function initPricingDetails(){
+  const cards=$$('.pm-card[data-plan]'), detail=$('#price-detail');
+  if(!cards.length||!detail) return;
+  const plans={
+    abbonamento:{title:'Abbonamento Modula · da CHF 59 a CHF 129',text:'Parti con app e moduli base a CHF 59/mese. Ogni modulo extra costa CHF 9–10/mese; dal settimo extra il canone si ferma a CHF 129/mese, con accesso a tutti i moduli anche se ne attivi dieci.',items:['Base: Hub, Calendario, Note, Clienti e Personale','Extra: CHF 9–10/mese ciascuno','Tetto CHF 129/mese · tutti i moduli inclusi']},
+    licenza:{title:'Licenza perpetua · scegli il livello di avvio',text:'La licenza è la stessa: cambia il grado di accompagnamento. In entrambi i casi il diritto d’uso della versione acquistata resta permanente.',items:['CHF 6’000 · fai-da-te: consegna per gestione autonoma','CHF 7’000 · setup gestito: installazione, configurazione e avvio curati da Modula','Upgrade e nuove funzioni si concordano separatamente']}
+  };
+  function show(id){const p=plans[id]; const active=detail.dataset.plan===id;cards.forEach(c=>{const on=c.dataset.plan===id&&!active;c.classList.toggle('on',on);c.setAttribute('aria-expanded',String(on));});if(active){detail.innerHTML='';detail.dataset.plan='';return;}detail.dataset.plan=id;detail.innerHTML=`<div class="detail-inner"><h3>${p.title}</h3><p>${p.text}</p><ul>${p.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;detail.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  cards.forEach(c=>c.addEventListener('click',()=>show(c.dataset.plan)));
+}
+
+/* ============================ CONFRONTO INTERATTIVO ============================ */
+function initDifference(){
+  const stage=$('#difference-stage'), tabs=$$('.diff-tab'); if(!stage||!tabs.length) return;
+  const views={
+    modula:{mark:'M',over:'MODULA',title:'Il lavoro decide la forma dell’app.',text:'Una base pronta, i moduli che ti servono e una configurazione guidata: niente funzioni inutili, niente progetto infinito.',items:['Solo moduli utili alla tua attività','Nome, colori e accessi del tuo team','Su computer e telefono, da subito']},
+    classic:{mark:'+',over:'GESTIONALE CLASSICO',title:'Il software decide come devi lavorare.',text:'Hai molte funzioni già pronte, ma spesso devi adattare processi, schermate e abitudini dell’attività al programma.',items:['Pacchetto ampio, anche con funzioni inutili','Personalizzazioni più lente o costose','Struttura scelta prima di conoscere il tuo lavoro']},
+    generic:{mark:'0',over:'APP GENERICA',title:'Parti da una tela vuota.',text:'Puoi inventare tutto, ma devi progettare flussi, schermate, regole e collegamenti prima di iniziare davvero a lavorare.',items:['Grande libertà, molto lavoro di impostazione','Richiede scelte tecniche e manutenzione','Nessuna base di settore già pronta']}
+  };
+  function render(id){const v=views[id];stage.innerHTML=`<div class="diff-mark">${v.mark}</div><div class="diff-copy"><span class="diff-overline">${v.over}</span><h3>${v.title}</h3><p>${v.text}</p></div><ul class="diff-list">${v.items.map(x=>`<li>${x}</li>`).join('')}</ul>`;tabs.forEach(t=>{const on=t.dataset.diff===id;t.classList.toggle('on',on);t.setAttribute('aria-selected',String(on));});}
+  tabs.forEach(t=>t.addEventListener('click',()=>render(t.dataset.diff)));
+}
+
 /* ============================ CONTATORI ANIMATI ============================ */
 function initCounters(){
   const els = $$('[data-count]');
@@ -229,6 +268,6 @@ function initFx(){
 }
 
 /* ============================ BOOT ============================ */
-function boot(){ initExplorer(); initBuilder(); initPerso(); initCounters(); initFx(); }
+function boot(){ initExplorer(); initBuilder(); initPerso(); initHeroConsole(); initPricingDetails(); initDifference(); initCounters(); initFx(); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

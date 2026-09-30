@@ -38,7 +38,7 @@ const seatFull=()=>MAX_EMP!=null && seatCount()>=MAX_EMP;
 /* viste visibili = permesso utente (can) ∩ modulo attivo per il tenant */
 function visViews(){const base=VIEWS.filter(v=>v.id==='hub'||v.id==='notif'||v.id==='settings'||((v.id==='zone'?can('clients'):can(v.id))&&moduleActive(v.id)));return typeof applyModOrder==='function'?applyModOrder(base):base;}
 
-const APP_VERSION='2026.07.06-140421';
+const APP_VERSION='20260915162000';
 
 const blank=()=>({clients:[],employees:[],timeEntries:[],notes:[],noteGroups:[],appointments:[],maintenances:[],pellet:[],sites:[],surveys:[],contracts:[],chat:[],lists:[],callLog:[],expenses:[],maintPrices:[],reports:[],invoices:[],documents:[],todos:[],settings:{bagsPerPallet:70,companyName:'',pricePerTon:null,pricePerBag:null,eventTypes:[],board:[],boards:{},places:[],billing:{},reminders:{},contractTemplates:[]},speaker:null,session:null});
 let S=blank();
@@ -654,6 +654,13 @@ const VIEWS=[
   {id:'settings',ic:'⚙️',label:'Impostazioni'},
 ];
 let view='hub';
+/* Il Calendario usa sempre il colore scelto per l'app: niente azzurro fisso. */
+function applyViewAccent(id){
+  const root=document.documentElement;
+  root.dataset.module=id||'hub';
+  root.style.setProperty('--cy','var(--brand)');
+  root.style.setProperty('--cy2','var(--brand2)');
+}
 /* ---- CATALOGO PIATTAFORMA: tutti i moduli Modula (per la schermata "Moduli & richieste") ----
    base = sempre presenti · pronti = attivabili subito dal super-admin · arrivo = su misura/da costruire.
    Tenere allineato con configuratore/catalogo.js e admin/index.html. */
@@ -718,8 +725,8 @@ function getBg(){try{return localStorage.getItem('modula_bg')||'foglie';}catch(e
 function setBg(id){try{if(id&&id!=='foglie')localStorage.setItem('modula_bg',id);else localStorage.removeItem('modula_bg');}catch(e){}applyBg();}
 function applyBg(){const id=getBg();if(id&&id!=='foglie')document.documentElement.dataset.bg=id;else document.documentElement.removeAttribute('data-bg');}
 function getAccent(){try{return localStorage.getItem('modula_accent')||'';}catch(e){return '';}}
-function setAccent(hex){try{if(hex)localStorage.setItem('modula_accent',hex);else localStorage.removeItem('modula_accent');}catch(e){}applyAccent();if(typeof renderNav==='function')renderNav();}
-function applyAccent(){const a=getAccent();if(!a)return;const p=ACCENTS.find(x=>x.cy.toLowerCase()===a.toLowerCase());document.documentElement.style.setProperty('--cy',a);document.documentElement.style.setProperty('--cy2',p?p.cy2:a);}
+function setAccent(hex){try{if(hex)localStorage.setItem('modula_accent',hex);else localStorage.removeItem('modula_accent');}catch(e){}applyAccent();applyViewAccent(view);if(typeof renderNav==='function')renderNav();}
+function applyAccent(){const a=getAccent();if(!a)return;const p=ACCENTS.find(x=>x.cy.toLowerCase()===a.toLowerCase());document.documentElement.style.setProperty('--brand',a);document.documentElement.style.setProperty('--brand2',p?p.cy2:a);}
 function applyPersonalization(){applyBg();applyAccent();}
 function navKey(){return 'caywork_nav_'+(S.session?S.session.empId:'x');}
 function getBottomNav(){const k=navKey();if(bottomNavMem[k])return bottomNavMem[k];try{const v=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(v)&&v.length){bottomNavMem[k]=v;return v;}}catch(e){}return NAV_DEFAULT;}
@@ -1255,6 +1262,7 @@ function render(){
   const lk=document.querySelector('.lock');if(lk)lk.remove();
   const vperm=view==='zone'?'clients':view; /* la Mappa/Zone si sblocca col permesso Clienti (non esiste un permesso 'zone') */
   if((!can(vperm)||!moduleActive(view))&&view!=='hub'&&view!=='notif'&&view!=='settings')view='hub';
+  applyViewAccent(view);
   S.speaker=S.session.empId;
   renderNav();
   $('#todaypill').textContent=GG[new Date().getDay()].slice(0,3)+' '+new Date().getDate()+' '+MESI[new Date().getMonth()].slice(0,3);
@@ -1365,7 +1373,7 @@ async function loadTenant(tenantId){
     BRAND={name:t.name||'',tagline:t.tagline||'',logo:t.logo||''};
     ACTIVE_MODULES=Array.isArray(t.modules)?t.modules:(t.modules?JSON.parse(t.modules):[]);
     MAX_EMP=(typeof t.max_employees==='number'&&t.max_employees>0)?t.max_employees:null; /* 0 o assente = illimitato (es. piano Tutto compreso) */
-    if(t.accent){document.documentElement.style.setProperty('--cy',t.accent);document.documentElement.style.setProperty('--accent',t.accent);}
+    if(t.accent){document.documentElement.style.setProperty('--brand',t.accent);document.documentElement.style.setProperty('--brand2',t.accent);document.documentElement.style.setProperty('--accent',t.accent);}
     if(BRAND.name)document.title=BRAND.name;
     applyBrandIcon(BRAND.logo);
   }catch(e){console.error('loadTenant',e);}
@@ -1736,11 +1744,20 @@ async function checkUpdate(){
       if(sessionStorage.getItem('cw_upd')===j.version)return; /* gia' tentato: evita loop */
       sessionStorage.setItem('cw_upd',j.version);
       try{toast('Aggiornamento in corso…');}catch(e){}
-      setTimeout(()=>location.reload(),1300);
+      /* Il parametro di versione aggira anche la cache di app.html: chi apre
+         l'icona PWA riceve il nuovo codice senza cancellare il collegamento. */
+      setTimeout(()=>{
+        const u=new URL(location.href);
+        u.searchParams.set('v',j.version);
+        location.replace(u.href);
+      },1300);
     }
   }catch(e){/* offline o errore: ignora, l'app continua a funzionare */}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate();});
+/* Controllo anche all'avvio: un collegamento PWA non deve restare indietro. */
+setTimeout(checkUpdate,1800);
+setInterval(checkUpdate,5*60*1000);
 
 /* ================= DEMO / VETRINA ================= */
 function demoBoot(){
