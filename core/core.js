@@ -308,37 +308,73 @@ function fmtD(s){if(!s)return'';const[y,m,d]=s.split('-').map(Number);const dt=n
   if(diff>2&&diff<7)return GG[dt.getDay()]+' · '+base; return base;}
 function fmtTime(t){return t||''}
 function relDays(s){if(!s)return null;const[y,m,d]=s.split('-').map(Number);const dt=new Date(y,m-1,d);const t=new Date();t.setHours(0,0,0,0);return Math.round((dt-t)/86400000);}
-/* Prepara una foto per l'upload: prova a ridimensionarla (max 1280px, JPEG). Se il
-   browser NON sa decodificarla — tipico delle foto HEIC dell'iPhone scelte dalla
-   galleria su Android/PC — o se qualcosa va storto, ricade sul file ORIGINALE così
-   l'upload non fallisce mai in silenzio. Risolve con {blob, ext, type}. */
-function preparePhoto(file){
-  const orig=()=>{const t=file.type||'application/octet-stream';const m=(t.split('/')[1]||'').split('+')[0];let ext=(file.name&&file.name.includes('.'))?file.name.split('.').pop().toLowerCase():(m||'jpg');ext=ext.replace(/[^a-z0-9]/g,'')||'jpg';return{blob:file,ext,type:t};};
+/* Prepara una foto per l'upload: la ridimensiona (max 1280px) e la converte in JPEG.
+   Le foto HEIC dell'iPhone (scelte dalla galleria su Android/PC) il browser non le sa
+   leggere: le converte in JPEG con heic2any (caricato solo quando serve), altrimenti
+   Chrome non riuscirebbe poi a MOSTRARLE. Se tutto fallisce ricade sul file ORIGINALE
+   così l'upload non fallisce mai in silenzio. Risolve con {blob, ext, type}. */
+const isHeic=f=>/hei[cf]/i.test(f.type||'')||/\.hei[cf]$/i.test(f.name||'');
+let _heicLib=null;
+function loadHeic2any(){
+  if(window.heic2any)return Promise.resolve(window.heic2any);
+  if(!_heicLib)_heicLib=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';s.onload=()=>window.heic2any?res(window.heic2any):rej(new Error('heic2any'));s.onerror=()=>{_heicLib=null;rej(new Error('heic2any non caricato'));};document.head.appendChild(s);});
+  return _heicLib;
+}
+/* ridimensiona+JPEG un'immagine che il browser sa decodificare; null se non ci riesce */
+function resizeToJpeg(blob,timeout){
   return new Promise(resolve=>{
     let done=false;const finish=v=>{if(done)return;done=true;resolve(v);};
-    // se la decodifica non arriva entro 8s (formato ostico), carica l'originale: mai appeso in silenzio
-    setTimeout(()=>finish(orig()),8000);
+    setTimeout(()=>finish(null),timeout);
     try{
       const r=new FileReader();
-      r.onerror=()=>finish(orig());
+      r.onerror=()=>finish(null);
       r.onload=()=>{
         const img=new Image();
-        img.onerror=()=>finish(orig());
+        img.onerror=()=>finish(null);
         img.onload=()=>{
           try{
             let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
-            if(!w||!h){finish(orig());return;}
+            if(!w||!h){finish(null);return;}
             const max=1280;if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
             const cv=document.createElement('canvas');cv.width=w;cv.height=h;
             cv.getContext('2d').drawImage(img,0,0,w,h);
-            cv.toBlob(b=>finish(b?{blob:b,ext:'jpg',type:'image/jpeg'}:orig()),'image/jpeg',.72);
-          }catch(_){finish(orig());}
+            cv.toBlob(b=>finish(b?{blob:b,ext:'jpg',type:'image/jpeg'}:null),'image/jpeg',.72);
+          }catch(_){finish(null);}
         };
         img.src=r.result;
       };
-      r.readAsDataURL(file);
-    }catch(_){finish(orig());}
+      r.readAsDataURL(blob);
+    }catch(_){finish(null);}
   });
+}
+async function preparePhoto(file){
+  const orig=()=>{const t=file.type||'application/octet-stream';const m=(t.split('/')[1]||'').split('+')[0];let ext=(file.name&&file.name.includes('.'))?file.name.split('.').pop().toLowerCase():(m||'jpg');ext=ext.replace(/[^a-z0-9]/g,'')||'jpg';return{blob:file,ext,type:t};};
+  // foto grandi su telefoni lenti: 20s prima di arrendersi (prima erano 8s e ricadeva sull'originale)
+  const r=await resizeToJpeg(file,20000);if(r)return r;
+  if(isHeic(file)){
+    try{
+      toast('🔄 Converto foto HEIC…');
+      const lib=await loadHeic2any();
+      let out=await lib({blob:file,toType:'image/jpeg',quality:.8});if(Array.isArray(out))out=out[0];
+      return (await resizeToJpeg(out,20000))||{blob:out,ext:'jpg',type:'image/jpeg'};
+    }catch(e){console.warn('HEIC → JPEG fallita',e);}
+  }
+  return orig();
+}
+/* link firmato di una foto non generato: prima finiva nel vuoto e restava l'icona 📷 per sempre */
+let _photoUrlFailAt=0;
+function photoUrlFail(err){
+  console.warn('createSignedUrl',err);
+  if(Date.now()-_photoUrlFailAt<10000)return;_photoUrlFailAt=Date.now();
+  toast('⚠ Non riesco ad aprire alcune foto'+(err&&err.message?': '+err.message:''));
+}
+/* <img> che il browser non sa mostrare (es. vecchie foto HEIC caricate senza conversione) */
+function photoBroken(img){
+  const box=document.createElement('div');
+  box.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;font-size:10px;text-align:center;padding:4px;box-sizing:border-box;cursor:pointer;color:var(--txt2,#888)';
+  box.innerHTML='<span style="font-size:20px">🖼</span>Formato non visibile<br>tocca per scaricare';
+  const u=img.getAttribute('src');box.onclick=e=>{e.stopPropagation();window.open(u,'_blank');};
+  img.replaceWith(box);
 }
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
 const byId=(arr,id)=>arr.find(x=>x.id===id);
@@ -1523,12 +1559,12 @@ async function loadClientAtt(clientId){
 function ensureClientAttUrls(clientId){
   const arr=clientAtt[clientId]||[];const miss=arr.filter(a=>!clientAttUrl[a.id]&&!clientAttFetching[a.id]&&a.storagePath);
   if(!miss.length)return;miss.forEach(a=>clientAttFetching[a.id]=true);
-  Promise.all(miss.map(a=>sb.storage.from('allegati').createSignedUrl(a.storagePath,3600).then(({data})=>{if(data)clientAttUrl[a.id]=data.signedUrl;}))).then(()=>renderClientAtt(clientId)).catch(()=>{});
+  Promise.all(miss.map(a=>sb.storage.from('allegati').createSignedUrl(a.storagePath,3600).then(({data,error})=>{if(data)clientAttUrl[a.id]=data.signedUrl;else photoUrlFail(error);}))).then(()=>renderClientAtt(clientId)).catch(()=>{});
 }
 function renderClientAtt(clientId){
   const host=$('#cli-att');if(!host)return;const arr=clientAtt[clientId]||[];ensureClientAttUrls(clientId);
   const grid=arr.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;margin-bottom:8px">${arr.map(a=>a.type==='img'
-    ?`<div>${clientAttUrl[a.id]?`<img src="${clientAttUrl[a.id]}" onclick="viewClientAtt('${clientId}','${a.id}')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;border:1px solid var(--line);cursor:pointer">`:`<div onclick="viewClientAtt('${clientId}','${a.id}')" style="width:100%;aspect-ratio:1;border-radius:9px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px;cursor:pointer">…</div>`}</div>`
+    ?`<div>${clientAttUrl[a.id]?`<img onerror="photoBroken(this)" src="${clientAttUrl[a.id]}" onclick="viewClientAtt('${clientId}','${a.id}')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;border:1px solid var(--line);cursor:pointer">`:`<div onclick="viewClientAtt('${clientId}','${a.id}')" style="width:100%;aspect-ratio:1;border-radius:9px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px;cursor:pointer">…</div>`}</div>`
     :`<div onclick="viewClientAtt('${clientId}','${a.id}')" style="aspect-ratio:1;border:1px solid var(--line);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--bg2)"><span style="font-size:20px">${(a.name||'').match(/\.pdf$/i)?'📄':'📊'}</span><span style="font-size:8px;color:var(--t3);padding:0 4px;text-align:center;overflow:hidden;max-height:22px">${esc((a.name||'').slice(0,18))}</span></div>`).join('')}</div>`:'';
   host.innerHTML=grid+`<div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn sm" onclick="$('#cli-att-cam').click()">📷 Scatta</button>

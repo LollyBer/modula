@@ -69,7 +69,7 @@ function openSite(id){
   <div class="fld"><label>📎 Foto e file (${s.attachments.length})</label>
     ${s.attachments.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;margin-bottom:8px">
       ${s.attachments.map(a=>a.type==='img'
-        ?`<div style="position:relative">${attUrl[a.id]?`<img src="${attUrl[a.id]}" onclick="viewAtt('${id}','${a.id}')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;border:1px solid var(--line);cursor:pointer">`:`<div onclick="viewAtt('${id}','${a.id}')" style="width:100%;aspect-ratio:1;border-radius:9px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px;cursor:pointer">…</div>`}</div>`
+        ?`<div style="position:relative">${attUrl[a.id]?`<img onerror="photoBroken(this)" src="${attUrl[a.id]}" onclick="viewAtt('${id}','${a.id}')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;border:1px solid var(--line);cursor:pointer">`:`<div onclick="viewAtt('${id}','${a.id}')" style="width:100%;aspect-ratio:1;border-radius:9px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px;cursor:pointer">…</div>`}</div>`
         :`<div onclick="viewAtt('${id}','${a.id}')" style="aspect-ratio:1;border:1px solid var(--line);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--bg2)"><span style="font-size:20px">${a.name.match(/\.pdf$/i)?'📄':'📊'}</span><span style="font-size:8px;color:var(--t3);padding:0 4px;text-align:center;overflow:hidden;max-height:22px">${esc(a.name.slice(0,18))}</span></div>`).join('')}
     </div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -129,7 +129,7 @@ function ensureAttUrls(s){
   const miss=s.attachments.filter(a=>!attUrl[a.id]&&!attFetching[a.id]&&a.storagePath);
   if(!miss.length)return;
   miss.forEach(a=>attFetching[a.id]=true);
-  Promise.all(miss.map(a=>sb.storage.from('allegati').createSignedUrl(a.storagePath,3600).then(({data})=>{if(data)attUrl[a.id]=data.signedUrl;})))
+  Promise.all(miss.map(a=>sb.storage.from('allegati').createSignedUrl(a.storagePath,3600).then(({data,error})=>{if(data)attUrl[a.id]=data.signedUrl;else photoUrlFail(error);})))
     .then(()=>{const o=$('#overlay');if(o)openSite(s.id);})
     .catch(()=>{});
 }

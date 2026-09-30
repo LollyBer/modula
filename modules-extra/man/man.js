@@ -198,14 +198,14 @@ function manPhotosSection(m){
 }
 function manTile(p){
   const u=manUrls[p.storagePath];
-  return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img src="${u}" onclick="photoView('${u}')" title="Tocca per ingrandire" style="width:100%;height:100%;object-fit:cover;cursor:pointer">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="manDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
+  return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img onerror="photoBroken(this)" src="${u}" onclick="photoView('${u}')" title="Tocca per ingrandire" style="width:100%;height:100%;object-fit:cover;cursor:pointer">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="manDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
 }
 function manRefreshPhotos(id){const el=$('#mn-photos');const m=byId(S.maintenances,id);if(el&&m)el.innerHTML=(m.photos||[]).map(manTile).join('');}
 async function manLoadUrls(id){
   const m=byId(S.maintenances,id);if(!m)return;
   const miss=(m.photos||[]).filter(p=>p.storagePath&&!manUrls[p.storagePath]);
   if(!miss.length)return;
-  await Promise.all(miss.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data})=>{if(data)manUrls[p.storagePath]=data.signedUrl;}).catch(()=>{})));
+  await Promise.all(miss.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data,error})=>{if(data)manUrls[p.storagePath]=data.signedUrl;else photoUrlFail(error);}).catch(photoUrlFail)));
   manRefreshPhotos(id);
 }
 async function manAddPhoto(id,ev){

@@ -155,14 +155,14 @@ function svPhotosSection(s){
 function svPhotoStatus(msg,err){const el=$('#sv-photostatus');if(el){el.textContent=msg||'';el.style.color=err?'var(--coral)':'var(--teal)';}}
 function svTile(p){
   const u=svUrls[p.storagePath];
-  return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img src="${u}" onclick="photoView('${u}')" title="Tocca per ingrandire" style="width:100%;height:100%;object-fit:cover;cursor:pointer">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="svDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
+  return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img onerror="photoBroken(this)" src="${u}" onclick="photoView('${u}')" title="Tocca per ingrandire" style="width:100%;height:100%;object-fit:cover;cursor:pointer">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="svDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
 }
 function svRefreshPhotos(id){const el=$('#sv-photos');const s=byId(S.surveys,id);if(el&&s)el.innerHTML=(s.photos||[]).map(svTile).join('');}
 async function svLoadUrls(id){
   const s=byId(S.surveys,id);if(!s)return;
   const miss=(s.photos||[]).filter(p=>p.storagePath&&!svUrls[p.storagePath]);
   if(!miss.length)return;
-  await Promise.all(miss.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data})=>{if(data)svUrls[p.storagePath]=data.signedUrl;}).catch(()=>{})));
+  await Promise.all(miss.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data,error})=>{if(data)svUrls[p.storagePath]=data.signedUrl;else photoUrlFail(error);}).catch(photoUrlFail)));
   svRefreshPhotos(id);
 }
 async function svAddPhoto(id,ev){

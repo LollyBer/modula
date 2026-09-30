@@ -84,13 +84,13 @@ function openReport(id,presetSite){
 }
 function repTile(p){
   const u=repUrls[p.storagePath];
-  return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img src="${u}" onclick="photoView('${u}')" title="Tocca per ingrandire" style="width:100%;height:100%;object-fit:cover;cursor:pointer">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="repDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
+  return `<div style="position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg3)">${u?`<img onerror="photoBroken(this)" src="${u}" onclick="photoView('${u}')" title="Tocca per ingrandire" style="width:100%;height:100%;object-fit:cover;cursor:pointer">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:20px">📷</div>'}<button onclick="repDelPhoto('${p.id}')" style="position:absolute;top:2px;right:2px;background:var(--coral);color:#fff;border:0;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button></div>`;
 }
 function repRefresh(){const el=$('#rp-photos');if(el&&repDraft)el.innerHTML=repDraft.photos.map(repTile).join('');}
 async function repLoadUrls(photos){
   const miss=(photos||[]).filter(p=>p.storagePath&&!repUrls[p.storagePath]);
   if(!miss.length)return;
-  await Promise.all(miss.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data})=>{if(data)repUrls[p.storagePath]=data.signedUrl;}).catch(()=>{})));
+  await Promise.all(miss.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data,error})=>{if(data)repUrls[p.storagePath]=data.signedUrl;else photoUrlFail(error);}).catch(photoUrlFail)));
   repRefresh();
 }
 async function repAddPhoto(ev){
@@ -134,7 +134,7 @@ async function siteSummary(id){
   toast('📄 Preparo il riepilogo…');
   const allPhotos=[];list.forEach(r=>(r.photos||[]).forEach(p=>{if(p.storagePath)allPhotos.push(p);}));
   const urls={};
-  try{await Promise.all(allPhotos.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data})=>{if(data)urls[p.storagePath]=data.signedUrl;}).catch(()=>{})));}catch(e){}
+  try{await Promise.all(allPhotos.map(p=>sb.storage.from('allegati').createSignedUrl(p.storagePath,3600).then(({data,error})=>{if(data)urls[p.storagePath]=data.signedUrl;else photoUrlFail(error);}).catch(photoUrlFail)));}catch(e){}
   const cli=s.clientId?byId(S.clients,s.clientId):null;const addr=cli&&typeof cAddr==='function'?cAddr(cli):'';
   const totH=repHours(list);const STAT={previsto:'Lavoro futuro',aperto:'In corso',da_fatturare:'Da fatturare',chiuso:'Archiviato'};
   const rows=list.map(r=>`<tr>
